@@ -24,4 +24,5 @@ public class CampusLocationDTO {
     private String phone;
     private String email;
     private String openingHours;
+    private Boolean isActive;
 }

@@ -25,6 +25,7 @@ import org.com.campus.data.CampusRepository
 import org.com.campus.data.University
 import org.com.core.ui.theme.AppColorScheme
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun UniversitySelectionScreen(
     onUniversitySelected: (University) -> Unit
@@ -51,24 +52,22 @@ fun UniversitySelectionScreen(
         }
     }
 
-    BoxWithConstraints(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColorScheme.background)
     ) {
-        val isLargeScreen = maxWidth > 900.dp
-        
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(64.dp))
 
             Text(
-                text = "CAMPUS NAVIGATION",
+                text = "CAMPNAV",
                 style = MaterialTheme.typography.displayMedium,
                 color = Color.White,
                 fontWeight = FontWeight.ExtraBold,
@@ -76,11 +75,21 @@ fun UniversitySelectionScreen(
             )
 
             Text(
+                text = "Campus Navigation",
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.White.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
                 text = "CHOOSE YOUR UNIVERSITY",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp, bottom = 48.dp)
+                modifier = Modifier.padding(bottom = 48.dp)
             )
 
             if (isLoading) {
@@ -106,42 +115,26 @@ fun UniversitySelectionScreen(
                     }
                 }
             } else {
-                if (isLargeScreen) {
-                    Row(
-                        modifier = Modifier
-                            .widthIn(max = 1200.dp)
-                            .height(IntrinsicSize.Max)
-                            .padding(bottom = 48.dp),
-                        horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        universities.forEach { university ->
-                            UniversityCard(
-                                university = university,
-                                onClick = { onUniversitySelected(university) },
-                                modifier = Modifier.weight(1f).fillMaxHeight()
-                            )
-                        }
-                    }
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .widthIn(max = 500.dp)
-                            .padding(bottom = 48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(32.dp)
-                    ) {
-                        universities.forEach { university ->
-                            UniversityCard(
-                                university = university,
-                                onClick = { onUniversitySelected(university) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                FlowRow(
+                    modifier = Modifier
+                        .widthIn(max = 1400.dp)
+                        .padding(horizontal = 24.dp, vertical = 24.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalArrangement = Arrangement.spacedBy(32.dp),
+                    maxItemsInEachRow = 3
+                ) {
+                    universities.forEach { university ->
+                        UniversityCard(
+                            university = university,
+                            onClick = { onUniversitySelected(university) },
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .width(380.dp)
+                        )
                     }
                 }
             }
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(64.dp))
         }
     }
 }
@@ -166,7 +159,7 @@ fun UniversityCard(
         ) {
             Surface(
                 modifier = Modifier
-                    .size(140.dp)
+                    .size(120.dp)
                     .clip(RoundedCornerShape(20.dp)),
                 color = Color.White.copy(alpha = 0.05f)
             ) {
@@ -182,17 +175,17 @@ fun UniversityCard(
             
             Text(
                 text = university.name.uppercase(),
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
                 textAlign = TextAlign.Center,
-                lineHeight = 28.sp,
-                modifier = Modifier.heightIn(min = 56.dp)
+                lineHeight = 24.sp,
+                minLines = 2
             )
 
             Text(
                 text = university.shortName ?: "",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 8.dp)
@@ -222,7 +215,8 @@ fun UniversityCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 16.dp).heightIn(min = 32.dp)
+                    modifier = Modifier.padding(top = 16.dp).heightIn(min = 32.dp),
+                    maxLines = 2
                 )
             }
 
@@ -230,13 +224,13 @@ fun UniversityCard(
 
             Button(
                 onClick = onClick,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Explore Campus", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Spacer(Modifier.width(12.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text("Explore Campus", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(Modifier.width(8.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
             }
         }
     }

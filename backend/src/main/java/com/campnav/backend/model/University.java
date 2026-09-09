@@ -21,6 +21,7 @@ public class University {
     private String name;
     private String shortName;
     private String logoUrl;
+    @Column(columnDefinition = "TEXT")
     private String description;
     private String country;
     private String city;
@@ -28,6 +29,13 @@ public class University {
     private Double latitude;
     private Double longitude;
     private Float defaultZoom;
+    
+    @Builder.Default
+    private Boolean isActive = true;
+    
+    private Integer sortOrder;
+    
+    private Double campusAreaHectares;
     
     @OneToMany(mappedBy = "university", cascade = CascadeType.ALL)
     @JsonIgnore

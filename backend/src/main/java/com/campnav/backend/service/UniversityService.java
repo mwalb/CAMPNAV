@@ -25,11 +25,15 @@ public class UniversityService {
     private CategoryRepository categoryRepository;
 
     public List<University> getAllUniversities() {
-        return universityRepository.findAll();
+        return universityRepository.findAllByIsActiveTrueOrderBySortOrderAsc();
     }
 
     public Optional<University> getUniversityById(Long id) {
         return universityRepository.findById(id);
+    }
+
+    public Optional<University> getUniversityByShortName(String shortName) {
+        return universityRepository.findByShortName(shortName);
     }
 
     public List<CampusLocation> getLocationsByUniversity(Long universityId, Long categoryId, List<Long> categoryIds) {

@@ -1,0 +1,88 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :clean
+> Task :compileJava
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+2026-09-09T13:03:59.402-04:00  INFO 80803 --- [campnav-backend] [           main] c.c.backend.CampNavBackendApplication    : Starting CampNavBackendApplication using Java 21.0.11-ea with PID 80803 (/home/mwalb/StudioProjects/CAMPNAV/backend/build/classes/java/main started by mwalb in /home/mwalb/StudioProjects/CAMPNAV/backend)
+2026-09-09T13:03:59.407-04:00  INFO 80803 --- [campnav-backend] [           main] c.c.backend.CampNavBackendApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-09-09T13:04:00.415-04:00  INFO 80803 --- [campnav-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-09T13:04:00.518-04:00  INFO 80803 --- [campnav-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 93 ms. Found 5 JPA repository interfaces.
+2026-09-09T13:04:01.266-04:00  INFO 80803 --- [campnav-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-09-09T13:04:01.304-04:00  INFO 80803 --- [campnav-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-09-09T13:04:01.304-04:00  INFO 80803 --- [campnav-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.28]
+2026-09-09T13:04:01.369-04:00  INFO 80803 --- [campnav-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-09-09T13:04:01.372-04:00  INFO 80803 --- [campnav-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1871 ms
+2026-09-09T13:04:01.421-04:00  INFO 80803 --- [campnav-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-09-09T13:04:01.635-04:00  INFO 80803 --- [campnav-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:campnavdb user=SA
+2026-09-09T13:04:01.638-04:00  INFO 80803 --- [campnav-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-09-09T13:04:01.655-04:00  INFO 80803 --- [campnav-backend] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:campnavdb'
+2026-09-09T13:04:01.982-04:00  INFO 80803 --- [campnav-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:campnavdb (H2 2.2)
+2026-09-09T13:04:01.991-04:00  WARN 80803 --- [campnav-backend] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-09-09T13:04:02.028-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-09-09T13:04:02.032-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 4 migrations (execution time 00:00.025s)
+2026-09-09T13:04:02.044-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-09-09T13:04:02.089-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-09-09T13:04:02.101-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - init schema"
+2026-09-09T13:04:02.149-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "2 - update category schema"
+2026-09-09T13:04:02.193-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "3 - update university schema"
+2026-09-09T13:04:02.212-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "4 - update location schema"
+2026-09-09T13:04:02.228-04:00  INFO 80803 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "PUBLIC", now at version v4 (execution time 00:00.088s)
+2026-09-09T13:04:02.321-04:00  INFO 80803 --- [campnav-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-09T13:04:02.382-04:00  INFO 80803 --- [campnav-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+2026-09-09T13:04:02.415-04:00  INFO 80803 --- [campnav-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-09T13:04:02.755-04:00  INFO 80803 --- [campnav-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-09T13:04:04.319-04:00  INFO 80803 --- [campnav-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-09T13:04:04.350-04:00  INFO 80803 --- [campnav-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-09T13:04:04.914-04:00  WARN 80803 --- [campnav-backend] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-09T13:04:05.377-04:00  WARN 80803 --- [campnav-backend] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-09-09T13:04:05.379-04:00  INFO 80803 --- [campnav-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-09T13:04:05.383-04:00  INFO 80803 --- [campnav-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-09-09T13:04:05.387-04:00  INFO 80803 --- [campnav-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-09-09T13:04:05.403-04:00  INFO 80803 --- [campnav-backend] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-09-09T13:04:05.431-04:00 ERROR 80803 --- [campnav-backend] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
+
+> Task :bootRun FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':bootRun'.
+> Process 'command '/usr/lib/jvm/java-21-openjdk-amd64/bin/java'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 27s
+5 actionable tasks: 5 executed

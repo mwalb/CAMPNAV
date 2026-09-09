@@ -13,7 +13,10 @@ data class University(
     val city: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val defaultZoom: Float? = null
+    val defaultZoom: Float? = null,
+    val isActive: Boolean = true,
+    val sortOrder: Int? = null,
+    val campusAreaHectares: Double? = null
 )
 
 @Serializable
@@ -29,9 +32,10 @@ data class Category(
 @Serializable
 data class CampusLocation(
     val id: Long,
+    val universityId: Long? = null,
+    val categoryId: Long? = null,
     val name: String,
     val description: String? = null,
-    val categoryId: Long? = null,
     val latitude: Double,
     val longitude: Double,
     val buildingCode: String? = null,
@@ -40,5 +44,6 @@ data class CampusLocation(
     val imageUrl: String? = null,
     val phone: String? = null,
     val email: String? = null,
-    val openingHours: String? = null
+    val openingHours: String? = null,
+    val isActive: Boolean = true
 )

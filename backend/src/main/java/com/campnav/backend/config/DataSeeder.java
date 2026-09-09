@@ -27,59 +27,72 @@ public class DataSeeder implements CommandLineRunner {
         Category admin = categories.get("administration");
         Category accom = categories.get("accommodation");
         Category food = categories.get("food-cafeteria");
-        Category religion = categories.get("religious-places");
-        Category bank = categories.get("banks-finance");
-        Category health = categories.get("health-medical");
-        Category shop = categories.get("shopping-services");
-        Category tech = categories.get("technology-ict");
-        Category pub = categories.get("public-services");
 
-        // Seed/Update UDSM
-        Optional<University> udsmOpt = universityService.getAllUniversities().stream().filter(u -> u.getShortName().equals("UDSM")).findFirst();
-        University udsm = udsmOpt.orElse(University.builder().shortName("UDSM").build());
-        udsm.setName("University of Dar es Salaam");
-        udsm.setCity("Dar es Salaam");
-        udsm.setCountry("Tanzania");
-        udsm.setLatitude(-6.7801);
-        udsm.setLongitude(39.2041);
-        udsm.setDefaultZoom(15f);
-        udsm.setLogoUrl("https://upload.wikimedia.org/wikipedia/en/2/2a/University_of_Dar_es_Salaam_Logo.png");
-        udsm.setDescription("Knowledge First");
-        udsm = universityService.saveUniversity(udsm);
+        // 1. University of Dar es Salaam (UDSM)
+        seedUniversity("University of Dar es Salaam", "UDSM", "Dar es Salaam", -6.7801, 39.2041, 15f, 
+                "Knowledge First", "https://upload.wikimedia.org/wikipedia/en/2/2a/University_of_Dar_es_Salaam_Logo.png", 1, true, 657.0);
 
-        // Seed/Update ARDHI
-        Optional<University> aruOpt = universityService.getAllUniversities().stream().filter(u -> u.getShortName().equals("ARDHI")).findFirst();
-        University aru = aruOpt.orElse(University.builder().shortName("ARDHI").build());
-        aru.setName("Ardhi University");
-        aru.setCity("Dar es Salaam");
-        aru.setCountry("Tanzania");
-        aru.setLatitude(-6.7720);
-        aru.setLongitude(39.2070);
-        aru.setDefaultZoom(15f);
-        aru.setLogoUrl("https://upload.wikimedia.org/wikipedia/en/d/d4/Ardhi_University_logo.png");
-        aru.setDescription("For Real Estate and Environmental Sciences");
-        aru = universityService.saveUniversity(aru);
+        // 2. University of Dodoma (UDOM)
+        seedUniversity("University of Dodoma", "UDOM", "Dodoma", -6.2033, 35.8000, 14f, 
+                "Embracing Knowledge", "https://upload.wikimedia.org/wikipedia/en/1/1b/UDOM_Logo.png", 2, true, 6000.0);
 
-        // Locations
-        if (universityService.getLocationsByUniversity(udsm.getId(), null, null).isEmpty()) {
-            universityService.saveLocation(CampusLocation.builder().name("UDSM Main Library").latitude(-6.7810).longitude(39.2030).university(udsm).category(lib).build());
-            universityService.saveLocation(CampusLocation.builder().name("CoICT Complex").latitude(-6.7750).longitude(39.2360).university(udsm).category(lect).build());
-            universityService.saveLocation(CampusLocation.builder().name("Hall 1").latitude(-6.7820).longitude(39.2050).university(udsm).category(accom).build());
-            universityService.saveLocation(CampusLocation.builder().name("Yombo Cafeteria").latitude(-6.7830).longitude(39.2020).university(udsm).category(food).build());
-            universityService.saveLocation(CampusLocation.builder().name("UDSM Chapel").latitude(-6.7840).longitude(39.2060).university(udsm).category(religion).build());
-            universityService.saveLocation(CampusLocation.builder().name("CRDB Bank").latitude(-6.7850).longitude(39.2070).university(udsm).category(bank).build());
-            universityService.saveLocation(CampusLocation.builder().name("UDSM Health Centre").latitude(-6.7860).longitude(39.2080).university(udsm).category(health).build());
-            universityService.saveLocation(CampusLocation.builder().name("UDSM Bookshop").latitude(-6.7870).longitude(39.2090).university(udsm).category(shop).build());
-        }
+        // 3. Mbeya University of Science and Technology (MUST)
+        seedUniversity("Mbeya University of Science and Technology", "MUST", "Mbeya", -8.9328, 33.3980, 15f, 
+                "Science and Technology for Development", "https://upload.wikimedia.org/wikipedia/en/a/a2/Mbeya_University_of_Science_and_Technology_Logo.png", 3, true, null);
 
-        if (universityService.getLocationsByUniversity(aru.getId(), null, null).isEmpty()) {
-            universityService.saveLocation(CampusLocation.builder().name("ARU Administration Block").latitude(-6.7725).longitude(39.2075).university(aru).category(admin).build());
-            universityService.saveLocation(CampusLocation.builder().name("ARU Library").latitude(-6.7715).longitude(39.2065).university(aru).category(lib).build());
-            universityService.saveLocation(CampusLocation.builder().name("Block A Hostel").latitude(-6.7735).longitude(39.2085).university(aru).category(accom).build());
-            universityService.saveLocation(CampusLocation.builder().name("ARU Cafeteria").latitude(-6.7745).longitude(39.2095).university(aru).category(food).build());
-            universityService.saveLocation(CampusLocation.builder().name("Computer Centre").latitude(-6.7755).longitude(39.2105).university(aru).category(tech).build());
-            universityService.saveLocation(CampusLocation.builder().name("Post Office").latitude(-6.7765).longitude(39.2115).university(aru).category(pub).build());
-        }
+        // 4. Sokoine University of Agriculture (SUA)
+        seedUniversity("Sokoine University of Agriculture", "SUA", "Morogoro", -6.8475, 37.6591, 15f, 
+                "Ardhi ni Hazina", "https://upload.wikimedia.org/wikipedia/en/3/3d/Sua_logo.png", 4, true, null);
+
+        // 5. Mzumbe University (MU)
+        seedUniversity("Mzumbe University", "MU", "Morogoro", -6.8167, 37.6667, 15f, 
+                "Muscente Discimus", "https://upload.wikimedia.org/wikipedia/en/e/e0/Mzumbe_University_logo.png", 5, true, 4926.75);
+
+        // Deactivate Ardhi University if it exists
+        deactivateUniversity("ARDHI");
+
+        // Seed some sample locations for the new universities if empty
+        seedLocations("UDSM", lib, lect);
+        seedLocations("UDOM", lib, lect);
+        seedLocations("MUST", lib, lect);
+        seedLocations("SUA", lib, lect);
+        seedLocations("MU", lib, lect);
+    }
+
+    private void seedUniversity(String name, String shortName, String city, Double lat, Double lng, Float zoom, 
+                                String desc, String logo, Integer sortOrder, Boolean active, Double area) {
+        Optional<University> opt = universityService.getUniversityByShortName(shortName);
+        
+        University u = opt.orElse(University.builder().shortName(shortName).build());
+        u.setName(name);
+        u.setCity(city);
+        u.setCountry("Tanzania");
+        u.setLatitude(lat);
+        u.setLongitude(lng);
+        u.setDefaultZoom(zoom);
+        u.setDescription(desc);
+        u.setLogoUrl(logo);
+        u.setSortOrder(sortOrder);
+        u.setIsActive(active);
+        u.setCampusAreaHectares(area);
+        universityService.saveUniversity(u);
+    }
+
+    private void deactivateUniversity(String shortName) {
+        universityService.getUniversityByShortName(shortName)
+                .ifPresent(u -> {
+                    u.setIsActive(false);
+                    universityService.saveUniversity(u);
+                });
+    }
+
+    private void seedLocations(String shortName, Category lib, Category lect) {
+        universityService.getUniversityByShortName(shortName).ifPresent(u -> {
+            if (universityService.getLocationsByUniversity(u.getId(), null, null).isEmpty()) {
+                universityService.saveLocation(CampusLocation.builder().name(u.getShortName() + " Main Library").latitude(u.getLatitude() - 0.001).longitude(u.getLongitude() - 0.001).university(u).category(lib).isActive(true).build());
+                universityService.saveLocation(CampusLocation.builder().name(u.getShortName() + " Lecture Theatre").latitude(u.getLatitude() + 0.001).longitude(u.getLongitude() + 0.001).university(u).category(lect).isActive(true).build());
+            }
+        });
     }
 
     private Map<String, Category> seedCategories() {

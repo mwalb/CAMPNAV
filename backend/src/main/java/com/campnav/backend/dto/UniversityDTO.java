@@ -20,4 +20,7 @@ public class UniversityDTO {
     private Double latitude;
     private Double longitude;
     private Float defaultZoom;
+    private Integer sortOrder;
+    private Double campusAreaHectares;
+    private Boolean isActive;
 }

@@ -7,6 +7,7 @@ import com.campnav.backend.model.CampusLocation;
 import com.campnav.backend.model.Category;
 import com.campnav.backend.model.University;
 import com.campnav.backend.service.UniversityService;
+import com.campnav.backend.repository.UniversityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,14 @@ public class UniversityController {
 
     @Autowired
     private UniversityService universityService;
+    
+    @Autowired
+    private UniversityRepository universityRepository;
+
+    @GetMapping("/debug/all-raw")
+    public List<University> getAllRaw() {
+        return universityRepository.findAll();
+    }
 
     @GetMapping
     public List<UniversityDTO> getAllUniversities() {
@@ -76,6 +85,9 @@ public class UniversityController {
                 .latitude(university.getLatitude())
                 .longitude(university.getLongitude())
                 .defaultZoom(university.getDefaultZoom())
+                .sortOrder(university.getSortOrder())
+                .campusAreaHectares(university.getCampusAreaHectares())
+                .isActive(university.getIsActive())
                 .build();
     }
 
@@ -106,6 +118,7 @@ public class UniversityController {
                 .phone(location.getPhone())
                 .email(location.getEmail())
                 .openingHours(location.getOpeningHours())
+                .isActive(location.getIsActive())
                 .build();
     }
 }

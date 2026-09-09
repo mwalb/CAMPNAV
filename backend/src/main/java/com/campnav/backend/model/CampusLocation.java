@@ -18,6 +18,7 @@ public class CampusLocation {
     private Long id;
     
     private String name;
+    @Column(columnDefinition = "TEXT")
     private String description;
     
     @ManyToOne
@@ -39,4 +40,7 @@ public class CampusLocation {
     private String phone;
     private String email;
     private String openingHours;
+    
+    @Builder.Default
+    private Boolean isActive = true;
 }

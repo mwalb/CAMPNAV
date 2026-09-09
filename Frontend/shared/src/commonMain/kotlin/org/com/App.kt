@@ -31,9 +31,7 @@ fun MainApp() {
             AppMode.CampusNav -> selectedUniversity?.let {
                 CampusMapScreen(
                     university = it,
-                    onBack = { mode = AppMode.UniversitySelection },
-                    onNavigateToEntertainment = { mode = AppMode.Entertainment },
-                    onNavigateToCreator = { mode = AppMode.ContentCreator }
+                    onBack = { mode = AppMode.UniversitySelection }
                 )
             }
             AppMode.Entertainment -> IPTVPlayerApp(
