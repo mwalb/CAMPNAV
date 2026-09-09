@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinxSerialization)
 }
 
 kotlin {
@@ -44,6 +45,8 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.android)
             implementation(libs.ktor.client.cio)
+            implementation("com.google.maps.android:maps-compose:4.4.1")
+            implementation("com.google.android.gms:play-services-maps:19.0.0")
         }
 
         commonMain.dependencies {

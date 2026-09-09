@@ -1,0 +1,34 @@
+package org.com.campus.data
+
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import org.com.core.network.apiClient
+
+class CampusRepository {
+    private val client = apiClient
+
+    suspend fun getUniversities(): List<University> {
+        return client.get("/api/universities").body()
+    }
+
+    suspend fun getLocations(universityId: Long, categoryIds: List<Long>? = null): List<CampusLocation> {
+        return client.get("/api/universities/${universityId}/locations") {
+            if (categoryIds != null && categoryIds.isNotEmpty()) {
+                parameter("categoryIds", categoryIds.joinToString(","))
+            }
+        }.body()
+    }
+
+    suspend fun getCategories(): List<Category> {
+        return client.get("/api/universities/categories").body()
+    }
+
+    suspend fun searchLocations(universityId: Long, query: String, categoryIds: List<Long>? = null): List<CampusLocation> {
+        return client.get("/api/universities/${universityId}/search") {
+            parameter("query", query)
+            if (categoryIds != null && categoryIds.isNotEmpty()) {
+                parameter("categoryIds", categoryIds.joinToString(","))
+            }
+        }.body()
+    }
+}
