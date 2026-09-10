@@ -11,5 +11,6 @@ expect fun CampusMap(
     university: University,
     locations: List<CampusLocation>,
     onLocationSelected: (CampusLocation) -> Unit,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    initialSelectedLocation: CampusLocation? = null
 )

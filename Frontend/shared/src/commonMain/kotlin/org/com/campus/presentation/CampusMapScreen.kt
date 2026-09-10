@@ -11,6 +11,7 @@ import org.com.campus.data.University
 @Composable
 fun CampusMapScreen(
     university: University,
+    initialSelectedLocation: CampusLocation? = null,
     onBack: () -> Unit
 ) {
     var locations by remember { mutableStateOf(emptyList<CampusLocation>()) }
@@ -23,7 +24,7 @@ fun CampusMapScreen(
             
             // Defensive filtering: Ensure locations belong to selected university and are active
             val validLocations = fetchedLocations.filter { 
-                it.isActive && (it.universityId == null || it.universityId == university.id)
+                (it.isActive) && (it.universityId == null || it.universityId == university.id)
             }
             
             locations = validLocations
@@ -41,6 +42,7 @@ fun CampusMapScreen(
         onLocationSelected = { location ->
             println("[CAMPNAV] Marker clicked: ${location.name} (ID: ${location.id})")
         },
-        onBack = onBack
+        onBack = onBack,
+        initialSelectedLocation = initialSelectedLocation
     )
 }

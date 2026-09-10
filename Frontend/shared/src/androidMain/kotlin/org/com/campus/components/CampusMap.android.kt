@@ -14,11 +14,17 @@ actual fun CampusMap(
     university: University,
     locations: List<CampusLocation>,
     onLocationSelected: (CampusLocation) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    initialSelectedLocation: CampusLocation?
 ) {
-    val initialPos = LatLng(university.latitude ?: 0.0, university.longitude ?: 0.0)
+    val initialPos = if (initialSelectedLocation != null) {
+        LatLng(initialSelectedLocation.latitude, initialSelectedLocation.longitude)
+    } else {
+        LatLng(university.latitude ?: 0.0, university.longitude ?: 0.0)
+    }
+    
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(initialPos, university.defaultZoom ?: 15f)
+        position = CameraPosition.fromLatLngZoom(initialPos, if (initialSelectedLocation != null) 18f else (university.defaultZoom ?: 15f))
     }
 
     GoogleMap(
