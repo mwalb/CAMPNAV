@@ -6,16 +6,12 @@ import org.com.campus.data.University
 import org.com.campus.presentation.CampusDestinationScreen
 import org.com.campus.presentation.CampusMapScreen
 import org.com.campus.presentation.UniversitySelectionScreen
-import org.com.creator.presentation.ContentCreatorScreen
-import org.com.entertainment.presentation.IPTVPlayerApp
 import org.com.core.ui.theme.CampNavTheme
 
 enum class AppMode {
     UniversitySelection,
     CampusDestination,
-    CampusNav,
-    Entertainment,
-    ContentCreator
+    CampusNav
 }
 
 @Composable
@@ -54,13 +50,6 @@ fun MainApp() {
                     onBack = { mode = AppMode.CampusDestination }
                 )
             }
-            AppMode.Entertainment -> IPTVPlayerApp(
-                onBackToSelection = { mode = AppMode.CampusNav }
-            )
-            AppMode.ContentCreator -> ContentCreatorScreen(
-                onBack = { mode = AppMode.CampusNav },
-                onSave = { /* Handle project save */ }
-            )
         }
     }
 }
