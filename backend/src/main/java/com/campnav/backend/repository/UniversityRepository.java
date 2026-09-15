@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface UniversityRepository extends JpaRepository<University, Long> {
     List<University> findAllByIsActiveTrueOrderBySortOrderAsc();
     Optional<University> findByShortName(String shortName);
+    Optional<University> findByExternalId(String externalId);
 }

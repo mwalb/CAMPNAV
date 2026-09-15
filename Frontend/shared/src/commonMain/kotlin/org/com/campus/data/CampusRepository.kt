@@ -11,6 +11,10 @@ class CampusRepository {
         return client.get("/api/universities").body()
     }
 
+    suspend fun getUniversity(id: Long): University {
+        return client.get("/api/universities/$id").body()
+    }
+
     suspend fun getLocations(universityId: Long, categoryIds: List<Long>? = null): List<CampusLocation> {
         return client.get("/api/universities/${universityId}/locations") {
             if (categoryIds != null && categoryIds.isNotEmpty()) {
@@ -19,8 +23,9 @@ class CampusRepository {
         }.body()
     }
 
-    suspend fun getCategories(): List<Category> {
-        return client.get("/api/universities/categories").body()
+    suspend fun getCategories(universityId: Long? = null): List<Category> {
+        val path = if (universityId != null) "/api/universities/$universityId/categories" else "/api/categories"
+        return client.get(path).body()
     }
 
     suspend fun searchLocations(universityId: Long, query: String, categoryIds: List<Long>? = null): List<CampusLocation> {

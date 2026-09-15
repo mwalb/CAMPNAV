@@ -18,13 +18,21 @@ public class University {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    private String externalId; // e.g., UDSM
     private String name;
+    private String officialName;
     private String shortName;
     private String logoUrl;
     @Column(columnDefinition = "TEXT")
     private String description;
     private String country;
     private String city;
+    private String status;
+    
+    @org.hibernate.annotations.CreationTimestamp
+    private java.time.LocalDateTime createdAt;
+    @org.hibernate.annotations.UpdateTimestamp
+    private java.time.LocalDateTime updatedAt;
     
     private Double latitude;
     private Double longitude;

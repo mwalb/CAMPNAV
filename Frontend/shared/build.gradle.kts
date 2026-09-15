@@ -45,8 +45,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.android)
             implementation(libs.ktor.client.cio)
-            implementation("com.google.maps.android:maps-compose:4.4.1")
-            implementation("com.google.android.gms:play-services-maps:19.0.0")
+            implementation(libs.googleMapsCompose)
+            implementation(libs.playServicesMaps)
+            implementation(libs.playServicesLocation)
         }
 
         commonMain.dependencies {

@@ -29,7 +29,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.com.campus.data.CampusLocation
@@ -43,7 +42,7 @@ import org.com.core.ui.theme.AppColorScheme
 fun CampusDestinationScreen(
     university: University,
     onBack: () -> Unit,
-    onFindOnMap: (CampusLocation) -> Unit
+    onFindOnMap: (CampusLocation, Long?) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var categories by remember { mutableStateOf(emptyList<Category>()) }
@@ -51,7 +50,7 @@ fun CampusDestinationScreen(
     var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
     var expandedCategoryId by remember { mutableStateOf<Long?>(null) }
     var selectedLetter by remember { mutableStateOf<Char?>(null) }
-    
+
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -60,23 +59,43 @@ fun CampusDestinationScreen(
     LaunchedEffect(university.id) {
         isLoading = true
         error = null
+
+        categories = emptyList()
+        allLocations = emptyList()
+        selectedLocation = null
+        expandedCategoryId = null
+        selectedLetter = null
+        searchQuery = ""
+
         try {
-            categories = repository.getCategories()
+            categories = repository.getCategories(university.id)
             allLocations = repository.getLocations(university.id)
+
+            if (allLocations.isEmpty()) {
+                println("[CAMPNAV] No locations found for university: ${university.name}")
+            }
+        } catch (e: io.ktor.client.plugins.ResponseException) {
+            error = "Server error (${e.response.status.value}). Please try again later."
+            println("[CAMPNAV] HTTP Error: ${e.message}")
         } catch (e: Exception) {
-            error = "Unable to load campus destinations."
-            println("[CAMPNAV] Error: ${e.message}")
+            error = "Connection failed. Please check your internet."
+            println("[CAMPNAV] Network Error: ${e.message}")
         } finally {
             isLoading = false
         }
     }
 
     val filteredLocations = remember(searchQuery, allLocations) {
-        if (searchQuery.isBlank()) emptyList()
-        else allLocations.filter { 
-            it.name.contains(searchQuery, ignoreCase = true) || 
-            it.buildingCode?.contains(searchQuery, ignoreCase = true) == true 
-        }.sortedBy { it.name }
+        val q = searchQuery.trim()
+        if (q.isBlank()) emptyList()
+        else {
+            allLocations.filter {
+                it.name.contains(q, ignoreCase = true) ||
+                        it.officialName?.contains(q, ignoreCase = true) == true ||
+                        it.buildingCode?.contains(q, ignoreCase = true) == true ||
+                        it.aliases?.split(";")?.any { alias -> alias.trim().contains(q, ignoreCase = true) } == true
+            }.sortedBy { it.name }
+        }
     }
 
     val alphabet = ('A'..'Z').toList()
@@ -86,7 +105,7 @@ fun CampusDestinationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 120.dp) // Space for fixed bottom card
+                .padding(bottom = 140.dp)
         ) {
             // Header
             Row(
@@ -118,20 +137,26 @@ fun CampusDestinationScreen(
                 }
             } else if (error != null) {
                 Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
-                    Text(error!!, color = Color.Gray)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(error!!, color = Color.Gray, modifier = Modifier.padding(16.dp))
+                    }
+                }
+            } else if (allLocations.isEmpty()) {
+                Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
+                    Text("No destinations available for this university.", color = Color.Gray)
                 }
             } else {
-                // Search Section
+                // Search Input Box
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Find a building, service or place on campus",
+                        text = "Find a building, hostel, cafeteria, or bank on campus",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.7f)
                     )
                     Spacer(Modifier.height(16.dp))
                     OutlinedTextField(
                         value = searchQuery,
-                        onValueChange = { 
+                        onValueChange = {
                             searchQuery = it
                             if (it.isNotBlank()) {
                                 selectedLetter = null
@@ -139,32 +164,42 @@ fun CampusDestinationScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Search destination...", color = Color.Gray) },
+                        placeholder = { Text("Search building, hall, cafeteria...", color = Color.Gray) },
                         leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) },
+                        trailingIcon = if (searchQuery.isNotEmpty()) {
+                            {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Close, null, tint = Color.Gray)
+                                }
+                            }
+                        } else null,
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
                             focusedContainerColor = Color.White.copy(alpha = 0.05f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f)
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                            focusedBorderColor = AppColorScheme.primary,
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
                         ),
                         singleLine = true
                     )
-                    
+
                     if (searchQuery.isNotBlank()) {
                         Spacer(Modifier.height(8.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surface.copy(alpha = 0.5f))
+                            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surface.copy(alpha = 0.5f)),
+                            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.2f))
                         ) {
                             Column {
                                 if (filteredLocations.isEmpty()) {
                                     Text("No destinations found", modifier = Modifier.padding(16.dp), color = Color.Gray)
                                 }
-                                filteredLocations.take(5).forEach { location ->
+                                filteredLocations.take(10).forEach { location ->
                                     LocationRow(location, categories) {
                                         selectedLocation = it
-                                        searchQuery = "" // Clear search after selection
+                                        searchQuery = ""
                                     }
                                 }
                             }
@@ -172,7 +207,7 @@ fun CampusDestinationScreen(
                     }
                 }
 
-                // Quick Destinations
+                // Quick Destinations (Mapped to category slugs)
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text("QUICK DESTINATIONS", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
@@ -181,42 +216,57 @@ fun CampusDestinationScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        QuickDestButton("Library", Icons.AutoMirrored.Filled.MenuBook) { 
-                            searchQuery = "Library" 
+                        QuickDestButton("Academics", Icons.Default.School) {
+                            expandedCategoryId = categories.find { it.slug == "academic" }?.id
+                            searchQuery = ""
                             selectedLetter = null
-                            expandedCategoryId = null
                         }
-                        QuickDestButton("Food", Icons.Default.Restaurant) { 
-                            searchQuery = "Cafeteria"
+                        QuickDestButton("Hostels", Icons.Default.Hotel) {
+                            expandedCategoryId = categories.find { it.slug == "hostel" }?.id
+                            searchQuery = ""
                             selectedLetter = null
-                            expandedCategoryId = null
                         }
-                        QuickDestButton("Health", Icons.Default.MedicalServices) { 
-                            searchQuery = "Health"
+                        QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) {
+                            expandedCategoryId = categories.find { it.slug == "library" }?.id
+                            searchQuery = ""
                             selectedLetter = null
-                            expandedCategoryId = null
                         }
-                        QuickDestButton("Hostel", Icons.Default.Hotel) { 
-                            searchQuery = "Hall"
+                        QuickDestButton("Food", Icons.Default.Restaurant) {
+                            expandedCategoryId = categories.find { it.slug == "food" }?.id
+                            searchQuery = ""
                             selectedLetter = null
-                            expandedCategoryId = null
                         }
-                        QuickDestButton("ATM", Icons.Default.Payments) { 
-                            searchQuery = "Bank"
+                        QuickDestButton("Health", Icons.Default.LocalHospital) {
+                            expandedCategoryId = categories.find { it.slug == "health" }?.id
+                            searchQuery = ""
                             selectedLetter = null
-                            expandedCategoryId = null
                         }
-                        QuickDestButton("Religious", Icons.Default.AccountBalance) { 
-                            searchQuery = "Chapel"
+                        QuickDestButton("Banking", Icons.Default.Payments) {
+                            expandedCategoryId = categories.find { it.slug == "banking" }?.id
+                            searchQuery = ""
                             selectedLetter = null
-                            expandedCategoryId = null
+                        }
+                        QuickDestButton("Religious", Icons.Default.AccountBalance) {
+                            expandedCategoryId = categories.find { it.slug == "religious" }?.id
+                            searchQuery = ""
+                            selectedLetter = null
+                        }
+                        QuickDestButton("Sports", Icons.Default.SportsSoccer) {
+                            expandedCategoryId = categories.find { it.slug == "sports" }?.id
+                            searchQuery = ""
+                            selectedLetter = null
+                        }
+                        QuickDestButton("Security", Icons.Default.Security) {
+                            expandedCategoryId = categories.find { it.slug == "security" }?.id
+                            searchQuery = ""
+                            selectedLetter = null
                         }
                     }
                 }
 
                 Spacer(Modifier.height(32.dp))
 
-                // Categories Section
+                // Categories List Section
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text("CATEGORIES / SERVICES", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
@@ -225,7 +275,7 @@ fun CampusDestinationScreen(
                             category = category,
                             locations = allLocations.filter { it.categoryId == category.id },
                             isExpanded = expandedCategoryId == category.id,
-                            onExpandToggle = { 
+                            onExpandToggle = {
                                 expandedCategoryId = if (expandedCategoryId == category.id) null else category.id
                                 if (expandedCategoryId != null) {
                                     searchQuery = ""
@@ -239,7 +289,7 @@ fun CampusDestinationScreen(
 
                 Spacer(Modifier.height(32.dp))
 
-                // A-Z Section
+                // A-Z Locations List
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text("BUILDINGS & LOCATIONS (A-Z)", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
@@ -253,7 +303,7 @@ fun CampusDestinationScreen(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .clickable(enabled = hasLocations) { 
+                                    .clickable(enabled = hasLocations) {
                                         selectedLetter = if (selectedLetter == letter) null else letter
                                         if (selectedLetter != null) {
                                             searchQuery = ""
@@ -277,7 +327,7 @@ fun CampusDestinationScreen(
                             }
                         }
                     }
-                    
+
                     AnimatedVisibility(
                         visible = selectedLetter != null,
                         enter = expandVertically() + fadeIn(),
@@ -285,6 +335,9 @@ fun CampusDestinationScreen(
                     ) {
                         Column(modifier = Modifier.padding(top = 16.dp)) {
                             val letterLocations = allLocations.filter { it.name.startsWith(selectedLetter!!, ignoreCase = true) }.sortedBy { it.name }
+                            if (letterLocations.isEmpty()) {
+                                Text("No locations found for this letter.", color = Color.Gray, modifier = Modifier.padding(16.dp))
+                            }
                             letterLocations.forEach { location ->
                                 LocationRow(location, categories) { selectedLocation = it }
                             }
@@ -294,7 +347,7 @@ fun CampusDestinationScreen(
             }
         }
 
-        // Selected Destination Sticky Bottom Card
+        // Sticky Bottom Card for Selected Destination
         AnimatedVisibility(
             visible = selectedLocation != null,
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -316,8 +369,9 @@ fun CampusDestinationScreen(
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(selectedLocation?.name ?: "", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                            val catName = categories.find { it.id == selectedLocation?.categoryId }?.name ?: "Campus Location"
-                            Text(catName + " • " + university.shortName, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                            val category = categories.find { it.id == selectedLocation?.categoryId }
+                            val catName = category?.name ?: "Campus Location"
+                            Text("$catName • ${university.shortName ?: "UDSM"}", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
                         }
                         IconButton(onClick = { selectedLocation = null }) {
                             Icon(Icons.Default.Close, null, tint = Color.Gray)
@@ -325,7 +379,7 @@ fun CampusDestinationScreen(
                     }
                     Spacer(Modifier.height(24.dp))
                     Button(
-                        onClick = { selectedLocation?.let { onFindOnMap(it) } },
+                        onClick = { selectedLocation?.let { onFindOnMap(it, null) } },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
@@ -385,8 +439,12 @@ fun CategoryExpandableRow(
                     color = AppColorScheme.primary.copy(alpha = 0.1f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        // In a real app we'd map icon names to actual vectors
-                        Icon(Icons.Default.ChevronRight, null, tint = AppColorScheme.primary, modifier = Modifier.size(16.dp))
+                        Icon(
+                            getCategoryIcon(category.iconName),
+                            null,
+                            tint = AppColorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
                 Spacer(Modifier.width(16.dp))
@@ -398,7 +456,7 @@ fun CategoryExpandableRow(
                 tint = Color.Gray
             )
         }
-        
+
         AnimatedVisibility(
             visible = isExpanded,
             enter = expandVertically() + fadeIn(),
@@ -438,12 +496,37 @@ fun LocationRow(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.Place, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+        val category = categories.find { it.id == location.categoryId }
+        Icon(
+            getCategoryIcon(category?.iconName),
+            null,
+            tint = Color.Gray,
+            modifier = Modifier.size(20.dp)
+        )
         Spacer(Modifier.width(16.dp))
         Column {
             Text(location.name, color = Color.White, fontWeight = FontWeight.Medium)
-            val catName = categories.find { it.id == location.categoryId }?.name ?: "Location"
+            val catName = category?.name ?: "Location"
             Text(catName, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
         }
+    }
+}
+
+fun getCategoryIcon(iconName: String?): ImageVector {
+    return when (iconName) {
+        "school" -> Icons.Default.School
+        "co_present" -> Icons.Default.Groups
+        "menu_book" -> Icons.AutoMirrored.Filled.MenuBook
+        "hotel" -> Icons.Default.Hotel
+        "business" -> Icons.Default.Business
+        "medical_services" -> Icons.Default.LocalHospital
+        "restaurant" -> Icons.Default.Restaurant
+        "sports_soccer" -> Icons.Default.Sports
+        "payments" -> Icons.Default.Payments
+        "security" -> Icons.Default.Security
+        "account_balance" -> Icons.Default.AccountBalance
+        "group" -> Icons.Default.Group
+        "more_horiz" -> Icons.Default.MoreHoriz
+        else -> Icons.Default.Place
     }
 }

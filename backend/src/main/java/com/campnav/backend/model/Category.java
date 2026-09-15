@@ -20,6 +20,10 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @ManyToOne
+    @JoinColumn(name = "university_id")
+    private University university;
+    
     private String name;
     private String slug;
     private String description;

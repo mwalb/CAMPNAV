@@ -1,0 +1,1048 @@
+> Task :clean UP-TO-DATE
+
+> Task :compileJava FAILED
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:225: error: method seedUniversity(String,String,String,String,Double,Double,Float,String,String,Integer,Double) is already defined in class DataSeeder
+    private University seedUniversity(String externalId, String name, String shortName, String city, Double lat, Double lng, Float zoom, 
+                       ^
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:243: error: method seedCampus(String,String,University) is already defined in class DataSeeder
+    private Campus seedCampus(String externalId, String name, University university) {
+                   ^
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:46: error: cannot find symbol
+        University u = opt.orElse(University.builder().externalId(externalId).shortName(shortName).build());
+                                            ^
+  symbol:   method builder()
+  location: class University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:47: error: cannot find symbol
+        u.setName(name);
+         ^
+  symbol:   method setName(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:48: error: cannot find symbol
+        u.setCity(city);
+         ^
+  symbol:   method setCity(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:49: error: cannot find symbol
+        u.setCountry("Tanzania");
+         ^
+  symbol:   method setCountry(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:50: error: cannot find symbol
+        u.setLatitude(lat);
+         ^
+  symbol:   method setLatitude(Double)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:51: error: cannot find symbol
+        u.setLongitude(lng);
+         ^
+  symbol:   method setLongitude(Double)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:52: error: cannot find symbol
+        u.setDefaultZoom(zoom);
+         ^
+  symbol:   method setDefaultZoom(Float)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:53: error: cannot find symbol
+        u.setDescription(desc);
+         ^
+  symbol:   method setDescription(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:54: error: cannot find symbol
+        u.setLogoUrl(logo);
+         ^
+  symbol:   method setLogoUrl(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:55: error: cannot find symbol
+        u.setSortOrder(sortOrder);
+         ^
+  symbol:   method setSortOrder(Integer)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:56: error: cannot find symbol
+        u.setIsActive(true);
+         ^
+  symbol:   method setIsActive(boolean)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:57: error: cannot find symbol
+        u.setCampusAreaHectares(area);
+         ^
+  symbol:   method setCampusAreaHectares(Double)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:63: error: cannot find symbol
+        Campus c = opt.orElse(Campus.builder().externalId(externalId).build());
+                                    ^
+  symbol:   method builder()
+  location: class Campus
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:64: error: cannot find symbol
+        c.setName(name);
+         ^
+  symbol:   method setName(String)
+  location: variable c of type Campus
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:65: error: cannot find symbol
+        c.setUniversity(university);
+         ^
+  symbol:   method setUniversity(University)
+  location: variable c of type Campus
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:147: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0079", university, campus, categories.get(catMap.get(6)), "Mlimani SACCOS", "Mlimani SACCOS", null, null, null, null, null, -6.7806827, 39.2056391, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM office=government; savings & credit co-op.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:150: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0080", university, campus, categories.get(catMap.get(7)), "Administration Block", "Administration Block", null, null, null, null, null, -6.7806065, 39.2034922, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM: government=education, office=government, check_date 2023-12-10.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:157: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0083", university, campus, categories.get(catMap.get(9)), "UDSM Playground", "UDSM Playground", null, null, null, null, null, -6.7812486, 39.2094138, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM leisure=playground.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:158: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0084", university, campus, categories.get(catMap.get(9)), "UDSM Football Pitch", "UDSM Football Pitch", null, null, null, null, null, -6.7812857, 39.2093359, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM leisure=pitch, sport=soccer.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:160: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0086", university, campus, categories.get(catMap.get(9)), "UDSM Running Track", "UDSM Running Track", null, null, null, null, null, -6.7813249, 39.2093136, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM multipolygon leisure=track.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:161: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0087", university, campus, categories.get(catMap.get(9)), "UDSM Swimming Pool", "UDSM Swimming Pool", null, null, null, null, null, -6.7796638, 39.2081319, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM leisure=swimming_pool (private access).", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:166: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0090", university, campus, categories.get(catMap.get(10)), "Bondeni Bus Stop", "Bondeni Bus Stop", null, null, null, null, null, -6.7789511, 39.2036923, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM public_transport=platform.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:167: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0091", university, campus, categories.get(catMap.get(10)), "Shuttle Point Parking", "Shuttle Point Parking", null, null, null, null, null, -6.7796466, 39.2075934, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM capacity=60.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:168: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0092", university, campus, categories.get(catMap.get(10)), "Swimming Pool Parking", "Swimming Pool Parking", null, null, null, null, null, -6.7800874, 39.2081241, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, null, "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,<null>,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:171: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0093", university, campus, categories.get(catMap.get(11)), "Mlimani Police Post", "Mlimani Police Post", null, null, null, null, null, -6.7811177, 39.2020036, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM amenity=police, public ownership.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:172: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0094", university, campus, categories.get(catMap.get(11)), "UDSM Auxiliary Police", "UDSM Auxiliary Police", null, null, null, null, null, -6.7806727, 39.202479, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM building.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:173: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0095", university, campus, categories.get(catMap.get(11)), "Auxiliary Police Post", "Auxiliary Police Post", null, null, null, null, null, -6.7846403, 39.2067697, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "Second OSM police facility near campus SW edge.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:176: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0096", university, campus, categories.get(catMap.get(12)), "UDSM Computer Center", "UDSM Computer Center", null, null, null, null, null, -6.7816019, 39.2028853, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, null, "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,<null>,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:177: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0097", university, campus, categories.get(catMap.get(12)), "Centre for Virtual Learning", "Centre for Virtual Learning", "CVL", null, null, null, null, -6.7811017, 39.2039221, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "Contact data from OSM tags.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,String,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:180: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0098", university, campus, categories.get(catMap.get(13)), "Msaud Mosque", "Msaud Mosque", null, null, null, null, null, -6.777148, 39.2047452, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM amenity=place_of_worship, religion=muslim, denomination=sunni.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:183: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0099", university, campus, categories.get(catMap.get(14)), "FedEx Service Centre", "FedEx Service Centre", null, null, null, null, null, -6.7806296, 39.2052711, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, null, "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,<null>,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:184: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0100", university, campus, categories.get(catMap.get(14)), "Dar es Salaam Publisher, Printers and Book Seller", "Dar es Salaam Publisher, Printers and Book Seller", null, null, null, null, null, -6.7805043, 39.2059826, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, null, "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,<null>,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:185: error: method seedLocation in class DataSeeder cannot be applied to given types;
+        seedLocation("LOC-0101", university, campus, categories.get(catMap.get(14)), "Hill Park Supermarket and Restaurant", "Hill Park Supermarket and Restaurant", "Hill Park", null, null, null, null, -6.7810835, 39.2019693, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "Two OSM nodes (shop=supermarket + amenity=restaurant) at same complex merged.", "2026-09-11");
+        ^
+  required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+  found:    String,University,Campus,Category,String,String,String,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+  reason: actual and formal argument lists differ in length
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:196: error: cannot find symbol
+        CampusLocation loc = opt.orElse(CampusLocation.builder().externalId(externalId).build());
+                                                      ^
+  symbol:   method builder()
+  location: class CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:198: error: cannot find symbol
+        loc.setUniversity(university);
+           ^
+  symbol:   method setUniversity(University)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:199: error: cannot find symbol
+        loc.setCampus(campus);
+           ^
+  symbol:   method setCampus(Campus)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:200: error: cannot find symbol
+        loc.setCategory(category);
+           ^
+  symbol:   method setCategory(Category)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:201: error: cannot find symbol
+        loc.setName(name);
+           ^
+  symbol:   method setName(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:202: error: cannot find symbol
+        loc.setOfficialName(officialName);
+           ^
+  symbol:   method setOfficialName(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:203: error: cannot find symbol
+        loc.setAliases(aliases);
+           ^
+  symbol:   method setAliases(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:204: error: cannot find symbol
+        loc.setDescription(desc);
+           ^
+  symbol:   method setDescription(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:205: error: cannot find symbol
+        loc.setBuildingCode(buildingCode);
+           ^
+  symbol:   method setBuildingCode(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:206: error: cannot find symbol
+        loc.setFloor(floor);
+           ^
+  symbol:   method setFloor(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:207: error: cannot find symbol
+        loc.setRoomNumber(roomNumber);
+           ^
+  symbol:   method setRoomNumber(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:208: error: cannot find symbol
+        loc.setLatitude(lat);
+           ^
+  symbol:   method setLatitude(Double)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:209: error: cannot find symbol
+        loc.setLongitude(lng);
+           ^
+  symbol:   method setLongitude(Double)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:210: error: cannot find symbol
+        loc.setEntranceLatitude(eLat);
+           ^
+  symbol:   method setEntranceLatitude(Double)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:211: error: cannot find symbol
+        loc.setEntranceLongitude(eLng);
+           ^
+  symbol:   method setEntranceLongitude(Double)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:212: error: cannot find symbol
+        loc.setCoordinateType(coordType);
+           ^
+  symbol:   method setCoordinateType(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:213: error: cannot find symbol
+        loc.setConfidence(confidence);
+           ^
+  symbol:   method setConfidence(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:214: error: cannot find symbol
+        loc.setStatus(status);
+           ^
+  symbol:   method setStatus(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:215: error: cannot find symbol
+        loc.setSourcePrimary(sPrimary);
+           ^
+  symbol:   method setSourcePrimary(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:216: error: cannot find symbol
+        loc.setSourceSecondary(sSecondary);
+           ^
+  symbol:   method setSourceSecondary(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:217: error: cannot find symbol
+        loc.setSourceMap(sMap);
+           ^
+  symbol:   method setSourceMap(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:218: error: cannot find symbol
+        loc.setSourceNotes(sNotes);
+           ^
+  symbol:   method setSourceNotes(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:219: error: cannot find symbol
+        loc.setVerifiedDate(verifiedDate);
+           ^
+  symbol:   method setVerifiedDate(String)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:220: error: cannot find symbol
+        loc.setIsActive(true);
+           ^
+  symbol:   method setIsActive(boolean)
+  location: variable loc of type CampusLocation
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:228: error: cannot find symbol
+        University u = opt.orElse(University.builder().externalId(externalId).shortName(shortName).build());
+                                            ^
+  symbol:   method builder()
+  location: class University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:229: error: cannot find symbol
+        u.setName(name);
+         ^
+  symbol:   method setName(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:230: error: cannot find symbol
+        u.setCity(city);
+         ^
+  symbol:   method setCity(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:231: error: cannot find symbol
+        u.setCountry("Tanzania");
+         ^
+  symbol:   method setCountry(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:232: error: cannot find symbol
+        u.setLatitude(lat);
+         ^
+  symbol:   method setLatitude(Double)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:233: error: cannot find symbol
+        u.setLongitude(lng);
+         ^
+  symbol:   method setLongitude(Double)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:234: error: cannot find symbol
+        u.setDefaultZoom(zoom);
+         ^
+  symbol:   method setDefaultZoom(Float)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:235: error: cannot find symbol
+        u.setDescription(desc);
+         ^
+  symbol:   method setDescription(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:236: error: cannot find symbol
+        u.setLogoUrl(logo);
+         ^
+  symbol:   method setLogoUrl(String)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:237: error: cannot find symbol
+        u.setSortOrder(sortOrder);
+         ^
+  symbol:   method setSortOrder(Integer)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:238: error: cannot find symbol
+        u.setIsActive(true);
+         ^
+  symbol:   method setIsActive(boolean)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:239: error: cannot find symbol
+        u.setCampusAreaHectares(area);
+         ^
+  symbol:   method setCampusAreaHectares(Double)
+  location: variable u of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:245: error: cannot find symbol
+        Campus c = opt.orElse(Campus.builder().externalId(externalId).build());
+                                    ^
+  symbol:   method builder()
+  location: class Campus
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:246: error: cannot find symbol
+        c.setName(name);
+         ^
+  symbol:   method setName(String)
+  location: variable c of type Campus
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:247: error: cannot find symbol
+        c.setUniversity(university);
+         ^
+  symbol:   method setUniversity(University)
+  location: variable c of type Campus
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:275: error: cannot find symbol
+                    .filter(c -> c.getSlug() != null && c.getSlug().equals(slug))
+                                  ^
+  symbol:   method getSlug()
+  location: variable c of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:275: error: cannot find symbol
+                    .filter(c -> c.getSlug() != null && c.getSlug().equals(slug))
+                                                         ^
+  symbol:   method getSlug()
+  location: variable c of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:278: error: cannot find symbol
+            Category category = existing.orElse(Category.builder().slug(slug).build());
+                                                        ^
+  symbol:   method builder()
+  location: class Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:279: error: cannot find symbol
+            category.setName(data[0]);
+                    ^
+  symbol:   method setName(String)
+  location: variable category of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:280: error: cannot find symbol
+            category.setIconName(data[2]);
+                    ^
+  symbol:   method setIconName(String)
+  location: variable category of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:77: error: cannot find symbol
+        return UniversityDTO.builder()
+                            ^
+  symbol:   method builder()
+  location: class UniversityDTO
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:78: error: cannot find symbol
+                .id(university.getId())
+                              ^
+  symbol:   method getId()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:79: error: cannot find symbol
+                .name(university.getName())
+                                ^
+  symbol:   method getName()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:80: error: cannot find symbol
+                .shortName(university.getShortName())
+                                     ^
+  symbol:   method getShortName()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:81: error: cannot find symbol
+                .logoUrl(university.getLogoUrl())
+                                   ^
+  symbol:   method getLogoUrl()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:82: error: cannot find symbol
+                .description(university.getDescription())
+                                       ^
+  symbol:   method getDescription()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:83: error: cannot find symbol
+                .country(university.getCountry())
+                                   ^
+  symbol:   method getCountry()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:84: error: cannot find symbol
+                .city(university.getCity())
+                                ^
+  symbol:   method getCity()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:85: error: cannot find symbol
+                .latitude(university.getLatitude())
+                                    ^
+  symbol:   method getLatitude()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:86: error: cannot find symbol
+                .longitude(university.getLongitude())
+                                     ^
+  symbol:   method getLongitude()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:87: error: cannot find symbol
+                .defaultZoom(university.getDefaultZoom())
+                                       ^
+  symbol:   method getDefaultZoom()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:88: error: cannot find symbol
+                .sortOrder(university.getSortOrder())
+                                     ^
+  symbol:   method getSortOrder()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:89: error: cannot find symbol
+                .campusAreaHectares(university.getCampusAreaHectares())
+                                              ^
+  symbol:   method getCampusAreaHectares()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:90: error: cannot find symbol
+                .isActive(university.getIsActive())
+                                    ^
+  symbol:   method getIsActive()
+  location: variable university of type University
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:95: error: cannot find symbol
+        return CategoryDTO.builder()
+                          ^
+  symbol:   method builder()
+  location: class CategoryDTO
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:96: error: cannot find symbol
+                .id(category.getId())
+                            ^
+  symbol:   method getId()
+  location: variable category of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:97: error: cannot find symbol
+                .name(category.getName())
+                              ^
+  symbol:   method getName()
+  location: variable category of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:98: error: cannot find symbol
+                .slug(category.getSlug())
+                              ^
+  symbol:   method getSlug()
+  location: variable category of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:99: error: cannot find symbol
+                .description(category.getDescription())
+                                     ^
+  symbol:   method getDescription()
+  location: variable category of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:100: error: cannot find symbol
+                .iconName(category.getIconName())
+                                  ^
+  symbol:   method getIconName()
+  location: variable category of type Category
+/home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:101: error: cannot find symbol
+                .sortOrder(category.getSortOrder())
+                                   ^
+  symbol:   method getSortOrder()
+  location: variable category of type Category
+100 errors
+
+[Incubating] Problems report is available at: file:///home/mwalb/StudioProjects/CAMPNAV/backend/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:147: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0079", university, campus, categories.get(catMap.get(6)), "Mlimani SACCOS", "Mlimani SACCOS", null, null, null, null, null, -6.7806827, 39.2056391, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM office=government; savings & credit co-op.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:150: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0080", university, campus, categories.get(catMap.get(7)), "Administration Block", "Administration Block", null, null, null, null, null, -6.7806065, 39.2034922, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM: government=education, office=government, check_date 2023-12-10.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:157: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0083", university, campus, categories.get(catMap.get(9)), "UDSM Playground", "UDSM Playground", null, null, null, null, null, -6.7812486, 39.2094138, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM leisure=playground.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:158: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0084", university, campus, categories.get(catMap.get(9)), "UDSM Football Pitch", "UDSM Football Pitch", null, null, null, null, null, -6.7812857, 39.2093359, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM leisure=pitch, sport=soccer.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:160: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0086", university, campus, categories.get(catMap.get(9)), "UDSM Running Track", "UDSM Running Track", null, null, null, null, null, -6.7813249, 39.2093136, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM multipolygon leisure=track.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:161: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0087", university, campus, categories.get(catMap.get(9)), "UDSM Swimming Pool", "UDSM Swimming Pool", null, null, null, null, null, -6.7796638, 39.2081319, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM leisure=swimming_pool (private access).", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:166: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0090", university, campus, categories.get(catMap.get(10)), "Bondeni Bus Stop", "Bondeni Bus Stop", null, null, null, null, null, -6.7789511, 39.2036923, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM public_transport=platform.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:167: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0091", university, campus, categories.get(catMap.get(10)), "Shuttle Point Parking", "Shuttle Point Parking", null, null, null, null, null, -6.7796466, 39.2075934, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM capacity=60.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:168: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0092", university, campus, categories.get(catMap.get(10)), "Swimming Pool Parking", "Swimming Pool Parking", null, null, null, null, null, -6.7800874, 39.2081241, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, null, "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,<null>,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:171: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0093", university, campus, categories.get(catMap.get(11)), "Mlimani Police Post", "Mlimani Police Post", null, null, null, null, null, -6.7811177, 39.2020036, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM amenity=police, public ownership.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:172: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0094", university, campus, categories.get(catMap.get(11)), "UDSM Auxiliary Police", "UDSM Auxiliary Police", null, null, null, null, null, -6.7806727, 39.202479, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM building.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:173: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0095", university, campus, categories.get(catMap.get(11)), "Auxiliary Police Post", "Auxiliary Police Post", null, null, null, null, null, -6.7846403, 39.2067697, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "Second OSM police facility near campus SW edge.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:176: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0096", university, campus, categories.get(catMap.get(12)), "UDSM Computer Center", "UDSM Computer Center", null, null, null, null, null, -6.7816019, 39.2028853, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, null, "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,<null>,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:177: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0097", university, campus, categories.get(catMap.get(12)), "Centre for Virtual Learning", "Centre for Virtual Learning", "CVL", null, null, null, null, -6.7811017, 39.2039221, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "Contact data from OSM tags.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,String,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:180: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0098", university, campus, categories.get(catMap.get(13)), "Msaud Mosque", "Msaud Mosque", null, null, null, null, null, -6.777148, 39.2047452, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "OSM amenity=place_of_worship, religion=muslim, denomination=sunni.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:183: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0099", university, campus, categories.get(catMap.get(14)), "FedEx Service Centre", "FedEx Service Centre", null, null, null, null, null, -6.7806296, 39.2052711, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, null, "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,<null>,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:184: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0100", university, campus, categories.get(catMap.get(14)), "Dar es Salaam Publisher, Printers and Book Seller", "Dar es Salaam Publisher, Printers and Book Seller", null, null, null, null, null, -6.7805043, 39.2059826, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, null, "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,<null>,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,<null>,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:185: error: method seedLocation in class DataSeeder cannot be applied to given types;
+          seedLocation("LOC-0101", university, campus, categories.get(catMap.get(14)), "Hill Park Supermarket and Restaurant", "Hill Park Supermarket and Restaurant", "Hill Park", null, null, null, null, -6.7810835, 39.2019693, null, null, "BUILDING_CENTROID", "MEDIUM", "VERIFIED", "OpenStreetMap via Overpass API (ODbL), timestamp 2026-09-11", null, "Two OSM nodes (shop=supermarket + amenity=restaurant) at same complex merged.", "2026-09-11");
+          ^
+    required: String,University,Campus,Category,String,String,String,String,String,String,String,Double,Double,Double,Double,String,String,String,String,String,String,String,String
+    found:    String,University,Campus,Category,String,String,String,<null>,<null>,<null>,<null>,double,double,<null>,<null>,String,String,String,String,<null>,String,String
+    reason: actual and formal argument lists differ in length
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:46: error: cannot find symbol
+          University u = opt.orElse(University.builder().externalId(externalId).shortName(shortName).build());
+                                              ^
+    symbol:   method builder()
+    location: class University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:47: error: cannot find symbol
+          u.setName(name);
+           ^
+    symbol:   method setName(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:48: error: cannot find symbol
+          u.setCity(city);
+           ^
+    symbol:   method setCity(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:49: error: cannot find symbol
+          u.setCountry("Tanzania");
+           ^
+    symbol:   method setCountry(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:50: error: cannot find symbol
+          u.setLatitude(lat);
+           ^
+    symbol:   method setLatitude(Double)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:51: error: cannot find symbol
+          u.setLongitude(lng);
+           ^
+    symbol:   method setLongitude(Double)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:52: error: cannot find symbol
+          u.setDefaultZoom(zoom);
+           ^
+    symbol:   method setDefaultZoom(Float)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:53: error: cannot find symbol
+          u.setDescription(desc);
+           ^
+    symbol:   method setDescription(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:54: error: cannot find symbol
+          u.setLogoUrl(logo);
+           ^
+    symbol:   method setLogoUrl(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:55: error: cannot find symbol
+          u.setSortOrder(sortOrder);
+           ^
+    symbol:   method setSortOrder(Integer)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:56: error: cannot find symbol
+          u.setIsActive(true);
+           ^
+    symbol:   method setIsActive(boolean)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:57: error: cannot find symbol
+          u.setCampusAreaHectares(area);
+           ^
+    symbol:   method setCampusAreaHectares(Double)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:63: error: cannot find symbol
+          Campus c = opt.orElse(Campus.builder().externalId(externalId).build());
+                                      ^
+    symbol:   method builder()
+    location: class Campus
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:64: error: cannot find symbol
+          c.setName(name);
+           ^
+    symbol:   method setName(String)
+    location: variable c of type Campus
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:65: error: cannot find symbol
+          c.setUniversity(university);
+           ^
+    symbol:   method setUniversity(University)
+    location: variable c of type Campus
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:196: error: cannot find symbol
+          CampusLocation loc = opt.orElse(CampusLocation.builder().externalId(externalId).build());
+                                                        ^
+    symbol:   method builder()
+    location: class CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:198: error: cannot find symbol
+          loc.setUniversity(university);
+             ^
+    symbol:   method setUniversity(University)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:199: error: cannot find symbol
+          loc.setCampus(campus);
+             ^
+    symbol:   method setCampus(Campus)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:200: error: cannot find symbol
+          loc.setCategory(category);
+             ^
+    symbol:   method setCategory(Category)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:201: error: cannot find symbol
+          loc.setName(name);
+             ^
+    symbol:   method setName(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:202: error: cannot find symbol
+          loc.setOfficialName(officialName);
+             ^
+    symbol:   method setOfficialName(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:203: error: cannot find symbol
+          loc.setAliases(aliases);
+             ^
+    symbol:   method setAliases(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:204: error: cannot find symbol
+          loc.setDescription(desc);
+             ^
+    symbol:   method setDescription(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:205: error: cannot find symbol
+          loc.setBuildingCode(buildingCode);
+             ^
+    symbol:   method setBuildingCode(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:206: error: cannot find symbol
+          loc.setFloor(floor);
+             ^
+    symbol:   method setFloor(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:207: error: cannot find symbol
+          loc.setRoomNumber(roomNumber);
+             ^
+    symbol:   method setRoomNumber(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:208: error: cannot find symbol
+          loc.setLatitude(lat);
+             ^
+    symbol:   method setLatitude(Double)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:209: error: cannot find symbol
+          loc.setLongitude(lng);
+             ^
+    symbol:   method setLongitude(Double)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:210: error: cannot find symbol
+          loc.setEntranceLatitude(eLat);
+             ^
+    symbol:   method setEntranceLatitude(Double)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:211: error: cannot find symbol
+          loc.setEntranceLongitude(eLng);
+             ^
+    symbol:   method setEntranceLongitude(Double)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:212: error: cannot find symbol
+          loc.setCoordinateType(coordType);
+             ^
+    symbol:   method setCoordinateType(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:213: error: cannot find symbol
+          loc.setConfidence(confidence);
+             ^
+    symbol:   method setConfidence(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:214: error: cannot find symbol
+          loc.setStatus(status);
+             ^
+    symbol:   method setStatus(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:215: error: cannot find symbol
+          loc.setSourcePrimary(sPrimary);
+             ^
+    symbol:   method setSourcePrimary(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:216: error: cannot find symbol
+          loc.setSourceSecondary(sSecondary);
+             ^
+    symbol:   method setSourceSecondary(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:217: error: cannot find symbol
+          loc.setSourceMap(sMap);
+             ^
+    symbol:   method setSourceMap(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:218: error: cannot find symbol
+          loc.setSourceNotes(sNotes);
+             ^
+    symbol:   method setSourceNotes(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:219: error: cannot find symbol
+          loc.setVerifiedDate(verifiedDate);
+             ^
+    symbol:   method setVerifiedDate(String)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:220: error: cannot find symbol
+          loc.setIsActive(true);
+             ^
+    symbol:   method setIsActive(boolean)
+    location: variable loc of type CampusLocation
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:228: error: cannot find symbol
+          University u = opt.orElse(University.builder().externalId(externalId).shortName(shortName).build());
+                                              ^
+    symbol:   method builder()
+    location: class University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:229: error: cannot find symbol
+          u.setName(name);
+           ^
+    symbol:   method setName(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:230: error: cannot find symbol
+          u.setCity(city);
+           ^
+    symbol:   method setCity(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:231: error: cannot find symbol
+          u.setCountry("Tanzania");
+           ^
+    symbol:   method setCountry(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:232: error: cannot find symbol
+          u.setLatitude(lat);
+           ^
+    symbol:   method setLatitude(Double)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:233: error: cannot find symbol
+          u.setLongitude(lng);
+           ^
+    symbol:   method setLongitude(Double)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:234: error: cannot find symbol
+          u.setDefaultZoom(zoom);
+           ^
+    symbol:   method setDefaultZoom(Float)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:235: error: cannot find symbol
+          u.setDescription(desc);
+           ^
+    symbol:   method setDescription(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:236: error: cannot find symbol
+          u.setLogoUrl(logo);
+           ^
+    symbol:   method setLogoUrl(String)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:237: error: cannot find symbol
+          u.setSortOrder(sortOrder);
+           ^
+    symbol:   method setSortOrder(Integer)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:238: error: cannot find symbol
+          u.setIsActive(true);
+           ^
+    symbol:   method setIsActive(boolean)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:239: error: cannot find symbol
+          u.setCampusAreaHectares(area);
+           ^
+    symbol:   method setCampusAreaHectares(Double)
+    location: variable u of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:245: error: cannot find symbol
+          Campus c = opt.orElse(Campus.builder().externalId(externalId).build());
+                                      ^
+    symbol:   method builder()
+    location: class Campus
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:246: error: cannot find symbol
+          c.setName(name);
+           ^
+    symbol:   method setName(String)
+    location: variable c of type Campus
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:247: error: cannot find symbol
+          c.setUniversity(university);
+           ^
+    symbol:   method setUniversity(University)
+    location: variable c of type Campus
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:275: error: cannot find symbol
+                      .filter(c -> c.getSlug() != null && c.getSlug().equals(slug))
+                                    ^
+    symbol:   method getSlug()
+    location: variable c of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:275: error: cannot find symbol
+                      .filter(c -> c.getSlug() != null && c.getSlug().equals(slug))
+                                                           ^
+    symbol:   method getSlug()
+    location: variable c of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:278: error: cannot find symbol
+              Category category = existing.orElse(Category.builder().slug(slug).build());
+                                                          ^
+    symbol:   method builder()
+    location: class Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:279: error: cannot find symbol
+              category.setName(data[0]);
+                      ^
+    symbol:   method setName(String)
+    location: variable category of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:280: error: cannot find symbol
+              category.setIconName(data[2]);
+                      ^
+    symbol:   method setIconName(String)
+    location: variable category of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:77: error: cannot find symbol
+          return UniversityDTO.builder()
+                              ^
+    symbol:   method builder()
+    location: class UniversityDTO
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:78: error: cannot find symbol
+                  .id(university.getId())
+                                ^
+    symbol:   method getId()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:79: error: cannot find symbol
+                  .name(university.getName())
+                                  ^
+    symbol:   method getName()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:80: error: cannot find symbol
+                  .shortName(university.getShortName())
+                                       ^
+    symbol:   method getShortName()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:81: error: cannot find symbol
+                  .logoUrl(university.getLogoUrl())
+                                     ^
+    symbol:   method getLogoUrl()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:82: error: cannot find symbol
+                  .description(university.getDescription())
+                                         ^
+    symbol:   method getDescription()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:83: error: cannot find symbol
+                  .country(university.getCountry())
+                                     ^
+    symbol:   method getCountry()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:84: error: cannot find symbol
+                  .city(university.getCity())
+                                  ^
+    symbol:   method getCity()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:85: error: cannot find symbol
+                  .latitude(university.getLatitude())
+                                      ^
+    symbol:   method getLatitude()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:86: error: cannot find symbol
+                  .longitude(university.getLongitude())
+                                       ^
+    symbol:   method getLongitude()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:87: error: cannot find symbol
+                  .defaultZoom(university.getDefaultZoom())
+                                         ^
+    symbol:   method getDefaultZoom()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:88: error: cannot find symbol
+                  .sortOrder(university.getSortOrder())
+                                       ^
+    symbol:   method getSortOrder()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:89: error: cannot find symbol
+                  .campusAreaHectares(university.getCampusAreaHectares())
+                                                ^
+    symbol:   method getCampusAreaHectares()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:90: error: cannot find symbol
+                  .isActive(university.getIsActive())
+                                      ^
+    symbol:   method getIsActive()
+    location: variable university of type University
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:95: error: cannot find symbol
+          return CategoryDTO.builder()
+                            ^
+    symbol:   method builder()
+    location: class CategoryDTO
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:96: error: cannot find symbol
+                  .id(category.getId())
+                              ^
+    symbol:   method getId()
+    location: variable category of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:97: error: cannot find symbol
+                  .name(category.getName())
+                                ^
+    symbol:   method getName()
+    location: variable category of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:98: error: cannot find symbol
+                  .slug(category.getSlug())
+                                ^
+    symbol:   method getSlug()
+    location: variable category of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:99: error: cannot find symbol
+                  .description(category.getDescription())
+                                       ^
+    symbol:   method getDescription()
+    location: variable category of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:100: error: cannot find symbol
+                  .iconName(category.getIconName())
+                                    ^
+    symbol:   method getIconName()
+    location: variable category of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/controller/UniversityController.java:101: error: cannot find symbol
+                  .sortOrder(category.getSortOrder())
+                                     ^
+    symbol:   method getSortOrder()
+    location: variable category of type Category
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:225: error: method seedUniversity(String,String,String,String,Double,Double,Float,String,String,Integer,Double) is already defined in class DataSeeder
+      private University seedUniversity(String externalId, String name, String shortName, String city, Double lat, Double lng, Float zoom, 
+                         ^
+  /home/mwalb/StudioProjects/CAMPNAV/backend/src/main/java/com/campnav/backend/config/DataSeeder.java:243: error: method seedCampus(String,String,University) is already defined in class DataSeeder
+      private Campus seedCampus(String externalId, String name, University university) {
+                     ^
+  100 errors
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+
+BUILD FAILED in 5s
+2 actionable tasks: 1 executed, 1 up-to-date

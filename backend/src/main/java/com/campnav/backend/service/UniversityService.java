@@ -1,9 +1,11 @@
 package com.campnav.backend.service;
 
+import com.campnav.backend.model.Campus;
 import com.campnav.backend.model.CampusLocation;
 import com.campnav.backend.model.Category;
 import com.campnav.backend.model.University;
 import com.campnav.backend.repository.CampusLocationRepository;
+import com.campnav.backend.repository.CampusRepository;
 import com.campnav.backend.repository.CategoryRepository;
 import com.campnav.backend.repository.UniversityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,9 @@ public class UniversityService {
 
     @Autowired
     private UniversityRepository universityRepository;
+
+    @Autowired
+    private CampusRepository campusRepository;
 
     @Autowired
     private CampusLocationRepository locationRepository;
@@ -36,6 +41,22 @@ public class UniversityService {
         return universityRepository.findByShortName(shortName);
     }
 
+    public Optional<University> getUniversityByExternalId(String externalId) {
+        return universityRepository.findByExternalId(externalId);
+    }
+
+    public Optional<Campus> getCampusByExternalId(String externalId) {
+        return campusRepository.findByExternalId(externalId);
+    }
+
+    public Campus saveCampus(Campus campus) {
+        return campusRepository.save(campus);
+    }
+
+    public Optional<CampusLocation> getLocationByExternalId(String externalId) {
+        return locationRepository.findByExternalId(externalId);
+    }
+
     public List<CampusLocation> getLocationsByUniversity(Long universityId, Long categoryId, List<Long> categoryIds) {
         if (categoryIds != null && !categoryIds.isEmpty()) {
             return locationRepository.findByUniversityIdAndCategoryIdIn(universityId, categoryIds);
@@ -49,13 +70,17 @@ public class UniversityService {
         return categoryRepository.findAll();
     }
 
+    public List<Category> getCategoriesByUniversity(Long universityId) {
+        return categoryRepository.findByUniversityId(universityId);
+    }
+
+    public Optional<Category> getCategoryBySlug(String slug) {
+        return categoryRepository.findBySlug(slug);
+    }
+
     public List<CampusLocation> searchLocations(Long universityId, Long categoryId, List<Long> categoryIds, String query) {
-        if (categoryIds != null && !categoryIds.isEmpty()) {
-            return locationRepository.findByUniversityIdAndCategoryIdInAndNameContainingIgnoreCase(universityId, categoryIds, query);
-        } else if (categoryId != null) {
-            return locationRepository.findByUniversityIdAndCategoryIdAndNameContainingIgnoreCase(universityId, categoryId, query);
-        }
-        return locationRepository.findByUniversityIdAndNameContainingIgnoreCase(universityId, query);
+        // Simple search across name, officialName, and aliases
+        return locationRepository.searchCanonical(universityId, query);
     }
     
     public University saveUniversity(University university) {

@@ -23,12 +23,15 @@ fun MainApp() {
     var mode by remember { mutableStateOf(AppMode.UniversitySelection) }
     var selectedUniversity by remember { mutableStateOf<University?>(null) }
     var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
+    var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
 
     CampNavTheme {
         when (mode) {
             AppMode.UniversitySelection -> UniversitySelectionScreen(
                 onUniversitySelected = { university ->
                     selectedUniversity = university
+                    selectedLocation = null
+                    selectedCategoryId = null
                     mode = AppMode.CampusDestination
                 }
             )
@@ -36,8 +39,9 @@ fun MainApp() {
                 CampusDestinationScreen(
                     university = university,
                     onBack = { mode = AppMode.UniversitySelection },
-                    onFindOnMap = { location ->
+                    onFindOnMap = { location, categoryId ->
                         selectedLocation = location
+                        selectedCategoryId = categoryId
                         mode = AppMode.CampusNav
                     }
                 )
@@ -46,6 +50,7 @@ fun MainApp() {
                 CampusMapScreen(
                     university = university,
                     initialSelectedLocation = selectedLocation,
+                    selectedCategoryId = selectedCategoryId,
                     onBack = { mode = AppMode.CampusDestination }
                 )
             }

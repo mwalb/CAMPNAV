@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/universities")
+@RequestMapping("/api")
 @CrossOrigin(origins = "*")
 public class UniversityController {
 
@@ -26,35 +26,51 @@ public class UniversityController {
     @Autowired
     private UniversityRepository universityRepository;
 
-    @GetMapping("/debug/all-raw")
+    @GetMapping("/universities/debug/all-raw")
     public List<University> getAllRaw() {
         return universityRepository.findAll();
     }
 
-    @GetMapping
+    @GetMapping("/universities")
     public List<UniversityDTO> getAllUniversities() {
         return universityService.getAllUniversities().stream()
                 .map(this::mapToUniversityDTO)
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/universities/{id}")
     public ResponseEntity<UniversityDTO> getUniversityById(@PathVariable Long id) {
         return universityService.getUniversityById(id)
                 .map(u -> ResponseEntity.ok(mapToUniversityDTO(u)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{id}/locations")
+    @GetMapping("/universities/{id}/locations")
     public List<CampusLocationDTO> getLocations(
             @PathVariable Long id,
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) List<Long> categoryIds) {
-        return universityService.getLocationsByUniversity(id, categoryId, categoryIds).stream()
+            @RequestParam(required = false) List<Long> categoryIds,
+            @RequestParam(required = false) String category) {
+        
+        Long finalCategoryId = categoryId;
+        if (category != null && !category.isEmpty()) {
+            finalCategoryId = universityService.getCategoryBySlug(category.toLowerCase())
+                    .map(Category::getId)
+                    .orElse(null);
+        }
+        
+        return universityService.getLocationsByUniversity(id, finalCategoryId, categoryIds).stream()
                 .map(this::mapToLocationDTO)
                 .collect(Collectors.toList());
     }
 
+    @GetMapping("/universities/{id}/categories")
+    public List<CategoryDTO> getCategoriesForUniversity(@PathVariable Long id) {
+        return universityService.getCategoriesByUniversity(id).stream()
+                .map(this::mapToCategoryDTO)
+                .collect(Collectors.toList());
+    }
+    
     @GetMapping("/categories")
     public List<CategoryDTO> getCategories() {
         return universityService.getAllCategories().stream()
@@ -62,7 +78,17 @@ public class UniversityController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/{id}/search")
+    @GetMapping("/categories/{categoryId}/locations")
+    public List<CampusLocationDTO> getLocationsByCategory(@PathVariable Long categoryId) {
+        // This is a bit tricky without a universityId, but we'll return all locations for this category
+        // In a real scenario, this might need more context
+        return universityService.getAllUniversities().stream()
+                .flatMap(u -> universityService.getLocationsByUniversity(u.getId(), categoryId, null).stream())
+                .map(this::mapToLocationDTO)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/universities/{id}/search")
     public List<CampusLocationDTO> searchLocations(
             @PathVariable Long id,
             @RequestParam(required = false) Long categoryId,
@@ -76,12 +102,17 @@ public class UniversityController {
     private UniversityDTO mapToUniversityDTO(University university) {
         return UniversityDTO.builder()
                 .id(university.getId())
+                .externalId(university.getExternalId())
                 .name(university.getName())
+                .officialName(university.getOfficialName())
                 .shortName(university.getShortName())
                 .logoUrl(university.getLogoUrl())
                 .description(university.getDescription())
                 .country(university.getCountry())
                 .city(university.getCity())
+                .status(university.getStatus())
+                .createdAt(university.getCreatedAt())
+                .updatedAt(university.getUpdatedAt())
                 .latitude(university.getLatitude())
                 .longitude(university.getLongitude())
                 .defaultZoom(university.getDefaultZoom())
@@ -105,20 +136,44 @@ public class UniversityController {
     private CampusLocationDTO mapToLocationDTO(CampusLocation location) {
         return CampusLocationDTO.builder()
                 .id(location.getId())
+                .externalId(location.getExternalId())
                 .name(location.getName())
+                .officialName(location.getOfficialName())
+                .aliases(location.getAliases())
                 .description(location.getDescription())
                 .universityId(location.getUniversity() != null ? location.getUniversity().getId() : null)
+                .campusId(location.getCampus() != null ? location.getCampus().getId() : null)
                 .categoryId(location.getCategory() != null ? location.getCategory().getId() : null)
                 .latitude(location.getLatitude())
                 .longitude(location.getLongitude())
+                .entranceLatitude(location.getEntranceLatitude())
+                .entranceLongitude(location.getEntranceLongitude())
+                .coordinateType(location.getCoordinateType())
+                .confidence(location.getConfidence())
+                .status(location.getStatus())
                 .buildingCode(location.getBuildingCode())
                 .floor(location.getFloor())
                 .roomNumber(location.getRoomNumber())
+                
+                .googlePlaceId(location.getGooglePlaceId())
+                .googleName(location.getGoogleName())
+                .googleAddress(location.getGoogleAddress())
+                .googleType(location.getGoogleType())
+                .verificationStatus(location.getVerificationStatus())
+                .source(location.getSource())
+                .createdAt(location.getCreatedAt())
+                .updatedAt(location.getUpdatedAt())
+                
                 .imageUrl(location.getImageUrl())
                 .phone(location.getPhone())
                 .email(location.getEmail())
                 .openingHours(location.getOpeningHours())
                 .isActive(location.getIsActive())
+                .sourcePrimary(location.getSourcePrimary())
+                .sourceSecondary(location.getSourceSecondary())
+                .sourceMap(location.getSourceMap())
+                .sourceNotes(location.getSourceNotes())
+                .verifiedDate(location.getVerifiedDate())
                 .build();
     }
 }
