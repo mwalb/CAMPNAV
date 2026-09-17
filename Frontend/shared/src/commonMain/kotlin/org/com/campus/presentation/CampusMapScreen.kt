@@ -20,7 +20,7 @@ fun CampusMapScreen(
     var locations by remember { mutableStateOf(emptyList<CampusLocation>()) }
     var navigationState by remember { mutableStateOf(NavigationState()) }
     val repository = remember { CampusRepository() }
-    val routingService = remember { GoogleRoutingService("AIzaSyBrLZm8FhK4Xn6baE12QbY2D4wtTyfzj3M") }
+    val routingService = remember { GoogleRoutingService("AIzaSyAvna2gdB_NvFXsBGgY-WBnatqy9IKUN5s") }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(university.id) {
