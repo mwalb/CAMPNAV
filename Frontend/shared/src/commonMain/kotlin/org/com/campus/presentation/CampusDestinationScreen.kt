@@ -11,12 +11,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -100,177 +101,165 @@ fun CampusDestinationScreen(
 
     val alphabet = ('A'..'Z').toList()
 
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     Box(modifier = Modifier.fillMaxSize().background(AppColorScheme.background)) {
-        Column(
+        LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(bottom = 140.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-                }
-                Spacer(Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = "Where are you going?",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = university.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColorScheme.primary
-                    )
-                }
-            }
-
-            if (isLoading) {
-                Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AppColorScheme.primary)
-                }
-            } else if (error != null) {
-                Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(error!!, color = Color.Gray, modifier = Modifier.padding(16.dp))
+            item {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Where are you going?",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = university.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColorScheme.primary
+                        )
                     }
                 }
-            } else if (allLocations.isEmpty()) {
-                Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
-                    Text("No destinations available for this university.", color = Color.Gray)
-                }
-            } else {
-                // Search Input Box
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Find a building, hostel, cafeteria, or bank on campus",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = {
-                            searchQuery = it
-                            if (it.isNotBlank()) {
-                                selectedLetter = null
-                                expandedCategoryId = null
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Search building, hall, cafeteria...", color = Color.Gray) },
-                        leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) },
-                        trailingIcon = if (searchQuery.isNotEmpty()) {
-                            {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Default.Close, null, tint = Color.Gray)
-                                }
-                            }
-                        } else null,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color.White.copy(alpha = 0.05f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
-                            focusedBorderColor = AppColorScheme.primary,
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
-                        ),
-                        singleLine = true
-                    )
 
-                    if (searchQuery.isNotBlank()) {
-                        Spacer(Modifier.height(8.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surface.copy(alpha = 0.5f)),
-                            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.2f))
-                        ) {
-                            Column {
-                                if (filteredLocations.isEmpty()) {
-                                    Text("No destinations found", modifier = Modifier.padding(16.dp), color = Color.Gray)
+                if (isLoading) {
+                    Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AppColorScheme.primary)
+                    }
+                } else if (error != null) {
+                    Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(error!!, color = Color.Gray, modifier = Modifier.padding(16.dp))
+                        }
+                    }
+                } else if (allLocations.isEmpty()) {
+                    Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
+                        Text("No destinations available for this university.", color = Color.Gray)
+                    }
+                } else {
+                    // Search Input Box
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Find a building, hostel, cafeteria, or bank on campus",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = {
+                                searchQuery = it
+                                if (it.isNotBlank()) {
+                                    selectedLetter = null
+                                    expandedCategoryId = null
                                 }
-                                filteredLocations.take(10).forEach { location ->
-                                    LocationRow(location, categories) {
-                                        selectedLocation = it
-                                        searchQuery = ""
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Search building, hall, cafeteria...", color = Color.Gray) },
+                            leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) },
+                            trailingIcon = if (searchQuery.isNotEmpty()) {
+                                {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(Icons.Default.Close, null, tint = Color.Gray)
+                                    }
+                                }
+                            } else null,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                                unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                                focusedBorderColor = AppColorScheme.primary,
+                                unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
+                            ),
+                            singleLine = true
+                        )
+
+                        if (searchQuery.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = AppColorScheme.surface.copy(alpha = 0.5f)),
+                                border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.2f))
+                            ) {
+                                Column {
+                                    if (filteredLocations.isEmpty()) {
+                                        Text("No destinations found", modifier = Modifier.padding(16.dp), color = Color.Gray)
+                                    }
+                                    filteredLocations.take(10).forEach { location ->
+                                        LocationRow(location, categories) {
+                                            selectedLocation = it
+                                            searchQuery = ""
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                // Quick Destinations (Mapped to category slugs)
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Text("QUICK DESTINATIONS", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(12.dp))
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        QuickDestButton("Academics", Icons.Default.School) {
-                            expandedCategoryId = categories.find { it.slug == "academic" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
-                        }
-                        QuickDestButton("Hostels", Icons.Default.Hotel) {
-                            expandedCategoryId = categories.find { it.slug == "hostel" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
-                        }
-                        QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) {
-                            expandedCategoryId = categories.find { it.slug == "library" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
-                        }
-                        QuickDestButton("Food", Icons.Default.Restaurant) {
-                            expandedCategoryId = categories.find { it.slug == "food" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
-                        }
-                        QuickDestButton("Health", Icons.Default.LocalHospital) {
-                            expandedCategoryId = categories.find { it.slug == "health" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
-                        }
-                        QuickDestButton("Banking", Icons.Default.Payments) {
-                            expandedCategoryId = categories.find { it.slug == "banking" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
-                        }
-                        QuickDestButton("Religious", Icons.Default.AccountBalance) {
-                            expandedCategoryId = categories.find { it.slug == "religious" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
-                        }
-                        QuickDestButton("Sports", Icons.Default.SportsSoccer) {
-                            expandedCategoryId = categories.find { it.slug == "sports" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
-                        }
-                        QuickDestButton("Security", Icons.Default.Security) {
-                            expandedCategoryId = categories.find { it.slug == "security" }?.id
-                            searchQuery = ""
-                            selectedLetter = null
+                    // Quick Destinations
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Text("QUICK DESTINATIONS", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(12.dp))
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val scrollToCategory = { slug: String ->
+                                val category = categories.find { it.slug == slug }
+                                if (category != null) {
+                                    expandedCategoryId = category.id
+                                    searchQuery = ""
+                                    selectedLetter = null
+                                    val index = categories.indexOf(category)
+                                    if (index != -1) {
+                                        coroutineScope.launch {
+                                            // 2 items before categories: header/search/quickdests (item 0), "CATEGORIES" title (item 1)
+                                            listState.animateScrollToItem(index + 2)
+                                        }
+                                    }
+                                }
+                            }
+
+                            QuickDestButton("Academics", Icons.Default.School) { scrollToCategory("academic") }
+                            QuickDestButton("Hostels", Icons.Default.Hotel) { scrollToCategory("hostel") }
+                            QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) { scrollToCategory("library") }
+                            QuickDestButton("Food", Icons.Default.Restaurant) { scrollToCategory("food") }
+                            QuickDestButton("Health", Icons.Default.LocalHospital) { scrollToCategory("health") }
+                            QuickDestButton("Banking", Icons.Default.Payments) { scrollToCategory("banking") }
+                            QuickDestButton("Religious", Icons.Default.AccountBalance) { scrollToCategory("religious") }
+                            QuickDestButton("Sports", Icons.Default.SportsSoccer) { scrollToCategory("sports") }
+                            QuickDestButton("Security", Icons.Default.Security) { scrollToCategory("security") }
                         }
                     }
+                    Spacer(Modifier.height(32.dp))
+                }
+            }
+
+            if (!isLoading && error == null && allLocations.isNotEmpty()) {
+                item {
+                    Text("CATEGORIES / SERVICES", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
+                    Spacer(Modifier.height(12.dp))
                 }
 
-                Spacer(Modifier.height(32.dp))
-
-                // Categories List Section
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Text("CATEGORIES / SERVICES", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(12.dp))
-                    categories.forEach { category ->
+                items(categories) { category ->
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         CategoryExpandableRow(
                             category = category,
                             locations = allLocations.filter { it.categoryId == category.id },
@@ -287,59 +276,60 @@ fun CampusDestinationScreen(
                     }
                 }
 
-                Spacer(Modifier.height(32.dp))
-
-                // A-Z Locations List
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Text("BUILDINGS & LOCATIONS (A-Z)", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(12.dp))
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(alphabet) { letter ->
-                            val hasLocations = allLocations.any { it.name.startsWith(letter, ignoreCase = true) }
-                            Surface(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .clickable(enabled = hasLocations) {
-                                        selectedLetter = if (selectedLetter == letter) null else letter
-                                        if (selectedLetter != null) {
-                                            searchQuery = ""
-                                            expandedCategoryId = null
-                                        }
+                item {
+                    Spacer(Modifier.height(32.dp))
+                    // A-Z Locations List
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Text("BUILDINGS & LOCATIONS (A-Z)", style = MaterialTheme.typography.labelLarge, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(12.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(alphabet) { letter ->
+                                val hasLocations = allLocations.any { it.name.startsWith(letter, ignoreCase = true) }
+                                Surface(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .clickable(enabled = hasLocations) {
+                                            selectedLetter = if (selectedLetter == letter) null else letter
+                                            if (selectedLetter != null) {
+                                                searchQuery = ""
+                                                expandedCategoryId = null
+                                            }
+                                        },
+                                    color = when {
+                                        selectedLetter == letter -> AppColorScheme.primary
+                                        hasLocations -> Color.White.copy(alpha = 0.1f)
+                                        else -> Color.Transparent
                                     },
-                                color = when {
-                                    selectedLetter == letter -> AppColorScheme.primary
-                                    hasLocations -> Color.White.copy(alpha = 0.1f)
-                                    else -> Color.Transparent
-                                },
-                                border = if (hasLocations && selectedLetter != letter) BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)) else null
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = letter.toString(),
-                                        color = if (selectedLetter == letter) Color.White else if (hasLocations) Color.White else Color.Gray.copy(alpha = 0.3f),
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    border = if (hasLocations && selectedLetter != letter) BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)) else null
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = letter.toString(),
+                                            color = if (selectedLetter == letter) Color.White else if (hasLocations) Color.White else Color.Gray.copy(alpha = 0.3f),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    AnimatedVisibility(
-                        visible = selectedLetter != null,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Column(modifier = Modifier.padding(top = 16.dp)) {
-                            val letterLocations = allLocations.filter { it.name.startsWith(selectedLetter!!, ignoreCase = true) }.sortedBy { it.name }
-                            if (letterLocations.isEmpty()) {
-                                Text("No locations found for this letter.", color = Color.Gray, modifier = Modifier.padding(16.dp))
-                            }
-                            letterLocations.forEach { location ->
-                                LocationRow(location, categories) { selectedLocation = it }
+                        AnimatedVisibility(
+                            visible = selectedLetter != null,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut()
+                        ) {
+                            Column(modifier = Modifier.padding(top = 16.dp)) {
+                                val letterLocations = allLocations.filter { it.name.startsWith(selectedLetter!!, ignoreCase = true) }.sortedBy { it.name }
+                                if (letterLocations.isEmpty()) {
+                                    Text("No locations found for this letter.", color = Color.Gray, modifier = Modifier.padding(16.dp))
+                                }
+                                letterLocations.forEach { location ->
+                                    LocationRow(location, categories) { selectedLocation = it }
+                                }
                             }
                         }
                     }

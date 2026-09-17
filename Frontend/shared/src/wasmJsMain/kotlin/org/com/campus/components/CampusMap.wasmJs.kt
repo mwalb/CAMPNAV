@@ -1,3 +1,4 @@
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 package org.com.campus.components
 
 import androidx.compose.foundation.layout.Box
@@ -90,7 +91,7 @@ private fun syncWebMarkers(locations: List<CampusLocation>, selectedId: Long?, o
             selected.name, 
             selected.id.toString(), 
             true, 
-            onLocationSelected = { id ->
+            onLocationSelected = { id: String ->
                 val loc = locations.find { it.id.toString() == id }
                 if (loc != null) onLocationSelected(loc)
             }
@@ -98,46 +99,43 @@ private fun syncWebMarkers(locations: List<CampusLocation>, selectedId: Long?, o
     }
 }
 
-@Suppress("UNUSED_PARAMETER")
-private fun triggerOriginSelectionJS(destId: String): Unit = js("{ if (window.showOriginSelectionPopup) window.showOriginSelectionPopup(destId); }")
+@JsFun("(destId) => { if (window.showOriginSelectionPopup) window.showOriginSelectionPopup(destId); }")
+private external fun triggerOriginSelectionJS(destId: String)
 
-@Suppress("UNUSED_PARAMETER")
-private fun syncWebLocations(locationsJson: String): Unit = js("""{
-    window.campusLocationsData = JSON.parse(locationsJson);
-}""")
+@JsFun("(locationsJson) => { window.campusLocationsData = JSON.parse(locationsJson); }")
+private external fun syncWebLocations(locationsJson: String)
 
-private fun startTrackingUserLocation(): Unit = js("""{
+@JsFun("""() => {
     if (navigator.geolocation && !window.watchId) {
+        const options = { enableHighAccuracy: true, timeout: 30000, maximumAge: 3000 };
         window.watchId = navigator.geolocation.watchPosition((pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
+            const lat = Number(pos.coords.latitude);
+            const lng = Number(pos.coords.longitude);
             if (window.onLocationUpdate) window.onLocationUpdate(lat, lng);
             if (window.userMarker && window.campusMap) {
                 window.userMarker.position = { lat: lat, lng: lng };
                 if (!window.userMarker.map) window.userMarker.map = window.campusMap;
             }
         }, (err) => {
-            console.warn("Location tracking failed:", err.message);
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+            console.warn("Location tracking failed:", err.code, err.message);
+        }, options);
     }
 }""")
+private external fun startTrackingUserLocation()
 
-private fun stopTrackingUserLocation(): Unit = js("""{
+@JsFun("""() => {
     if (window.watchId) {
         navigator.geolocation.clearWatch(window.watchId);
         window.watchId = null;
     }
+    if (window.navWatchId) {
+        navigator.geolocation.clearWatch(window.navWatchId);
+        window.navWatchId = null;
+    }
 }""")
+private external fun stopTrackingUserLocation()
 
-private fun startWebMapLifecycle(
-    element: HTMLElement, 
-    lat: Double, 
-    lng: Double, 
-    zoom: Float, 
-    onBack: () -> Unit,
-    onLocationUpdate: (Double, Double) -> Unit,
-    onEndNav: () -> Unit
-): Unit = js("""{
+@JsFun("""(element, lat, lng, zoom, onBack, onLocationUpdate, onEndNav) => {
     const init = async () => {
         while (element.clientWidth === 0 || element.clientHeight === 0) {
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -147,7 +145,7 @@ private fun startWebMapLifecycle(
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        const { Map } = await google.maps.importLibrary("maps");
+        const { Map, LatLngBounds } = await google.maps.importLibrary("maps");
         const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
         const { Route } = await google.maps.importLibrary("routes");
         const { encoding } = await google.maps.importLibrary("geometry");
@@ -158,13 +156,6 @@ private fun startWebMapLifecycle(
             return !isNaN(l) && !isNaN(g) && l >= -90 && l <= 90 && g >= -180 && g <= 180;
         };
         
-        const minimalStyle = [
-            { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "road", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "water", "stylers": [{ "color": "#0F0F23" }] }
-        ];
-
         const mapOptions = {
             center: { lat: Number(lat), lng: Number(lng) },
             zoom: Number(zoom),
@@ -256,11 +247,11 @@ private fun startWebMapLifecycle(
                     navigator.geolocation.getCurrentPosition((pos) => {
                         usePosition(pos.coords.latitude, pos.coords.longitude);
                     }, (err) => {
-                        console.error("Location tracking failed:", err.message);
+                        console.error("Location tracking failed:", err.code, err.message);
                         currentLocBtn.innerText = "❌ GPS Failed - Retry?";
                         currentLocBtn.disabled = false;
                         alert("Unable to determine your current location. Please allow location access and try again.");
-                    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+                    }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 30000 });
                 };
                 selectionContainer.appendChild(currentLocBtn);
 
@@ -302,12 +293,28 @@ private fun startWebMapLifecycle(
 
                 const startBtn = document.createElement("button");
                 startBtn.innerText = "START NAVIGATION";
-                startBtn.disabled = true;
-                startBtn.style.cssText = "padding:18px; background:#6C63FF; color:white; border:none; border-radius:14px; cursor:pointer; font-weight: bold; font-size: 18px; margin-top: 8px; opacity: 0.5;";
-                startBtn.onclick = () => {
-                    overlay.style.display = "none";
-                    navPanel.style.display = "none";
-                    window.runRoutingJS(selectedOriginCoord, { lat: Number(dest.latitude), lng: Number(dest.longitude) }, dest.name);
+                startBtn.style.cssText = "padding:18px; background:#6C63FF; color:white; border:none; border-radius:14px; cursor:pointer; font-weight: bold; font-size: 18px; margin-top: 8px;";
+                startBtn.onclick = async () => {
+                    const runWithOrigin = (lat, lng) => {
+                        overlay.style.display = "none";
+                        navPanel.style.display = "none";
+                        window.runRoutingJS({ lat, lng }, dest);
+                    };
+
+                    if (selectedOriginCoord) {
+                        runWithOrigin(selectedOriginCoord.lat, selectedOriginCoord.lng);
+                    } else {
+                        startBtn.innerText = "⌛ Locating...";
+                        startBtn.disabled = true;
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                            runWithOrigin(pos.coords.latitude, pos.coords.longitude);
+                        }, (err) => {
+                            console.error("GPS error:", err.code, err.message);
+                            alert("Location permission is required for navigation. Please enable location access and try again.");
+                            startBtn.innerText = "START NAVIGATION";
+                            startBtn.disabled = false;
+                        }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
+                    }
                 };
                 navPanel.appendChild(startBtn);
 
@@ -318,109 +325,217 @@ private fun startWebMapLifecycle(
                 navPanel.appendChild(closeBtn);
             };
 
-            window.runRoutingJS = async (origin, destination, destName) => {
-                if (!origin || !destination) {
-                    alert("Invalid routing data. Please select a valid origin and destination.");
+            window.runRoutingJS = async (origin, destinationObj) => {
+                console.log("=== RAW ROUTING INPUT ===", {
+                    origin,
+                    destinationObj,
+                    originType: typeof origin,
+                    destinationObjType: typeof destinationObj
+                });
+
+                if (!origin || !destinationObj) {
+                    alert("Unable to start navigation: Missing origin or destination.");
                     return;
                 }
 
+                // Explicitly normalize origin coordinates to numbers
                 const originLat = Number(origin?.lat);
                 const originLng = Number(origin?.lng);
-                const destLat = Number(destination?.lat);
-                const destLng = Number(destination?.lng);
+                
+                // Use entrance coordinates if available (check for null), otherwise use official marker coordinates
+                const destinationLat = Number(destinationObj.entranceLatitude != null ? destinationObj.entranceLatitude : destinationObj.latitude);
+                const destinationLng = Number(destinationObj.entranceLongitude != null ? destinationObj.entranceLongitude : destinationObj.longitude);
 
                 if (!Number.isFinite(originLat) || !Number.isFinite(originLng) || 
-                    !Number.isFinite(destLat) || !Number.isFinite(destLng)) {
-                    console.error("Invalid routing coordinates:", {
-                        origin,
-                        destination,
-                        originLat,
+                    !Number.isFinite(destinationLat) || !Number.isFinite(destinationLng)) {
+                    console.error("INVALID ORIGIN OR DESTINATION:", { 
+                        origin, 
+                        destinationObj, 
+                        originLat, 
                         originLng,
-                        destLat,
-                        destLng
+                        destinationLat,
+                        destinationLng
                     });
-                    alert("Invalid location data. Please ensure coordinates are valid numbers.");
+                    alert("Invalid coordinates detected. Please ensure location services are enabled.");
                     return;
                 }
 
-                console.log("Routing origin:", {
-                    lat: originLat,
-                    lng: originLng,
-                    latType: typeof originLat,
-                    lngType: typeof originLng
-                });
-
-                console.log("Routing destination:", {
-                    lat: destLat,
-                    lng: destLng,
-                    latType: typeof destLat,
-                    lngType: typeof destLng
-                });
-
-                const req = {
-                    origin: { lat: originLat, lng: originLng },
-                    destination: { lat: destLat, lng: destLng },
-                    travelMode: 'WALKING',
-                    fields: ['durationMillis', 'distanceMeters', 'path', 'legs']
+                const calculateDistance = (l1, n1, l2, n2) => {
+                    const R = 6371e3;
+                    const φ1 = l1 * Math.PI/180;
+                    const φ2 = l2 * Math.PI/180;
+                    const Δφ = (l2-l1) * Math.PI/180;
+                    const Δλ = (n2-n1) * Math.PI/180;
+                    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                              Math.cos(φ1) * Math.cos(φ2) *
+                              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    return R * c;
                 };
 
-                console.log("Routes request:", req);
+                const startRouting = async (startLat, startLng, fitToMap = false) => {
+                    const oLat = Number(startLat);
+                    const oLng = Number(startLng);
+                    const dLat = Number(destinationLat);
+                    const dLng = Number(destinationLng);
 
-                try {
-                    const response = await Route.computeRoutes(req);
-                    if (!response.routes || response.routes.length === 0) {
-                        console.warn("No route found.");
-                        alert("No walking route found between these points.");
-                        return;
-                    }
-                    
-                    const route = response.routes[0];
-                    console.log("Route found:", route);
-
-                    if (window.routePolylines) {
-                        window.routePolylines.forEach(p => p.setMap(null));
-                    }
-                    
-                    window.routePolylines = route.createPolylines();
-                    window.routePolylines.forEach(polyline => {
-                        polyline.setOptions({
-                            strokeColor: "#6C63FF",
-                            strokeWeight: 6,
-                            map: window.campusMap
+                    if (!Number.isFinite(oLat) || !Number.isFinite(oLng) || !Number.isFinite(dLat) || !Number.isFinite(dLng)) {
+                        console.error("Invalid routing coordinates:", {
+                            oLat, oLng, dLat, dLng,
+                            oLatType: typeof oLat, oLngType: typeof oLng,
+                            dLatType: typeof dLat, dLngType: typeof dLng
                         });
-                    });
+                        throw new Error("Invalid origin or destination coordinates");
+                    }
 
-                    infoCard.style.display = "flex";
-                    infoCard.innerHTML = "";
-                    
-                    const nameDiv = document.createElement("div");
-                    nameDiv.innerText = destName;
-                    nameDiv.style.cssText = "font-weight:bold; font-size: 18px;";
-                    infoCard.appendChild(nameDiv);
-                    
-                    const statsDiv = document.createElement("div");
-                    const durationMin = Math.ceil(Number(route.durationMillis) / 60000);
-                    const distanceKm = (Number(route.distanceMeters) / 1000).toFixed(1);
-                    statsDiv.innerText = durationMin + " min • " + distanceKm + " km";
-                    statsDiv.style.cssText = "color: #6C63FF; font-weight: bold; font-size: 20px;";
-                    infoCard.appendChild(statsDiv);
-                    
-                    const endBtn = document.createElement("button");
-                    endBtn.innerText = "END NAVIGATION";
-                    endBtn.style.cssText = "margin-top: 8px; padding: 12px; background: #FF4B4B; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer;";
-                    endBtn.onclick = () => {
+                    const origin = { lat: oLat, lng: oLng };
+                    const destination = { lat: dLat, lng: dLng };
+
+                    console.log("=== ROUTING DEBUG ===");
+                    console.log("origin:", origin);
+                    console.log("destination:", destination);
+                    console.log("origin.lat:", origin.lat, typeof origin.lat);
+                    console.log("origin.lng:", origin.lng, typeof origin.lng);
+                    console.log("destination.lat:", destination.lat, typeof destination.lat);
+                    console.log("destination.lng:", destination.lng, typeof destination.lng);
+                    console.log("travelMode: DRIVING");
+
+                    const req = {
+                        origin: origin,
+                        destination: destination,
+                        travelMode: 'DRIVING',
+                        polylineQuality: 'HIGH_QUALITY',
+                        fields: ['path', 'distanceMeters', 'durationMillis', 'viewport']
+                    };
+
+                    console.log("request:", req);
+
+                    try {
+                        const { Route } = await google.maps.importLibrary("routes");
+                        const response = await Route.computeRoutes(req);
+                        
+                        if (!response.routes || response.routes.length === 0) {
+                            alert("No driving route found to this destination.");
+                            return;
+                        }
+                        
+                        const route = response.routes[0];
                         if (window.routePolylines) {
                             window.routePolylines.forEach(p => p.setMap(null));
-                            window.routePolylines = null;
                         }
-                        infoCard.style.display = "none";
-                        window.onEndNav();
-                    };
-                    infoCard.appendChild(endBtn);
-                } catch (e) {
-                    console.error("Routes API Error:", e);
-                    alert("Routing failed: " + e.message);
-                }
+                        
+                        window.routePolylines = route.createPolylines({
+                            polylineOptions: {
+                                strokeColor: "#6C63FF",
+                                strokeOpacity: 1.0,
+                                strokeWeight: 6
+                            }
+                        });
+                        
+                        window.routePolylines.forEach(polyline => {
+                            polyline.setMap(window.campusMap);
+                        });
+
+                        if (fitToMap && route.viewport && window.campusMap) {
+                            window.campusMap.fitBounds(route.viewport, { top: 50, right: 50, bottom: 250, left: 50 });
+                        }
+
+                        infoCard.style.display = "flex";
+                        infoCard.style.cssText = "position:absolute; bottom:0; left:0; right:0; z-index:1000; background:#0F0F23; color:white; padding:24px; border-radius:24px 24px 0 0; border-top:1px solid #6C63FF; display:flex; flex-direction:column; gap:12px; font-family: sans-serif; box-shadow: 0 -4px 20px rgba(0,0,0,0.5); max-height: 300px;";
+                        infoCard.innerHTML = "";
+                        
+                        const headDiv = document.createElement("div");
+                        headDiv.style.cssText = "display:flex; justify-content:space-between; align-items:center;";
+                        
+                        const titleGroup = document.createElement("div");
+                        const nameDiv = document.createElement("div");
+                        nameDiv.innerText = destinationObj.name;
+                        nameDiv.style.cssText = "font-weight:bold; font-size: 20px;";
+                        titleGroup.appendChild(nameDiv);
+                        
+                        const modeDiv = document.createElement("div");
+                        modeDiv.innerText = "Driving Mode";
+                        modeDiv.style.cssText = "color: #AAA; font-size: 14px;";
+                        titleGroup.appendChild(modeDiv);
+                        headDiv.appendChild(titleGroup);
+                        
+                        const statsDiv = document.createElement("div");
+                        const durationMin = Math.ceil(Number(route.durationMillis) / 60000);
+                        const distanceM = Number(route.distanceMeters);
+                        const distText = distanceM >= 1000 ? (distanceM/1000).toFixed(1) + " km" : distanceM + " m";
+                        statsDiv.innerText = distText + " • " + durationMin + " min";
+                        statsDiv.style.cssText = "color: #6C63FF; font-weight: bold; font-size: 18px; text-align: right;";
+                        headDiv.appendChild(statsDiv);
+                        
+                        infoCard.appendChild(headDiv);
+                        
+                        const endBtn = document.createElement("button");
+                        endBtn.innerText = "END NAVIGATION";
+                        endBtn.style.cssText = "margin-top: 12px; padding: 18px; background: #FF4B4B; color: white; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; font-size: 16px;";
+                        endBtn.onclick = () => {
+                            if (window.navWatchId) {
+                                navigator.geolocation.clearWatch(window.navWatchId);
+                                window.navWatchId = null;
+                            }
+                            if (window.routePolylines) {
+                                window.routePolylines.forEach(p => p.setMap(null));
+                                window.routePolylines = null;
+                            }
+                            infoCard.style.display = "none";
+                            window.onEndNav();
+                        };
+                        infoCard.appendChild(endBtn);
+
+                        // Start continuous tracking during navigation
+                        if (!window.navWatchId) {
+                            let lastRecalcPos = { lat: oLat, lng: oLng };
+                            window.navWatchId = navigator.geolocation.watchPosition((pos) => {
+                                const curLat = Number(pos.coords.latitude);
+                                const curLng = Number(pos.coords.longitude);
+
+                                console.log("ACTUAL GPS UPDATE:", {
+                                    latitude: curLat,
+                                    longitude: curLng,
+                                    accuracy: pos.coords.accuracy
+                                });
+                                
+                                if (window.userMarker) {
+                                    window.userMarker.position = { lat: curLat, lng: curLng };
+                                    if (!window.userMarker.map) window.userMarker.map = window.campusMap;
+                                }
+
+                                // Arrival detection: 20m threshold
+                                const distToDest = calculateDistance(curLat, curLng, dLat, dLng);
+                                if (distToDest < 20) {
+                                    console.log("Arrived at destination!");
+                                    if (window.navWatchId && window.navWatchId !== "ARRIVED") {
+                                        navigator.geolocation.clearWatch(window.navWatchId);
+                                        window.navWatchId = "ARRIVED"; // Special state to stop recalculation
+                                    }
+                                    return;
+                                }
+
+                                const moved = calculateDistance(curLat, curLng, lastRecalcPos.lat, lastRecalcPos.lng);
+                                if (moved > 25 && window.navWatchId !== "ARRIVED") { 
+                                    lastRecalcPos = { lat: curLat, lng: curLng };
+                                    startRouting(curLat, curLng, false); // Don't fit bounds on update
+                                }
+
+                                // Follow user
+                                if (window.campusMap) {
+                                    window.campusMap.panTo({ lat: curLat, lng: curLng });
+                                }
+
+                            }, (err) => console.warn("Nav tracking error:", err.code, err.message), 
+                            { enableHighAccuracy: true, timeout: 30000, maximumAge: 3000 });
+                        }
+                    } catch (e) {
+                        console.error("Routes API Error:", e);
+                        alert("Routing failed: " + e.message);
+                    }
+                };
+
+                await startRouting(originLat, originLng, true);
             };
 
             const backBtn = document.createElement("button");
@@ -436,9 +551,7 @@ private fun startWebMapLifecycle(
             window.campusMap.addListener("click", (e) => {
                 if (window.isSelectingOnMap) {
                     window.isSelectingOnMap = false;
-                    window.runRoutingJS({ lat: e.latLng.lat(), lng: e.latLng.lng() }, 
-                                       { lat: Number(window.activeDest.latitude), lng: Number(window.activeDest.longitude) }, 
-                                       window.activeDest.name);
+                    window.runRoutingJS({ lat: e.latLng.lat(), lng: e.latLng.lng() }, window.activeDest);
                 }
             });
 
@@ -452,17 +565,30 @@ private fun startWebMapLifecycle(
     };
     init();
 }""")
+private external fun startWebMapLifecycleInternal(
+    element: HTMLElement, 
+    lat: Double, 
+    lng: Double, 
+    zoom: Float, 
+    onBack: () -> Unit,
+    onLocationUpdate: (Double, Double) -> Unit,
+    onEndNav: () -> Unit
+)
 
-@Suppress("UNUSED_PARAMETER")
-private fun clearWebMarkers(): Unit = js("""{
-    if (window.mapMarkers) {
-        window.mapMarkers.forEach(m => m.map = null);
-    }
-    window.mapMarkers = [];
-}""")
+private fun startWebMapLifecycle(
+    element: HTMLElement, 
+    lat: Double, 
+    lng: Double, 
+    zoom: Float, 
+    onBack: () -> Unit,
+    onLocationUpdate: (Double, Double) -> Unit,
+    onEndNav: () -> Unit
+) = startWebMapLifecycleInternal(element, lat, lng, zoom, onBack, onLocationUpdate, onEndNav)
 
-@Suppress("UNUSED_PARAMETER")
-private fun addWebMarker(lat: Double, lng: Double, title: String, id: String, isSelected: Boolean, onLocationSelected: (String) -> Unit): Unit = js("""{
+@JsFun("""() => { if (window.mapMarkers) { window.mapMarkers.forEach(m => m.map = null); } window.mapMarkers = []; }""")
+private external fun clearWebMarkers()
+
+@JsFun("""(lat, lng, title, id, isSelected, onLocationSelected) => {
     (async () => {
         while (!window.mapInitialized || !window.AdvancedMarkerElement) {
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -475,18 +601,11 @@ private fun addWebMarker(lat: Double, lng: Double, title: String, id: String, is
         });
         
         const infoWindow = new google.maps.InfoWindow({
-            content: `
-                <div style="color:black; padding:12px; font-family: sans-serif; min-width: 180px;">
-                    <div style="font-weight:bold; margin-bottom:12px; font-size:16px; color:#0F0F23;">${'$'}{title}</div>
-                    <button id="nav-btn-wasm-${'$'}{id}" style="width:100%; padding:12px; background:#6C63FF; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                        NAVIGATE
-                    </button>
-                </div>
-            `
+            content: '<div style="color:black; padding:12px; font-family: sans-serif; min-width: 180px;"><div style="font-weight:bold; margin-bottom:12px; font-size:16px; color:#0F0F23;">' + title + '</div><button id="nav-btn-wasm-' + id + '" style="width:100%; padding:12px; background:#6C63FF; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">NAVIGATE</button></div>'
         });
 
         const setupNavBtn = () => {
-            const btn = document.getElementById(`nav-btn-wasm-${'$'}{id}`);
+            const btn = document.getElementById('nav-btn-wasm-' + id);
             if (btn) {
                 btn.onclick = (e) => {
                     e.stopPropagation();
@@ -511,3 +630,8 @@ private fun addWebMarker(lat: Double, lng: Double, title: String, id: String, is
         window.mapMarkers.push(marker);
     })();
 }""")
+private external fun addWebMarkerInternal(lat: Double, lng: Double, title: String, id: String, isSelected: Boolean, onLocationSelected: (String) -> Unit)
+
+private fun addWebMarker(lat: Double, lng: Double, title: String, id: String, isSelected: Boolean, onLocationSelected: (String) -> Unit) = 
+    addWebMarkerInternal(lat, lng, title, id, isSelected, onLocationSelected)
+

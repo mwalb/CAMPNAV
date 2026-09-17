@@ -108,9 +108,10 @@ private fun syncWebLocations(locationsJson: String): Unit = js("""{
 
 private fun startTrackingUserLocation(): Unit = js("""{
     if (navigator.geolocation && !window.watchId) {
+        const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 };
         window.watchId = navigator.geolocation.watchPosition((pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
+            const lat = Number(pos.coords.latitude);
+            const lng = Number(pos.coords.longitude);
             if (window.onLocationUpdate) window.onLocationUpdate(lat, lng);
             if (window.userMarker && window.campusMap) {
                 window.userMarker.position = { lat: lat, lng: lng };
@@ -118,7 +119,7 @@ private fun startTrackingUserLocation(): Unit = js("""{
             }
         }, (err) => {
             console.warn("Location tracking failed:", err.message);
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        }, options);
     }
 }""")
 
@@ -126,6 +127,10 @@ private fun stopTrackingUserLocation(): Unit = js("""{
     if (window.watchId) {
         navigator.geolocation.clearWatch(window.watchId);
         window.watchId = null;
+    }
+    if (window.navWatchId) {
+        navigator.geolocation.clearWatch(window.navWatchId);
+        window.navWatchId = null;
     }
 }""")
 
@@ -302,12 +307,28 @@ private fun startWebMapLifecycle(
 
                 const startBtn = document.createElement("button");
                 startBtn.innerText = "START NAVIGATION";
-                startBtn.disabled = true;
-                startBtn.style.cssText = "padding:18px; background:#6C63FF; color:white; border:none; border-radius:14px; cursor:pointer; font-weight: bold; font-size: 18px; margin-top: 8px; opacity: 0.5;";
-                startBtn.onclick = () => {
-                    overlay.style.display = "none";
-                    navPanel.style.display = "none";
-                    window.runRoutingJS(selectedOriginCoord, { lat: Number(dest.latitude), lng: Number(dest.longitude) }, dest.name);
+                startBtn.style.cssText = "padding:18px; background:#6C63FF; color:white; border:none; border-radius:14px; cursor:pointer; font-weight: bold; font-size: 18px; margin-top: 8px;";
+                startBtn.onclick = async () => {
+                    const runWithOrigin = (lat, lng) => {
+                        overlay.style.display = "none";
+                        navPanel.style.display = "none";
+                        window.runRoutingJS({ lat, lng }, { lat: Number(dest.latitude), lng: Number(dest.longitude) }, dest.name);
+                    };
+
+                    if (selectedOriginCoord) {
+                        runWithOrigin(selectedOriginCoord.lat, selectedOriginCoord.lng);
+                    } else {
+                        startBtn.innerText = "⌛ Locating...";
+                        startBtn.disabled = true;
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                            runWithOrigin(pos.coords.latitude, pos.coords.longitude);
+                        }, (err) => {
+                            console.error("GPS error:", err);
+                            alert("Location permission is required for navigation. Please enable location access and try again.");
+                            startBtn.innerText = "START NAVIGATION";
+                            startBtn.disabled = false;
+                        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+                    }
                 };
                 navPanel.appendChild(startBtn);
 
@@ -320,7 +341,7 @@ private fun startWebMapLifecycle(
 
             window.runRoutingJS = async (origin, destination, destName) => {
                 if (!origin || !destination) {
-                    alert("Invalid routing data. Please select a valid origin and destination.");
+                    alert("Unable to determine your current location. Please allow location access and try again.");
                     return;
                 }
 
@@ -331,96 +352,128 @@ private fun startWebMapLifecycle(
 
                 if (!Number.isFinite(originLat) || !Number.isFinite(originLng) || 
                     !Number.isFinite(destLat) || !Number.isFinite(destLng)) {
-                    console.error("Invalid routing coordinates:", {
-                        origin,
-                        destination,
-                        originLat,
-                        originLng,
-                        destLat,
-                        destLng
-                    });
-                    alert("Invalid location data. Please ensure coordinates are valid numbers.");
+                    alert("Your current location could not be determined. Please enable location access and try again.");
                     return;
                 }
 
-                console.log("Routing origin:", {
-                    lat: originLat,
-                    lng: originLng,
-                    latType: typeof originLat,
-                    lngType: typeof originLng
-                });
-
-                console.log("Routing destination:", {
-                    lat: destLat,
-                    lng: destLng,
-                    latType: typeof destLat,
-                    lngType: typeof destLng
-                });
-
-                const req = {
-                    origin: { lat: originLat, lng: originLng },
-                    destination: { lat: destLat, lng: destLng },
-                    travelMode: 'WALKING',
-                    fields: ['durationMillis', 'distanceMeters', 'path', 'legs']
+                const calculateDistance = (l1, n1, l2, n2) => {
+                    const R = 6371e3;
+                    const φ1 = l1 * Math.PI/180;
+                    const φ2 = l2 * Math.PI/180;
+                    const Δφ = (l2-l1) * Math.PI/180;
+                    const Δλ = (n2-n1) * Math.PI/180;
+                    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                              Math.cos(φ1) * Math.cos(φ2) *
+                              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    return R * c;
                 };
 
-                console.log("Routes request:", req);
+                const startRouting = async (startLat, startLng) => {
+                    const req = {
+                        origin: { lat: startLat, lng: startLng },
+                        destination: { lat: destLat, lng: destLng },
+                        travelMode: 'WALKING',
+                        polylineQuality: 'HIGH_QUALITY',
+                        fields: ['durationMillis', 'distanceMeters', 'path', 'legs']
+                    };
 
-                try {
-                    const response = await Route.computeRoutes(req);
-                    if (!response.routes || response.routes.length === 0) {
-                        console.warn("No route found.");
-                        alert("No walking route found between these points.");
-                        return;
-                    }
-                    
-                    const route = response.routes[0];
-                    console.log("Route found:", route);
-
-                    if (window.routePolylines) {
-                        window.routePolylines.forEach(p => p.setMap(null));
-                    }
-                    
-                    window.routePolylines = route.createPolylines();
-                    window.routePolylines.forEach(polyline => {
-                        polyline.setOptions({
-                            strokeColor: "#6C63FF",
-                            strokeWeight: 6,
-                            map: window.campusMap
-                        });
-                    });
-
-                    infoCard.style.display = "flex";
-                    infoCard.innerHTML = "";
-                    
-                    const nameDiv = document.createElement("div");
-                    nameDiv.innerText = destName;
-                    nameDiv.style.cssText = "font-weight:bold; font-size: 18px;";
-                    infoCard.appendChild(nameDiv);
-                    
-                    const statsDiv = document.createElement("div");
-                    const durationMin = Math.ceil(Number(route.durationMillis) / 60000);
-                    const distanceKm = (Number(route.distanceMeters) / 1000).toFixed(1);
-                    statsDiv.innerText = durationMin + " min • " + distanceKm + " km";
-                    statsDiv.style.cssText = "color: #6C63FF; font-weight: bold; font-size: 20px;";
-                    infoCard.appendChild(statsDiv);
-                    
-                    const endBtn = document.createElement("button");
-                    endBtn.innerText = "END NAVIGATION";
-                    endBtn.style.cssText = "margin-top: 8px; padding: 12px; background: #FF4B4B; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer;";
-                    endBtn.onclick = () => {
+                    try {
+                        const response = await Route.computeRoutes(req);
+                        if (!response.routes || response.routes.length === 0) {
+                            alert("No walking route found between these points.");
+                            return;
+                        }
+                        
+                        const route = response.routes[0];
                         if (window.routePolylines) {
                             window.routePolylines.forEach(p => p.setMap(null));
-                            window.routePolylines = null;
                         }
-                        infoCard.style.display = "none";
-                        window.onEndNav();
-                    };
-                    infoCard.appendChild(endBtn);
-                } catch (e) {
-                    console.error("Routes API Error:", e);
-                    alert("Routing failed: " + e.message);
-                }
+                        
+                        window.routePolylines = route.createPolylines({
+                            polylineOptions: {
+                                strokeColor: "#6C63FF",
+                                strokeOpacity: 1.0,
+                                strokeWeight: 6
+                            }
+                        });
+                        window.routePolylines.forEach(polyline => {
+                            polyline.setMap(window.campusMap);
+                        });
+
+                        infoCard.style.display = "flex";
+                        infoCard.style.cssText = "position:absolute; bottom:0; left:0; right:0; z-index:1000; background:#0F0F23; color:white; padding:24px; border-radius:24px 24px 0 0; border-top:1px solid #6C63FF; display:flex; flex-direction:column; gap:12px; font-family: sans-serif; box-shadow: 0 -4px 20px rgba(0,0,0,0.5); max-height: 300px;";
+                        infoCard.innerHTML = "";
+                        
+                        const headDiv = document.createElement("div");
+                        headDiv.style.cssText = "display:flex; justify-content:space-between; align-items:center;";
+                        
+                        const titleGroup = document.createElement("div");
+                        const nameDiv = document.createElement("div");
+                        nameDiv.innerText = destName;
+                        nameDiv.style.cssText = "font-weight:bold; font-size: 20px;";
+                        titleGroup.appendChild(nameDiv);
+                        
+                        const modeDiv = document.createElement("div");
+                        modeDiv.innerText = "Walking Mode";
+                        modeDiv.style.cssText = "color: #AAA; font-size: 14px;";
+                        titleGroup.appendChild(modeDiv);
+                        headDiv.appendChild(titleGroup);
+                        
+                        const statsDiv = document.createElement("div");
+                        const durationMin = Math.ceil(Number(route.durationMillis) / 60000);
+                        const distanceM = Number(route.distanceMeters);
+                        const distText = distanceM >= 1000 ? (distanceM/1000).toFixed(1) + " km" : distanceM + " m";
+                        statsDiv.innerText = distText + " • " + durationMin + " min";
+                        statsDiv.style.cssText = "color: #6C63FF; font-weight: bold; font-size: 18px; text-align: right;";
+                        headDiv.appendChild(statsDiv);
+                        
+                        infoCard.appendChild(headDiv);
+                        
+                        const endBtn = document.createElement("button");
+                        endBtn.innerText = "END NAVIGATION";
+                        endBtn.style.cssText = "margin-top: 12px; padding: 18px; background: #FF4B4B; color: white; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; font-size: 16px;";
+                        endBtn.onclick = () => {
+                            if (window.navWatchId) {
+                                navigator.geolocation.clearWatch(window.navWatchId);
+                                window.navWatchId = null;
+                            }
+                            if (window.routePolylines) {
+                                window.routePolylines.forEach(p => p.setMap(null));
+                                window.routePolylines = null;
+                            }
+                            infoCard.style.display = "none";
+                            window.onEndNav();
+                        };
+                        infoCard.appendChild(endBtn);
+
+                        // Start continuous tracking during navigation
+                        if (!window.navWatchId) {
+                            let lastRecalcPos = { lat: startLat, lng: startLng };
+                            window.navWatchId = navigator.geolocation.watchPosition((pos) => {
+                                const curLat = Number(pos.coords.latitude);
+                                const curLng = Number(pos.coords.longitude);
+                                
+                                if (window.userMarker) {
+                                    window.userMarker.position = { lat: curLat, lng: curLng };
+                                    if (!window.userMarker.map) window.userMarker.map = window.campusMap;
+                                }
+
+                                const moved = calculateDistance(curLat, curLng, lastRecalcPos.lat, lastRecalcPos.lng);
+                                if (moved > 25) { // Recalculate if moved > 25m
+                                    lastRecalcPos = { lat: curLat, lng: curLng };
+                                    startRouting(curLat, curLng);
+                                }
+                            }, (err) => console.warn("Nav tracking error:", err), 
+                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 });
+                        }
+                    } catch (e) {
+                        console.error("Routes API Error:", e);
+                        alert("Routing failed: " + e.message);
+                    }
+                };
+
+                await startRouting(originLat, originLng);
             };
 
             const backBtn = document.createElement("button");
