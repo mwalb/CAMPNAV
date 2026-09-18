@@ -1,10 +1,12 @@
-package org.com.contentcreators
+package org.com.creator.components
 
 import androidx.compose.runtime.Composable
 import kotlinx.browser.document
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.url.URL
 import kotlin.random.Random
+import org.com.creator.model.MediaItem
+import org.com.creator.model.MediaType
 
 @Composable
 actual fun LocalMediaPicker(

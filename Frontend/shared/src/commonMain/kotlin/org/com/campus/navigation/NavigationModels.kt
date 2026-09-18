@@ -27,6 +27,15 @@ data class Route(
 )
 
 @Serializable
+data class NavigationStep(
+    val instruction: String,
+    val maneuver: String? = null,
+    val distanceMeters: Double = 0.0,
+    val startLocation: RoutePoint,
+    val endLocation: RoutePoint
+)
+
+@Serializable
 data class NavigationState(
     val status: NavigationStatus = NavigationStatus.IDLE,
     val origin: CampusLocation? = null,
@@ -34,6 +43,17 @@ data class NavigationState(
     val destination: CampusLocation? = null,
     val route: Route? = null,
     val userLocation: RoutePoint? = null,
-    val isFollowingUser: Boolean = false,
+    val userHeading: Double? = null,
+    val isFollowingUser: Boolean = true,
+    val currentStepIndex: Int = 0,
+    val currentStep: NavigationStep? = null,
+    val nextStep: NavigationStep? = null,
+    val distanceToNextManeuver: Double = 0.0,
+    val remainingDistance: Double = 0.0,
+    val remainingDurationSeconds: Double = 0.0,
+    val eta: String? = null,
+    val voiceEnabled: Boolean = true,
+    val isOffRoute: Boolean = false,
+    val hasOffRoadFinalApproach: Boolean = false,
     val error: String? = null
 )

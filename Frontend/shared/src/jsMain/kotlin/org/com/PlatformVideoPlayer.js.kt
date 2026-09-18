@@ -1,4 +1,4 @@
-package org.com
+package org.com.entertainment.presentation
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -8,6 +8,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.positionInWindow
 import kotlinx.browser.document
 import org.w3c.dom.HTMLVideoElement
+import org.com.entertainment.model.Channel
+import org.com.entertainment.model.PlayerState
+import org.com.Hls
 
 @Composable
 actual fun PlatformVideoPlayer(

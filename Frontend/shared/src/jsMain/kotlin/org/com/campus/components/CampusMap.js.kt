@@ -142,7 +142,7 @@ private fun startWebMapLifecycle(
     onBack: () -> Unit,
     onLocationUpdate: (Double, Double) -> Unit,
     onEndNav: () -> Unit
-): Unit = js("""{
+): Unit = js("""eval(`(async () => {
     const init = async () => {
         while (element.clientWidth === 0 || element.clientHeight === 0) {
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -152,23 +152,10 @@ private fun startWebMapLifecycle(
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        const { Map } = await google.maps.importLibrary("maps");
+        const { Map, Polyline, LatLngBounds } = await google.maps.importLibrary("maps");
         const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
         const { Route } = await google.maps.importLibrary("routes");
-        const { encoding } = await google.maps.importLibrary("geometry");
-
-        const isValidCoordinate = (lat, lng) => {
-            const l = Number(lat);
-            const g = Number(lng);
-            return !isNaN(l) && !isNaN(g) && l >= -90 && l <= 90 && g >= -180 && g <= 180;
-        };
-        
-        const minimalStyle = [
-            { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "road", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "water", "stylers": [{ "color": "#0F0F23" }] }
-        ];
+        const { encoding, spherical } = await google.maps.importLibrary("geometry");
 
         const mapOptions = {
             center: { lat: Number(lat), lng: Number(lng) },
@@ -177,26 +164,108 @@ private fun startWebMapLifecycle(
             disableDefaultUI: false,
             mapTypeControl: false,
             streetViewControl: false,
-            fullscreenControl: false
+            fullscreenControl: false,
+            tilt: 0,
+            heading: 0
         };
 
         if (!window.campusMap) {
             window.campusMap = new Map(element, mapOptions);
             
+            // Internal navigation state
+            window.navState = {
+                active: false,
+                mode: "DRIVING",
+                steps: [],
+                currentStepIndex: 0,
+                isFollowing: true,
+                voiceEnabled: true,
+                lastHeading: 0,
+                destination: null,
+                drivingPath: [],
+                walkingPath: [],
+                recalculateCooldown: 0,
+                lastAnnouncedStep: -1,
+                lastAnnouncedDist: -1
+            };
+
+            window.navPolylines = [];
+
             const overlay = document.createElement("div");
             overlay.id = "native-map-overlay";
             overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:999; background:rgba(0,0,0,0.7); display:none; pointer-events:auto; backdrop-filter: blur(2px);";
             element.appendChild(overlay);
 
+            // 1. TOP NAVIGATION BANNER (Includes "Then" upcoming maneuver)
+            const topBanner = document.createElement("div");
+            topBanner.id = "nav-top-banner";
+            topBanner.style.cssText = "position:absolute; top:0; left:0; right:0; z-index:1100; background:#004D40; color:white; padding:16px; display:none; flex-direction:column; font-family: sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.3);";
+            element.appendChild(topBanner);
+
+            // 3. BOTTOM TRIP BAR
+            const bottomBar = document.createElement("div");
+            bottomBar.id = "nav-bottom-bar";
+            bottomBar.style.cssText = "position:absolute; bottom:0; left:0; right:0; z-index:1100; background:white; color:#3C4043; padding:16px; display:none; flex-direction:row; align-items:center; justify-content:space-between; font-family: sans-serif; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); border-radius: 20px 20px 0 0;";
+            element.appendChild(bottomBar);
+
+            // 4. FLOATING CONTROLS
+            const fabContainer = document.createElement("div");
+            fabContainer.id = "nav-fab-container";
+            fabContainer.style.cssText = "position:absolute; right:16px; bottom:120px; z-index:1100; display:none; flex-direction:column; gap:12px;";
+            element.appendChild(fabContainer);
+
+            const createFab = (icon, id, onClick) => {
+                const btn = document.createElement("button");
+                btn.id = id;
+                btn.innerHTML = icon;
+                btn.style.cssText = "width:56px; height:56px; border-radius:28px; background:white; border:none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size: 24px; color:#3C4043;";
+                btn.onclick = onClick;
+                fabContainer.appendChild(btn);
+                return btn;
+            };
+
+            const recentreBtn = document.createElement("button");
+            recentreBtn.id = "nav-recentre-btn";
+            recentreBtn.innerHTML = '<span style="margin-right:8px;">🎯</span> Re-centre';
+            recentreBtn.style.cssText = "position:absolute; bottom:120px; left:50%; transform:translateX(-50%); z-index:1100; padding:12px 24px; background:white; color:#005C53; border:none; border-radius:28px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor:pointer; font-weight:bold; display:none; font-size:16px; align-items:center;";
+            recentreBtn.onclick = () => {
+                window.navState.isFollowing = true;
+                recentreBtn.style.display = "none";
+                const markerPos = window.userMarker ? window.userMarker.position : null;
+                if (markerPos && window.campusMap) {
+                    window.campusMap.panTo(markerPos);
+                    window.campusMap.setZoom(19);
+                    window.campusMap.setTilt(45);
+                    const heading = window.navState.lastHeading;
+                    if (heading !== undefined) window.campusMap.setHeading(heading);
+                }
+            };
+            element.appendChild(recentreBtn);
+
+            const compassFab = createFab("🧭", "nav-compass-fab", () => {
+                if (window.campusMap) {
+                    const currentHeading = window.campusMap.getHeading();
+                    if (currentHeading !== 0) {
+                        window.campusMap.setHeading(0);
+                    } else {
+                        window.campusMap.setHeading(window.navState.lastHeading || 0);
+                    }
+                }
+            });
+
+            const searchFab = createFab("🔍", "nav-search-fab", () => {
+                alert("Search along route - Coming soon");
+            });
+
+            const voiceFab = createFab("🔊", "nav-voice-fab", () => {
+                window.navState.voiceEnabled = !window.navState.voiceEnabled;
+                voiceFab.innerHTML = window.navState.voiceEnabled ? "🔊" : "🔇";
+            });
+
             const navPanel = document.createElement("div");
             navPanel.id = "native-nav-panel";
-            navPanel.style.cssText = "position:absolute; z-index:1000; display:none; flex-direction:column; font-family: sans-serif;";
+            navPanel.style.cssText = "position:absolute; z-index:1200; display:none; flex-direction:column; font-family: sans-serif;";
             element.appendChild(navPanel);
-
-            const infoCard = document.createElement("div");
-            infoCard.id = "native-info-card";
-            infoCard.style.cssText = "position:absolute; bottom:30px; left:20px; right:20px; z-index:1000; background:#0F0F23; color:white; padding:20px; border-radius:20px; border:1px solid #6C63FF; display:none; flex-direction:column; gap:8px; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.5);";
-            element.appendChild(infoCard);
             
             window.onLocationUpdate = onLocationUpdate;
             window.onEndNav = onEndNav;
@@ -312,7 +381,7 @@ private fun startWebMapLifecycle(
                     const runWithOrigin = (lat, lng) => {
                         overlay.style.display = "none";
                         navPanel.style.display = "none";
-                        window.runRoutingJS({ lat, lng }, { lat: Number(dest.latitude), lng: Number(dest.longitude) }, dest.name);
+                        window.runRoutingJS({ lat, lng }, dest);
                     };
 
                     if (selectedOriginCoord) {
@@ -339,22 +408,41 @@ private fun startWebMapLifecycle(
                 navPanel.appendChild(closeBtn);
             };
 
-            window.runRoutingJS = async (origin, destination, destName) => {
-                if (!origin || !destination) {
-                    alert("Unable to determine your current location. Please allow location access and try again.");
+            window.runRoutingJS = async (origin, destinationObj) => {
+                if (!origin || !destinationObj) {
+                    alert("Unable to start navigation: Missing origin or destination.");
                     return;
                 }
 
                 const originLat = Number(origin?.lat);
                 const originLng = Number(origin?.lng);
-                const destLat = Number(destination?.lat);
-                const destLng = Number(destination?.lng);
+                const destinationLat = Number(destinationObj.entranceLatitude != null ? destinationObj.entranceLatitude : destinationObj.latitude);
+                const destinationLng = Number(destinationObj.entranceLongitude != null ? destinationObj.entranceLongitude : destinationObj.longitude);
 
-                if (!Number.isFinite(originLat) || !Number.isFinite(originLng) || 
-                    !Number.isFinite(destLat) || !Number.isFinite(destLng)) {
-                    alert("Your current location could not be determined. Please enable location access and try again.");
-                    return;
-                }
+                const speak = (text) => {
+                    if (window.navState.voiceEnabled && window.speechSynthesis) {
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        window.speechSynthesis.cancel();
+                        window.speechSynthesis.speak(utterance);
+                    }
+                };
+
+                const getManeuverIcon = (maneuver) => {
+                    const m = (maneuver || "").toLowerCase().replace(/_/g, "-");
+                    if (m.includes("turn-left")) return "←";
+                    if (m.includes("turn-right")) return "→";
+                    if (m.includes("turn-slight-left")) return "↖";
+                    if (m.includes("turn-slight-right")) return "↗";
+                    if (m.includes("turn-sharp-left")) return "↙";
+                    if (m.includes("turn-sharp-right")) return "↘";
+                    if (m.includes("u-turn")) return "U";
+                    if (m.includes("straight")) return "↑";
+                    if (m.includes("merge")) return "↑";
+                    if (m.includes("ramp")) return "↗";
+                    if (m.includes("fork")) return "Y";
+                    if (m.includes("roundabout")) return "O";
+                    return "↑";
+                };
 
                 const calculateDistance = (l1, n1, l2, n2) => {
                     const R = 6371e3;
@@ -369,111 +457,309 @@ private fun startWebMapLifecycle(
                     return R * c;
                 };
 
-                const startRouting = async (startLat, startLng) => {
-                    const req = {
-                        origin: { lat: startLat, lng: startLng },
-                        destination: { lat: destLat, lng: destLng },
-                        travelMode: 'WALKING',
+                const updateNavUI = (stepIndex) => {
+                    const step = window.navState.steps[stepIndex];
+                    const nextStep = window.navState.steps[stepIndex + 1];
+                    
+                    topBanner.style.display = "flex";
+                    let bannerHTML = '<div style="display:flex; align-items:center; gap:16px;">' +
+                        '<div style="font-size:48px; font-weight:bold; min-width:60px; text-align:center;">' + (step?.isWalking ? "🚶" : getManeuverIcon(step?.maneuver)) + '</div>' +
+                        '<div style="flex:1;">' +
+                            '<div style="font-size:22px; font-weight:bold;">' + (step?.instructions || "Head to destination") + '</div>' +
+                            '<div id="nav-step-dist" style="font-size:18px; opacity:0.9;"></div>' +
+                        '</div>' +
+                        '<div style="width:44px; height:44px; background:rgba(255,255,255,0.2); border-radius:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px;">✨</div>' +
+                    '</div>';
+
+                    if (nextStep) {
+                        bannerHTML += '<div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:15px; opacity:0.9; display:flex; align-items:center; gap:8px;">' +
+                            '<span>Then</span> <span style="font-weight:bold;">' + (nextStep.isWalking ? "🚶" : getManeuverIcon(nextStep.maneuver)) + '</span> ' + nextStep.instructions +
+                            '</div>';
+                    }
+                    
+                    topBanner.innerHTML = bannerHTML;
+
+                    bottomBar.style.display = "flex";
+                    
+                    let remDist = 0;
+                    let remDur = 0;
+                    for (let i = stepIndex; i < window.navState.steps.length; i++) {
+                        remDist += (Number(window.navState.steps[i].distanceMeters) || 0);
+                        remDur += (Number(window.navState.steps[i].durationMillis || window.navState.steps[i].staticDurationMillis) || 0);
+                    }
+                    
+                    const durationMin = Math.ceil(remDur / 60000);
+                    const distText = remDist >= 1000 ? (remDist/1000).toFixed(1) + " km" : Math.round(remDist) + " m";
+                    const arrivalTime = new Date(Date.now() + remDur);
+                    const eta = arrivalTime.getHours().toString().padStart(2, '0') + ":" + arrivalTime.getMinutes().toString().padStart(2, '0');
+
+                    bottomBar.innerHTML = '<div id="nav-exit-btn" style="font-size:28px; cursor:pointer; padding:12px; color:#5F6368;">✕</div>' +
+                        '<div style="flex:1; display:flex; flex-direction:column; align-items:center;">' +
+                            '<div style="display:flex; align-items:center; gap:8px;">' +
+                                '<span style="color:#D96B00; font-weight:bold; font-size:24px;">' + durationMin + ' min</span>' +
+                                '<span style="color:#1E8E3E; font-size:20px;">🌿</span>' +
+                            '</div>' +
+                            '<div style="color:#5F6368; font-size:16px; font-weight:500;">' + distText + ' • ' + eta + '</div>' +
+                        '</div>' +
+                        '<div id="nav-overview-btn" style="font-size:28px; cursor:pointer; padding:12px; color:#5F6368;">▢</div>';
+
+                    document.getElementById("nav-exit-btn").onclick = () => stopNavigation();
+                    document.getElementById("nav-overview-btn").onclick = () => {
+                        const bounds = new google.maps.LatLngBounds();
+                        window.navState.drivingPath.forEach(p => bounds.extend(p));
+                        window.navState.walkingPath.forEach(p => bounds.extend(p));
+                        window.campusMap.fitBounds(bounds, { top: 150, right: 50, bottom: 200, left: 50 });
+                        window.navState.isFollowing = false;
+                        recentreBtn.style.display = "flex";
+                    };
+                };
+
+                const stopNavigation = () => {
+                    if (window.navWatchId) {
+                        navigator.geolocation.clearWatch(window.navWatchId);
+                        window.navWatchId = null;
+                    }
+                    if (window.navPolylines) {
+                        window.navPolylines.forEach(p => p.setMap(null));
+                        window.navPolylines = [];
+                    }
+                    window.navState.active = false;
+                    topBanner.style.display = "none";
+                    bottomBar.style.display = "none";
+                    fabContainer.style.display = "none";
+                    recentreBtn.style.display = "none";
+                    if (window.campusMap) {
+                        window.campusMap.setTilt(0);
+                        window.campusMap.setHeading(0);
+                    }
+                    window.onEndNav();
+                };
+
+                const startRouting = async (startLat, startLng, fitToMap = false) => {
+                    const drivingReq = {
+                        origin: { lat: Number(startLat), lng: Number(startLng) },
+                        destination: { lat: Number(destinationLat), lng: Number(destinationLng) },
+                        travelMode: 'DRIVING',
                         polylineQuality: 'HIGH_QUALITY',
-                        fields: ['durationMillis', 'distanceMeters', 'path', 'legs']
+                        fields: ['path', 'distanceMeters', 'durationMillis', 'viewport', 'legs']
                     };
 
                     try {
-                        const response = await Route.computeRoutes(req);
+                        const { Route } = await google.maps.importLibrary("routes");
+                        const response = await Route.computeRoutes(drivingReq);
                         if (!response.routes || response.routes.length === 0) {
-                            alert("No walking route found between these points.");
+                            alert("No driving route found.");
                             return;
                         }
                         
-                        const route = response.routes[0];
-                        if (window.routePolylines) {
-                            window.routePolylines.forEach(p => p.setMap(null));
-                        }
+                        const drivingRoute = response.routes[0];
+                        const route = drivingRoute;
+                        const routeEnd = drivingRoute.path[drivingRoute.path.length - 1];
+                        const endLat = typeof routeEnd.lat === "function" ? routeEnd.lat() : (routeEnd.lat || routeEnd.latitude);
+                        const endLng = typeof routeEnd.lng === "function" ? routeEnd.lng() : (routeEnd.lng || routeEnd.longitude);
+                        const drivingEndpoint = { lat: Number(endLat), lng: Number(endLng) };
+                        const destination = { lat: Number(destinationObj.latitude), lng: Number(destinationObj.longitude) };
+                        const distToEnd = calculateDistance(drivingEndpoint.lat, drivingEndpoint.lng, destination.lat, destination.lng);
+                        const walkingRequired = distToEnd > 20;
+
+                        console.log("[CAMPNAV] Driving route received", route);
+                        console.log("[CAMPNAV] Driving endpoint", drivingEndpoint);
+                        console.log("[CAMPNAV] Exact destination", destination);
+                        console.log("[CAMPNAV] Walking required", walkingRequired);
+
+                        window.navState.active = true;
+                        window.navState.mode = "DRIVING";
+                        window.navState.drivingPath = drivingRoute.path;
+                        window.navState.walkingPath = [];
                         
-                        window.routePolylines = route.createPolylines({
+                        let allSteps = drivingRoute.legs?.flatMap(leg => leg.steps ?? []) ?? [];
+
+                        if (window.navPolylines) window.navPolylines.forEach(p => p.setMap(null));
+                        window.navPolylines = [];
+
+                        const drivingPolys = drivingRoute.createPolylines({
                             polylineOptions: {
-                                strokeColor: "#6C63FF",
-                                strokeOpacity: 1.0,
-                                strokeWeight: 6
+                                strokeColor: "#3800D8",
+                                strokeOpacity: 0.95,
+                                strokeWeight: 12,
+                                zIndex: 11
                             }
                         });
-                        window.routePolylines.forEach(polyline => {
-                            polyline.setMap(window.campusMap);
+                        drivingPolys.forEach(p => {
+                            p.setMap(window.campusMap);
+                            window.navPolylines.push(p);
                         });
 
-                        infoCard.style.display = "flex";
-                        infoCard.style.cssText = "position:absolute; bottom:0; left:0; right:0; z-index:1000; background:#0F0F23; color:white; padding:24px; border-radius:24px 24px 0 0; border-top:1px solid #6C63FF; display:flex; flex-direction:column; gap:12px; font-family: sans-serif; box-shadow: 0 -4px 20px rgba(0,0,0,0.5); max-height: 300px;";
-                        infoCard.innerHTML = "";
-                        
-                        const headDiv = document.createElement("div");
-                        headDiv.style.cssText = "display:flex; justify-content:space-between; align-items:center;";
-                        
-                        const titleGroup = document.createElement("div");
-                        const nameDiv = document.createElement("div");
-                        nameDiv.innerText = destName;
-                        nameDiv.style.cssText = "font-weight:bold; font-size: 20px;";
-                        titleGroup.appendChild(nameDiv);
-                        
-                        const modeDiv = document.createElement("div");
-                        modeDiv.innerText = "Walking Mode";
-                        modeDiv.style.cssText = "color: #AAA; font-size: 14px;";
-                        titleGroup.appendChild(modeDiv);
-                        headDiv.appendChild(titleGroup);
-                        
-                        const statsDiv = document.createElement("div");
-                        const durationMin = Math.ceil(Number(route.durationMillis) / 60000);
-                        const distanceM = Number(route.distanceMeters);
-                        const distText = distanceM >= 1000 ? (distanceM/1000).toFixed(1) + " km" : distanceM + " m";
-                        statsDiv.innerText = distText + " • " + durationMin + " min";
-                        statsDiv.style.cssText = "color: #6C63FF; font-weight: bold; font-size: 18px; text-align: right;";
-                        headDiv.appendChild(statsDiv);
-                        
-                        infoCard.appendChild(headDiv);
-                        
-                        const endBtn = document.createElement("button");
-                        endBtn.innerText = "END NAVIGATION";
-                        endBtn.style.cssText = "margin-top: 12px; padding: 18px; background: #FF4B4B; color: white; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; font-size: 16px;";
-                        endBtn.onclick = () => {
-                            if (window.navWatchId) {
-                                navigator.geolocation.clearWatch(window.navWatchId);
-                                window.navWatchId = null;
-                            }
-                            if (window.routePolylines) {
-                                window.routePolylines.forEach(p => p.setMap(null));
-                                window.routePolylines = null;
-                            }
-                            infoCard.style.display = "none";
-                            window.onEndNav();
-                        };
-                        infoCard.appendChild(endBtn);
+                        const actualDest = { lat: Number(destinationObj.latitude), lng: Number(destinationObj.longitude) };
 
-                        // Start continuous tracking during navigation
+                        if (walkingRequired) {
+                            const walkingReq = {
+                                origin: { lat: drivingEndpoint.lat, lng: drivingEndpoint.lng },
+                                destination: { lat: actualDest.lat, lng: actualDest.lng },
+                                travelMode: 'WALK',
+                                polylineQuality: 'HIGH_QUALITY',
+                                fields: ['path', 'distanceMeters', 'durationMillis', 'legs']
+                            };
+                            try {
+                                const walkResponse = await Route.computeRoutes(walkingReq);
+                                if (walkResponse.routes && walkResponse.routes.length > 0) {
+                                    const walkRoute = walkResponse.routes[0];
+                                    const walkingRoute = walkRoute;
+                                    console.log("[CAMPNAV] Walking route received", walkingRoute);
+
+                                    window.navState.walkingPath = walkRoute.path;
+                                    
+                                    const walkPolys = walkRoute.createPolylines({
+                                        polylineOptions: {
+                                            strokeColor: "#5F6368",
+                                            strokeOpacity: 0,
+                                            icons: [{
+                                                icon: { path: google.maps.SymbolPath.CIRCLE, fillOpacity: 1, scale: 4, strokeColor: "#5F6368", strokeWeight: 0 },
+                                                offset: '0px', repeat: '15px'
+                                            }],
+                                            zIndex: 12
+                                        }
+                                    });
+                                    walkPolys.forEach(p => {
+                                        p.setMap(window.campusMap);
+                                        window.navPolylines.push(p);
+                                    });
+                                    
+                                    const walkSteps = walkRoute.legs?.flatMap(leg => leg.steps ?? []) ?? [];
+                                    if (walkSteps.length > 0) {
+                                        walkSteps.forEach(s => s.isWalking = true);
+                                        allSteps.push({
+                                            instructions: "Park and continue on foot",
+                                            maneuver: "straight",
+                                            endLocation: walkSteps[0].startLocation,
+                                            distanceMeters: distToEnd,
+                                            isWalking: true
+                                        });
+                                        allSteps = allSteps.concat(walkSteps);
+                                    }
+                                }
+                            } catch (e) { console.warn("Walking route failed", e); }
+                        }
+
+                        window.navState.steps = allSteps;
+                        window.navState.currentStepIndex = 0;
+
+                        const routeStart = drivingRoute.path[0];
+                        const startPtLat = typeof routeStart.lat === "function" ? routeStart.lat() : (routeStart.lat || routeStart.latitude);
+                        const startPtLng = typeof routeStart.lng === "function" ? routeStart.lng() : (routeStart.lng || routeStart.longitude);
+                        const distFromStart = calculateDistance(Number(startLat), Number(startLng), Number(startPtLat), Number(startPtLng));
+                        if (distFromStart > 15) {
+                            const originReq = {
+                                origin: { lat: Number(startLat), lng: Number(startLng) },
+                                destination: { lat: Number(startPtLat), lng: Number(startPtLng) },
+                                travelMode: 'WALK',
+                                polylineQuality: 'HIGH_QUALITY',
+                                fields: ['path']
+                            };
+                            try {
+                                const originResponse = await Route.computeRoutes(originReq);
+                                if (originResponse.routes && originResponse.routes.length > 0) {
+                                    const originRoute = originResponse.routes[0];
+                                    const originPolys = originRoute.createPolylines({
+                                        polylineOptions: {
+                                            strokeColor: "#5F6368",
+                                            strokeOpacity: 0,
+                                            icons: [{
+                                                icon: { path: google.maps.SymbolPath.CIRCLE, fillOpacity: 1, scale: 4, strokeColor: "#5F6368", strokeWeight: 0 },
+                                                offset: '0px', repeat: '15px'
+                                            }],
+                                            zIndex: 12
+                                        }
+                                    });
+                                    originPolys.forEach(p => {
+                                        p.setMap(window.campusMap);
+                                        window.navPolylines.push(p);
+                                    });
+                                }
+                            } catch (err) {
+                                console.warn("Origin walking route failed", err);
+                            }
+                        }
+
+                        if (fitToMap && window.campusMap) {
+                            window.campusMap.setTilt(45);
+                            window.campusMap.panTo({ lat: Number(startLat), lng: Number(startLng) });
+                            window.campusMap.setZoom(19);
+                        }
+
+                        fabContainer.style.display = "flex";
+                        updateNavUI(0);
+                        speak(allSteps[0]?.instructions || "Head to destination");
+
                         if (!window.navWatchId) {
-                            let lastRecalcPos = { lat: startLat, lng: startLng };
                             window.navWatchId = navigator.geolocation.watchPosition((pos) => {
+                                if (!window.navState.active) return;
                                 const curLat = Number(pos.coords.latitude);
                                 const curLng = Number(pos.coords.longitude);
-                                
+                                const heading = pos.coords.heading;
+                                if (heading !== null) window.navState.lastHeading = heading;
+
                                 if (window.userMarker) {
                                     window.userMarker.position = { lat: curLat, lng: curLng };
                                     if (!window.userMarker.map) window.userMarker.map = window.campusMap;
                                 }
 
-                                const moved = calculateDistance(curLat, curLng, lastRecalcPos.lat, lastRecalcPos.lng);
-                                if (moved > 25) { // Recalculate if moved > 25m
-                                    lastRecalcPos = { lat: curLat, lng: curLng };
-                                    startRouting(curLat, curLng);
+                                if (window.navState.isFollowing && window.campusMap) {
+                                    window.campusMap.panTo({ lat: curLat, lng: curLng });
+                                    if (heading !== null) window.campusMap.setHeading(heading);
                                 }
-                            }, (err) => console.warn("Nav tracking error:", err), 
-                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 });
+
+                                const distToDest = calculateDistance(curLat, curLng, actualDest.lat, actualDest.lng);
+                                if (distToDest < 15) {
+                                    speak("You have arrived at your destination.");
+                                    stopNavigation();
+                                    return;
+                                }
+
+                                const currentStep = window.navState.steps[window.navState.currentStepIndex];
+                                if (currentStep) {
+                                    window.navState.mode = currentStep.isWalking ? "WALKING" : "DRIVING";
+                                    const nextStepLoc = currentStep.endLocation;
+                                    const distToManeuver = calculateDistance(curLat, curLng, nextStepLoc.lat, nextStepLoc.lng);
+                                    const distEl = document.getElementById("nav-step-dist");
+                                    if (distEl) distEl.innerText = distToManeuver >= 1000 ? (distToManeuver/1000).toFixed(1) + " km" : Math.round(distToManeuver) + " m";
+
+                                    if (distToManeuver < 20) {
+                                        window.navState.currentStepIndex++;
+                                        if (window.navState.currentStepIndex < window.navState.steps.length) {
+                                            updateNavUI(window.navState.currentStepIndex);
+                                            speak(window.navState.steps[window.navState.currentStepIndex].instructions);
+                                        }
+                                    } else if (distToManeuver < 100 && window.navState.lastAnnouncedDist !== 100 && window.navState.lastAnnouncedStep !== window.navState.currentStepIndex) {
+                                        speak("In 100 meters, " + currentStep.instructions);
+                                        window.navState.lastAnnouncedDist = 100;
+                                        window.navState.lastAnnouncedStep = window.navState.currentStepIndex;
+                                    }
+                                }
+
+                                if (window.navState.recalculateCooldown > 0) {
+                                    window.navState.recalculateCooldown--;
+                                } else {
+                                    const activePath = window.navState.mode === "WALKING" ? window.navState.walkingPath : window.navState.drivingPath;
+                                    let minOffRouteDist = 100000;
+                                    for (let i=0; i < activePath.length; i+=5) {
+                                        const pt = activePath[i];
+                                        const ptLat = typeof pt.lat === "function" ? pt.lat() : (pt.lat || pt.latitude);
+                                        const ptLng = typeof pt.lng === "function" ? pt.lng() : (pt.lng || pt.longitude);
+                                        const d = calculateDistance(curLat, curLng, Number(ptLat), Number(ptLng));
+                                        if (d < minOffRouteDist) minOffRouteDist = d;
+                                    }
+                                    if (minOffRouteDist > 60) {
+                                        window.navState.recalculateCooldown = 15;
+                                        startRouting(curLat, curLng, false);
+                                    }
+                                }
+                            }, (err) => console.warn(err), { enableHighAccuracy: true, timeout: 30000, maximumAge: 3000 });
                         }
-                    } catch (e) {
-                        console.error("Routes API Error:", e);
-                        alert("Routing failed: " + e.message);
-                    }
+                    } catch (e) { console.error("Routes error", e); }
                 };
 
-                await startRouting(originLat, originLng);
+                await startRouting(originLat, originLng, true);
             };
 
             const backBtn = document.createElement("button");
@@ -489,9 +775,13 @@ private fun startWebMapLifecycle(
             window.campusMap.addListener("click", (e) => {
                 if (window.isSelectingOnMap) {
                     window.isSelectingOnMap = false;
-                    window.runRoutingJS({ lat: e.latLng.lat(), lng: e.latLng.lng() }, 
-                                       { lat: Number(window.activeDest.latitude), lng: Number(window.activeDest.longitude) }, 
-                                       window.activeDest.name);
+                    window.runRoutingJS({ lat: e.latLng.lat(), lng: e.latLng.lng() }, window.activeDest);
+                }
+            });
+            window.campusMap.addListener("dragstart", () => {
+                if (window.navState.active) {
+                    window.navState.isFollowing = false;
+                    recentreBtn.style.display = "flex";
                 }
             });
 
@@ -504,7 +794,7 @@ private fun startWebMapLifecycle(
         window.mapInitialized = true;
     };
     init();
-}""")
+})()`);""")
 
 @Suppress("UNUSED_PARAMETER")
 private fun clearWebMarkers(): Unit = js("""{
@@ -516,9 +806,10 @@ private fun clearWebMarkers(): Unit = js("""{
 
 @Suppress("UNUSED_PARAMETER")
 private fun addWebMarker(lat: Double, lng: Double, title: String, id: String, isSelected: Boolean, onLocationSelected: (String) -> Unit): Unit = js("""{
-    (async () => {
-        while (!window.mapInitialized || !window.AdvancedMarkerElement) {
-            await new Promise(resolve => setTimeout(resolve, 50));
+    const checkInit = () => {
+        if (!window.mapInitialized || !window.AdvancedMarkerElement) {
+            setTimeout(checkInit, 50);
+            return;
         }
 
         const marker = new window.AdvancedMarkerElement({
@@ -531,7 +822,7 @@ private fun addWebMarker(lat: Double, lng: Double, title: String, id: String, is
             content: `
                 <div style="color:black; padding:12px; font-family: sans-serif; min-width: 180px;">
                     <div style="font-weight:bold; margin-bottom:12px; font-size:16px; color:#0F0F23;">${'$'}{title}</div>
-                    <button id="nav-btn-${'$'}{id}" style="width:100%; padding:12px; background:#6C63FF; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                    <button id="nav-btn-js-${'$'}{id}" style="width:100%; padding:12px; background:#6C63FF; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                         NAVIGATE
                     </button>
                 </div>
@@ -539,7 +830,7 @@ private fun addWebMarker(lat: Double, lng: Double, title: String, id: String, is
         });
 
         const setupNavBtn = () => {
-            const btn = document.getElementById(`nav-btn-${'$'}{id}`);
+            const btn = document.getElementById(`nav-btn-js-${'$'}{id}`);
             if (btn) {
                 btn.onclick = (e) => {
                     e.stopPropagation();
@@ -562,5 +853,6 @@ private fun addWebMarker(lat: Double, lng: Double, title: String, id: String, is
 
         if (!window.mapMarkers) window.mapMarkers = [];
         window.mapMarkers.push(marker);
-    })();
+    };
+    checkInit();
 }""")
