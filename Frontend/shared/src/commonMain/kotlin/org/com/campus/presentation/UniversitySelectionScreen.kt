@@ -154,24 +154,26 @@ fun UniversityCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
     ) {
         Column(
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(20.dp)),
-                color = Color.White.copy(alpha = 0.05f)
+                    .size(140.dp)
+                    .clip(RoundedCornerShape(24.dp)),
+                color = Color.White
             ) {
+                // If a local high-quality logo is available, we could use it here.
+                // For now, using the seeded URL.
                 AsyncImage(
                     model = university.logoUrl,
                     contentDescription = "${university.name} Logo",
-                    modifier = Modifier.padding(16.dp).fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit
                 )
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             Text(
                 text = university.name.uppercase(),

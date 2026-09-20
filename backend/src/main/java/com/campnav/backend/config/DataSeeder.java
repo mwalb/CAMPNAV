@@ -23,7 +23,7 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // 1. Seed Universities (Idempotent)
         University udsm = seedUniversity("UDSM", "University of Dar es Salaam", "University of Dar es Salaam", "UDSM", "Dar es Salaam", -6.7801, 39.2041, 15f, 
-                "Knowledge First", "https://upload.wikimedia.org/wikipedia/en/2/2a/University_of_Dar_es_Salaam_Logo.png", 1, 657.0);
+                "Hekima ni Uhuru", "https://upload.wikimedia.org/wikipedia/en/2/2a/University_of_Dar_es_Salaam_Logo.png", 1, 657.0);
 
         // 2. Seed Campus
         seedCampus("UDSM-MLIMANI", "Mwalimu Julius K. Nyerere Mlimani Campus", udsm);

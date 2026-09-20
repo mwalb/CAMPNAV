@@ -9,6 +9,7 @@ import org.com.campus.data.CampusLocation
 import org.com.campus.data.CampusRepository
 import org.com.campus.data.University
 import org.com.campus.navigation.*
+import org.com.campus.utils.openGoogleMapsNavigation
 
 @Composable
 fun CampusMapScreen(
@@ -68,14 +69,9 @@ fun CampusMapScreen(
         }
     }
 
-    // Filter locations: show only selected place if destination is set, otherwise show all active
-    val displayLocations = remember(locations, navigationState.destination) {
-        val dest = navigationState.destination
-        if (dest != null) {
-            listOf(dest)
-        } else {
-            locations
-        }
+    // Filter locations: show all active locations to keep markers constant
+    val displayLocations = remember(locations) {
+        locations
     }
 
     CampusMap(
@@ -91,12 +87,11 @@ fun CampusMapScreen(
         onBack = onBack,
         initialSelectedLocation = initialSelectedLocation,
         navigationState = navigationState,
-        onStartNavigation = { dest, origin ->
-            if (origin == null && navigationState.userLocation == null) {
-                navigationState = navigationState.copy(destination = dest, status = NavigationStatus.SELECTING_ORIGIN)
-            } else {
-                calculateRoute(dest, origin, navigationState.userLocation)
-            }
+        onStartNavigation = { dest, _ ->
+            navigationState = navigationState.copy(
+                destination = dest,
+                status = NavigationStatus.SHOWING_NAV_CHOICE
+            )
         },
         onEndNavigation = {
             navigationState = NavigationState()
@@ -105,7 +100,7 @@ fun CampusMapScreen(
             val prevLoc = navigationState.userLocation
             navigationState = navigationState.copy(userLocation = point)
             
-            // Auto-start navigation if we were waiting for location
+            // Auto-start navigation if we were waiting for location (internal routing only)
             if (navigationState.status == NavigationStatus.SELECTING_ORIGIN && prevLoc == null) {
                 navigationState.destination?.let { dest ->
                     calculateRoute(dest, null, point)
@@ -123,6 +118,19 @@ fun CampusMapScreen(
                     }
                 }
             }
+        },
+        onMapClick = { point ->
+            if (navigationState.status == NavigationStatus.SELECTING_START_POINT) {
+                navigationState.destination?.let { dest ->
+                    // Directly open Google Maps navigation without extra popup
+                    openGoogleMapsNavigation(point.latitude, point.longitude, dest.latitude, dest.longitude)
+                }
+                // Return to idle state after starting navigation
+                navigationState = NavigationState()
+            }
+        },
+        onStatusChange = { status ->
+            navigationState = navigationState.copy(status = status)
         }
     )
 }

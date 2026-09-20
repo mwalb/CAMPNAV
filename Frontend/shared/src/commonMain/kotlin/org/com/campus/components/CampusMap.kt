@@ -6,6 +6,7 @@ import org.com.campus.data.CampusLocation
 import org.com.campus.data.University
 
 import org.com.campus.navigation.NavigationState
+import org.com.campus.navigation.NavigationStatus
 import org.com.campus.navigation.RoutePoint
 
 @Composable
@@ -19,5 +20,7 @@ expect fun CampusMap(
     navigationState: NavigationState = NavigationState(),
     onStartNavigation: (CampusLocation, CampusLocation?) -> Unit = { _, _ -> },
     onEndNavigation: () -> Unit = {},
-    onLocationUpdate: (RoutePoint) -> Unit = {}
+    onLocationUpdate: (RoutePoint) -> Unit = {},
+    onMapClick: (RoutePoint) -> Unit = {},
+    onStatusChange: (NavigationStatus) -> Unit = {}
 )

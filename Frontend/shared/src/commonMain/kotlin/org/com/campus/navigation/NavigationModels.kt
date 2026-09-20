@@ -8,6 +8,9 @@ data class RoutePoint(val latitude: Double, val longitude: Double)
 
 enum class NavigationStatus {
     IDLE,
+    SHOWING_NAV_CHOICE,
+    SELECTING_START_POINT,
+    CONFIRMING_START_POINT,
     SELECTING_ORIGIN,
     CALCULATING,
     ACTIVE,
@@ -41,6 +44,7 @@ data class NavigationState(
     val origin: CampusLocation? = null,
     val originLatLng: RoutePoint? = null,
     val destination: CampusLocation? = null,
+    val selectedStartPoint: RoutePoint? = null,
     val route: Route? = null,
     val userLocation: RoutePoint? = null,
     val userHeading: Double? = null,
