@@ -68,6 +68,9 @@ actual fun CampusMap(
                     triggerNavChoiceJS(dest.id.toString(), dest.name)
                 }
             }
+            NavigationStatus.SELECTING_START_POINT -> {
+                triggerStartPointSelectionJS()
+            }
             NavigationStatus.SELECTING_ORIGIN -> {
                 navigationState.destination?.let { triggerOriginSelectionJS(it.id.toString()) }
             }
@@ -128,6 +131,9 @@ private fun syncWebMarkers(locations: List<CampusLocation>, selectedId: Long?, s
 
 @Suppress("UNUSED_PARAMETER")
 private fun triggerNavChoiceJS(destId: String, destName: String): Unit = js("{ if (window.showNavChoicePopup) window.showNavChoicePopup(destId, destName); }")
+
+@Suppress("UNUSED_PARAMETER")
+private fun triggerStartPointSelectionJS(): Unit = js("{ if (window.showStartPointSelectionOverlay) window.showStartPointSelectionOverlay(); }")
 
 private fun hideNavOverlaysJS(): Unit = js("{ if (window.hideNavOverlays) window.hideNavOverlays(); }")
 
@@ -315,12 +321,152 @@ private fun startWebMapLifecycle(
             window.hideNavOverlays = () => {
                 overlay.style.display = "none";
                 navPanel.style.display = "none";
+                const selOverlay = document.getElementById("select-point-overlay");
+                if (selOverlay) selOverlay.style.display = "none";
+            };
+
+            window.showStartPointSelectionOverlay = () => {
+                let selOverlay = document.getElementById("select-point-overlay");
+                if (!selOverlay) {
+                    selOverlay = document.createElement("div");
+                    selOverlay.id = "select-point-overlay";
+                    element.appendChild(selOverlay);
+                }
+                selOverlay.style.display = "flex";
+                selOverlay.style.flexDirection = "column";
+                selOverlay.style.gap = "12px";
+                selOverlay.style.position = "absolute";
+                selOverlay.style.top = "20px";
+                selOverlay.style.left = "50%";
+                selOverlay.style.transform = "translateX(-50%)";
+                selOverlay.style.zIndex = "1000";
+                selOverlay.style.background = "white";
+                selOverlay.style.color = "#3C4043";
+                selOverlay.style.padding = "24px";
+                selOverlay.style.borderRadius = "28px";
+                selOverlay.style.boxShadow = "0 12px 48px rgba(0,0,0,0.25)";
+                selOverlay.style.fontWeight = "bold";
+                selOverlay.style.fontFamily = "sans-serif";
+                selOverlay.style.width = "90%";
+                selOverlay.style.maxWidth = "380px";
+
+                selOverlay.innerHTML = `
+                    <div style="margin-bottom: 12px; text-align: center; color: #0F0F23; font-size: 20px; font-weight: 800;">Select a starting point</div>
+                    
+                    <div style="position: relative; width: 100%; margin-bottom: 8px;">
+                        <input id="start-point-search" type="text" placeholder="Search location..." 
+                               style="padding: 16px 44px 16px 16px; border-radius: 16px; border: 2px solid #F0F0F0; width: 100%; box-sizing: border-box; font-size: 16px; outline: none; transition: all 0.2s; background: #F8F9FA;">
+                        <span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #AAA; font-size: 18px;">🔍</span>
+                    </div>
+                    
+                    <div id="start-point-results" style="display: none; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; background: white; border-radius: 16px; padding: 8px; border: 1px solid #EEE; font-weight: normal; margin-bottom: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></div>
+                    
+                    <button id="start-point-action-btn" style="width: 100%; padding: 16px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3); transition: transform 0.1s;">
+                        <span>🚀</span> Start
+                    </button>
+                    
+                    <div style="display: flex; gap: 10px; width: 100%; margin-top: 4px;">
+                        <button id="start-point-tap-map" style="flex: 1; padding: 14px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(108, 99, 255, 0.2);">
+                            <span>📍</span> Tap on the Map
+                        </button>
+                        <button id="start-point-cancel" style="padding: 14px; border-radius: 16px; border: 2px solid #F0F0F0; background: white; color: #666; cursor: pointer; font-weight: 700; font-size: 14px;">
+                            Cancel
+                        </button>
+                    </div>
+                `;
+
+                const searchInput = document.getElementById("start-point-search");
+                const resultsDiv = document.getElementById("start-point-results");
+                const actionBtn = document.getElementById("start-point-action-btn");
+                const tapMapBtn = document.getElementById("start-point-tap-map");
+                const cancelBtn = document.getElementById("start-point-cancel");
+                
+                searchInput.focus();
+                searchInput.onfocus = () => { 
+                    searchInput.style.borderColor = "#6C63FF"; 
+                    searchInput.style.background = "white";
+                };
+                searchInput.onblur = () => { 
+                    searchInput.style.borderColor = "#F0F0F0";
+                    searchInput.style.background = "#F8F9FA";
+                };
+
+                searchInput.oninput = (e) => {
+                    const query = e.target.value.toLowerCase();
+                    const locations = window.campusLocationsData || [];
+
+                    if (query.length < 1) {
+                        resultsDiv.style.display = "none";
+                        return;
+                    }
+                    const filtered = locations.filter(l => l.name.toLowerCase().includes(query)).slice(0, 8);
+                    if (filtered.length > 0) {
+                        resultsDiv.style.display = "flex";
+                        resultsDiv.innerHTML = "";
+                        filtered.forEach(loc => {
+                            const btn = document.createElement("div");
+                            btn.innerText = loc.name;
+                            btn.style.padding = "12px 14px";
+                            btn.style.cursor = "pointer";
+                            btn.style.fontSize = "14px";
+                            btn.style.borderBottom = "1px solid #F5F5F5";
+                            btn.onmouseover = () => { btn.style.background = "#F8F9FA"; };
+                            btn.onmouseout = () => { btn.style.background = "transparent"; };
+                            btn.onclick = () => {
+                                window.onMapClick(loc.latitude, loc.longitude);
+                                window.hideNavOverlays();
+                            };
+                            resultsDiv.appendChild(btn);
+                        });
+                    } else {
+                        resultsDiv.style.display = "none";
+                    }
+                };
+
+                actionBtn.onclick = () => {
+                    const query = searchInput.value.toLowerCase();
+                    const locations = window.campusLocationsData || [];
+                    const finalDest = window.lastSelectedDest;
+
+                    if (query.length > 0) {
+                        const filtered = locations.filter(l => l.name.toLowerCase().includes(query));
+                        if (filtered.length > 0 && finalDest) {
+                            window.openGoogleMapsNavigation(filtered[0].latitude, filtered[0].longitude, finalDest.latitude, finalDest.longitude);
+                            window.hideNavOverlays();
+                            window.onEndNav();
+                        } else {
+                            alert("Location not found or destination missing.");
+                        }
+                    } else {
+                        console.log("[CAMPNAV] 'Start' clicked with empty search - using current location...");
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                            if (finalDest) {
+                                window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, finalDest.latitude, finalDest.longitude);
+                                window.hideNavOverlays();
+                                window.onEndNav();
+                            }
+                        }, (err) => {
+                            console.error("[CAMPNAV] Geolocation error: " + err.message);
+                            alert("Could not get location. Please allow location access or search for a place.");
+                        });
+                    }
+                };
+                
+                tapMapBtn.onclick = () => {
+                    window.hideNavOverlays();
+                };
+                
+                cancelBtn.onclick = () => {
+                    window.hideNavOverlays();
+                    window.onEndNav();
+                };
             };
 
             window.showNavChoicePopup = (destId, destName) => {
                 const locations = window.campusLocationsData || [];
                 const dest = locations.find(l => String(l.id) === String(destId));
                 if (!dest) return;
+                window.lastSelectedDest = dest;
 
                 overlay.style.display = "block";
                 navPanel.style.display = "flex";

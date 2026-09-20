@@ -69,6 +69,9 @@ actual fun CampusMap(
                     triggerNavChoiceJS(dest.id.toString(), dest.name)
                 }
             }
+            NavigationStatus.SELECTING_START_POINT -> {
+                triggerStartPointSelectionJS()
+            }
             NavigationStatus.SELECTING_ORIGIN -> {
                 navigationState.destination?.let { triggerOriginSelectionJS(it.id.toString()) }
             }
@@ -127,8 +130,11 @@ private fun syncWebMarkers(locations: List<CampusLocation>, selectedId: Long?, s
     }
 }
 
-@JsFun("(destId, destName) => { if (window.showNavChoicePopup) window.showNavChoicePopup(destId, destName); }")
+@JsFun("(destId, destName) => { console.log('[CAMPNAV] Showing Nav Choice JS...'); if (window.showNavChoicePopup) window.showNavChoicePopup(destId, destName); }")
 private external fun triggerNavChoiceJS(destId: String, destName: String)
+
+@JsFun("() => { console.log('[CAMPNAV] Showing Start Point Selection Overlay JS...'); if (window.showStartPointSelectionOverlay) window.showStartPointSelectionOverlay(); }")
+private external fun triggerStartPointSelectionJS()
 
 @JsFun("() => { if (window.hideNavOverlays) window.hideNavOverlays(); }")
 private external fun hideNavOverlaysJS()
@@ -140,19 +146,23 @@ private external fun triggerOriginSelectionJS(destId: String)
 private external fun syncWebLocations(locationsJson: String)
 
 @JsFun("""() => {
+    console.log("[CAMPNAV] Starting user location tracking...");
     if (navigator.geolocation && !window.watchId) {
         const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 };
         window.watchId = navigator.geolocation.watchPosition((pos) => {
             const lat = Number(pos.coords.latitude);
             const lng = Number(pos.coords.longitude);
+            console.log("[CAMPNAV] Location update:", lat, lng);
             if (window.onLocationUpdate) window.onLocationUpdate(lat, lng);
             if (window.userMarker && window.campusMap) {
                 window.userMarker.position = { lat: lat, lng: lng };
                 if (!window.userMarker.map) window.userMarker.map = window.campusMap;
             }
         }, (err) => {
-            console.warn("Location tracking failed:", err.message);
+            console.error("[CAMPNAV] Location tracking error (" + err.code + "): " + err.message);
         }, options);
+    } else if (!navigator.geolocation) {
+        console.error("[CAMPNAV] Geolocation is not supported by this browser.");
     }
 }""")
 private external fun startTrackingUserLocation()
@@ -180,15 +190,7 @@ private external fun stopTrackingUserLocation()
         }
 
         const { Map, LatLngBounds, Polyline } = await google.maps.importLibrary("maps");
-        const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
-        const { Route } = await google.maps.importLibrary("routes");
-        const { encoding, spherical } = await google.maps.importLibrary("geometry");
-
-        const isValidCoordinate = (lat, lng) => {
-            const l = Number(lat);
-            const g = Number(lng);
-            return !isNaN(l) && !isNaN(g) && l >= -90 && l <= 90 && g >= -180 && g <= 180;
-        };
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
         
         const mapOptions = {
             center: { lat: Number(lat), lng: Number(lng) },
@@ -205,91 +207,12 @@ private external fun stopTrackingUserLocation()
         if (!window.campusMap) {
             window.campusMap = new Map(element, mapOptions);
             
-            // Internal navigation state
-            window.navState = {
-                active: false,
-                mode: "DRIVING",
-                steps: [],
-                currentStepIndex: 0,
-                isFollowing: true,
-                voiceEnabled: true,
-                lastHeading: 0,
-                destination: null,
-                drivingPath: [],
-                walkingPath: [],
-                recalculateCooldown: 0,
-                lastAnnouncedStep: -1,
-                lastAnnouncedDist: -1
-            };
-
-            window.navPolylines = [];
+            window.navState = { active: false };
 
             const overlay = document.createElement("div");
             overlay.id = "native-map-overlay";
             overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:999; background:rgba(0,0,0,0.7); display:none; pointer-events:auto; backdrop-filter: blur(2px);";
             element.appendChild(overlay);
-
-            // 1. TOP NAVIGATION BANNER (Includes "Then" upcoming maneuver)
-            const topBanner = document.createElement("div");
-            topBanner.id = "nav-top-banner";
-            topBanner.style.cssText = "position:absolute; top:0; left:0; right:0; z-index:1100; background:#004D40; color:white; padding:16px; display:none; flex-direction:column; font-family: sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.3);";
-            element.appendChild(topBanner);
-
-            // 3. BOTTOM TRIP BAR
-            const bottomBar = document.createElement("div");
-            bottomBar.id = "nav-bottom-bar";
-            bottomBar.style.cssText = "position:absolute; bottom:0; left:0; right:0; z-index:1100; background:white; color:#3C4043; padding:16px; display:none; flex-direction:row; align-items:center; justify-content:space-between; font-family: sans-serif; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); border-radius: 20px 20px 0 0;";
-            element.appendChild(bottomBar);
-
-            // 4. FLOATING CONTROLS
-            const fabContainer = document.createElement("div");
-            fabContainer.id = "nav-fab-container";
-            fabContainer.style.cssText = "position:absolute; right:16px; bottom:120px; z-index:1100; display:none; flex-direction:column; gap:12px;";
-            element.appendChild(fabContainer);
-
-            const createFab = (icon, id, onClick) => {
-                const btn = document.createElement("button");
-                btn.id = id;
-                btn.innerHTML = icon;
-                btn.style.cssText = "width:56px; height:56px; border-radius:28px; background:white; border:none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size: 24px; color:#3C4043;";
-                btn.onclick = onClick;
-                fabContainer.appendChild(btn);
-                return btn;
-            };
-
-            const recentreBtn = document.createElement("button");
-            recentreBtn.id = "nav-recentre-btn";
-            recentreBtn.innerHTML = '<span style="margin-right:8px;">🎯</span> Re-centre';
-            recentreBtn.style.cssText = "position:absolute; bottom:120px; left:50%; transform:translateX(-50%); z-index:1100; padding:12px 24px; background:white; color:#005C53; border:none; border-radius:28px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor:pointer; font-weight:bold; display:none; font-size:16px; align-items:center;";
-            recentreBtn.onclick = () => {
-                window.navState.isFollowing = true;
-                recentreBtn.style.display = "none";
-                const markerPos = window.userMarker ? window.userMarker.position : null;
-                if (markerPos && window.campusMap) {
-                    window.campusMap.panTo(markerPos);
-                    window.campusMap.setZoom(19);
-                    window.campusMap.setTilt(45);
-                    const heading = window.navState.lastHeading;
-                    if (heading !== undefined) window.campusMap.setHeading(heading);
-                }
-            };
-            element.appendChild(recentreBtn);
-
-            const compassFab = createFab("🧭", "nav-compass-fab", () => {
-                if (window.campusMap) {
-                    const currentHeading = window.campusMap.getHeading();
-                    if (currentHeading !== 0) {
-                        window.campusMap.setHeading(0);
-                    } else {
-                        window.campusMap.setHeading(window.navState.lastHeading || 0);
-                    }
-                }
-            });
-
-            const voiceFab = createFab("🔊", "nav-voice-fab", () => {
-                window.navState.voiceEnabled = !window.navState.voiceEnabled;
-                voiceFab.innerHTML = window.navState.voiceEnabled ? "🔊" : "🔇";
-            });
 
             const navPanel = document.createElement("div");
             navPanel.id = "native-nav-panel";
@@ -309,12 +232,15 @@ private external fun stopTrackingUserLocation()
             window.hideNavOverlays = () => {
                 overlay.style.display = "none";
                 navPanel.style.display = "none";
+                const selOverlay = document.getElementById("select-point-overlay");
+                if (selOverlay) selOverlay.style.display = "none";
             };
 
             window.showNavChoicePopup = (destId, destName) => {
                 const locations = window.campusLocationsData || [];
                 const dest = locations.find(l => String(l.id) === String(destId));
                 if (!dest) return;
+                window.lastSelectedDest = dest;
 
                 overlay.style.display = "block";
                 navPanel.style.display = "flex";
@@ -361,6 +287,132 @@ private external fun stopTrackingUserLocation()
                     window.onEndNav(); 
                 };
                 navPanel.appendChild(cancelBtn);
+            };
+
+            window.showStartPointSelectionOverlay = () => {
+                let selOverlay = document.getElementById("select-point-overlay");
+                if (!selOverlay) {
+                    selOverlay = document.createElement("div");
+                    selOverlay.id = "select-point-overlay";
+                    element.appendChild(selOverlay);
+                }
+                selOverlay.style.display = "flex";
+                selOverlay.style.flexDirection = "column";
+                selOverlay.style.gap = "12px";
+                selOverlay.style.position = "absolute";
+                selOverlay.style.top = "20px";
+                selOverlay.style.left = "50%";
+                selOverlay.style.transform = "translateX(-50%)";
+                selOverlay.style.zIndex = "1000";
+                selOverlay.style.background = "white";
+                selOverlay.style.color = "#3C4043";
+                selOverlay.style.padding = "24px";
+                selOverlay.style.borderRadius = "28px";
+                selOverlay.style.boxShadow = "0 12px 48px rgba(0,0,0,0.25)";
+                selOverlay.style.fontWeight = "bold";
+                selOverlay.style.fontFamily = "sans-serif";
+                selOverlay.style.width = "90%";
+                selOverlay.style.maxWidth = "380px";
+
+                selOverlay.innerHTML = `
+                    <div style="margin-bottom: 12px; text-align: center; color: #0F0F23; font-size: 20px; font-weight: 800;">Select a starting point</div>
+                    
+                    <div style="position: relative; width: 100%; margin-bottom: 8px;">
+                        <input id="start-point-search" type="text" placeholder="Search location..." 
+                               style="padding: 16px 44px 16px 16px; border-radius: 16px; border: 2px solid #F0F0F0; width: 100%; box-sizing: border-box; font-size: 16px; outline: none; transition: all 0.2s; background: #F8F9FA;">
+                        <span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #AAA; font-size: 18px;">🔍</span>
+                    </div>
+                    
+                    <div id="start-point-results" style="display: none; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; background: white; border-radius: 16px; padding: 8px; border: 1px solid #EEE; font-weight: normal; margin-bottom: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></div>
+                    
+                    <button id="start-point-action-btn" style="width: 100%; padding: 16px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3); transition: transform 0.1s;">
+                        <span>🚀</span> Start
+                    </button>
+                    
+                    <div style="display: flex; gap: 10px; width: 100%; margin-top: 4px;">
+                        <button id="start-point-tap-map" style="flex: 1; padding: 14px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(108, 99, 255, 0.2);">
+                            <span>📍</span> Tap on the Map
+                        </button>
+                        <button id="start-point-cancel" style="padding: 14px; border-radius: 16px; border: 2px solid #F0F0F0; background: white; color: #666; cursor: pointer; font-weight: 700; font-size: 14px;">
+                            Cancel
+                        </button>
+                    </div>
+                `;
+
+                const searchInput = document.getElementById("start-point-search");
+                const resultsDiv = document.getElementById("start-point-results");
+                const actionBtn = document.getElementById("start-point-action-btn");
+                const tapMapBtn = document.getElementById("start-point-tap-map");
+                const cancelBtn = document.getElementById("start-point-cancel");
+                
+                searchInput.focus();
+                searchInput.oninput = (e) => {
+                    const query = e.target.value.toLowerCase();
+                    const locations = window.campusLocationsData || [];
+
+                    if (query.length < 1) {
+                        resultsDiv.style.display = "none";
+                        return;
+                    }
+                    const filtered = locations.filter(l => l.name.toLowerCase().includes(query)).slice(0, 8);
+                    if (filtered.length > 0) {
+                        resultsDiv.style.display = "flex";
+                        resultsDiv.innerHTML = "";
+                        filtered.forEach(loc => {
+                            const btn = document.createElement("div");
+                            btn.innerText = loc.name;
+                            btn.style.padding = "12px 14px";
+                            btn.style.cursor = "pointer";
+                            btn.style.fontSize = "14px";
+                            btn.style.borderBottom = "1px solid #F5F5F5";
+                            btn.onmouseover = () => { btn.style.background = "#F8F9FA"; };
+                            btn.onmouseout = () => { btn.style.background = "transparent"; };
+                            btn.onclick = () => {
+                                window.onMapClick(loc.latitude, loc.longitude);
+                                window.hideNavOverlays();
+                            };
+                            resultsDiv.appendChild(btn);
+                        });
+                    } else {
+                        resultsDiv.style.display = "none";
+                    }
+                };
+
+                actionBtn.onclick = () => {
+                    const query = searchInput.value.toLowerCase();
+                    const locations = window.campusLocationsData || [];
+                    const finalDest = window.lastSelectedDest;
+
+                    if (query.length > 0) {
+                        const filtered = locations.filter(l => l.name.toLowerCase().includes(query));
+                        if (filtered.length > 0 && finalDest) {
+                            window.openGoogleMapsNavigation(filtered[0].latitude, filtered[0].longitude, finalDest.latitude, finalDest.longitude);
+                            window.hideNavOverlays();
+                            window.onEndNav();
+                        } else {
+                            alert("Location not found or destination missing.");
+                        }
+                    } else {
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                            if (finalDest) {
+                                window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, finalDest.latitude, finalDest.longitude);
+                                window.hideNavOverlays();
+                                window.onEndNav();
+                            }
+                        }, (err) => {
+                            alert("Could not get location. Please allow location access or search for a place.");
+                        });
+                    }
+                };
+                
+                tapMapBtn.onclick = () => {
+                    window.hideNavOverlays();
+                };
+                
+                cancelBtn.onclick = () => {
+                    window.hideNavOverlays();
+                    window.onEndNav();
+                };
             };
 
             window.showOriginSelectionPopup = (destId) => {
@@ -416,7 +468,6 @@ private external fun stopTrackingUserLocation()
             window.campusMap.addListener("dragstart", () => {
                 if (window.navState.active) {
                     window.navState.isFollowing = false;
-                    recentreBtn.style.display = "flex";
                 }
             });
 
@@ -426,7 +477,6 @@ private external fun stopTrackingUserLocation()
         }
         
         window.AdvancedMarkerElement = AdvancedMarkerElement;
-        window.PinElement = PinElement;
         window.mapInitialized = true;
     };
     init();
