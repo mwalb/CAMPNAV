@@ -362,12 +362,12 @@ private fun startWebMapLifecycle(
                     <div id="start-point-results" style="display: none; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; background: white; border-radius: 16px; padding: 8px; border: 1px solid #EEE; font-weight: normal; margin-bottom: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></div>
                     
                     <button id="start-point-action-btn" style="width: 100%; padding: 16px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3); transition: transform 0.1s;">
-                        <span>🚀</span> Start
+                        Start
                     </button>
                     
                     <div style="display: flex; gap: 10px; width: 100%; margin-top: 4px;">
                         <button id="start-point-tap-map" style="flex: 1; padding: 14px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(108, 99, 255, 0.2);">
-                            <span>📍</span> Tap on the Map
+                            Tap on the Map
                         </button>
                         <button id="start-point-cancel" style="padding: 14px; border-radius: 16px; border: 2px solid #F0F0F0; background: white; color: #666; cursor: pointer; font-weight: 700; font-size: 14px;">
                             Cancel
@@ -483,7 +483,7 @@ private fun startWebMapLifecycle(
                 const btnStyle = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left; display: flex; align-items: center; gap: 12px;";
                 
                 const currentLocBtn = document.createElement("button");
-                currentLocBtn.innerHTML = "<span>📍</span> Use my current location";
+                currentLocBtn.innerHTML = "Use my current location";
                 currentLocBtn.style.cssText = btnStyle;
                 currentLocBtn.onclick = () => {
                     console.log("[CAMPNAV] Requesting current location for navigation...");
@@ -500,7 +500,7 @@ private fun startWebMapLifecycle(
                 navPanel.appendChild(currentLocBtn);
 
                 const selectOnMapBtn = document.createElement("button");
-                selectOnMapBtn.innerHTML = "<span>📌</span> Select starting point";
+                selectOnMapBtn.innerHTML = "Select starting point";
                 selectOnMapBtn.style.cssText = btnStyle;
                 selectOnMapBtn.onclick = () => {
                     window.hideNavOverlays();
@@ -543,7 +543,7 @@ private fun startWebMapLifecycle(
                 navPanel.appendChild(selectionContainer);
 
                 const currentLocBtn = document.createElement("button");
-                currentLocBtn.innerText = "📍 Use My Current Location";
+                currentLocBtn.innerText = "Use My Current Location";
                 currentLocBtn.style.cssText = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left;";
                 
                 currentLocBtn.onclick = async () => {
@@ -562,6 +562,15 @@ private fun startWebMapLifecycle(
                 cancelBtn.onclick = () => { window.hideNavOverlays(); window.onEndNav(); };
                 navPanel.appendChild(cancelBtn);
             };
+
+            const backBtn = document.createElement("button");
+            backBtn.id = "native-back-btn";
+            backBtn.innerHTML = "<span>⬅</span>";
+            backBtn.style.cssText = "position:absolute; top:20px; left:20px; z-index:1100; width:48px; height:48px; border-radius:24px; background:white; border:none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size: 20px; color:#3C4043; transition: transform 0.1s;";
+            backBtn.onclick = () => { onBack(); };
+            backBtn.onmousedown = () => { backBtn.style.transform = "scale(0.9)"; };
+            backBtn.onmouseup = () => { backBtn.style.transform = "scale(1)"; };
+            element.appendChild(backBtn);
 
             window.campusMap.addListener("click", (e) => {
                 if (window.onMapClick) {
