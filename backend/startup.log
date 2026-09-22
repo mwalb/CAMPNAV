@@ -1,0 +1,69 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :resolveMainClassName UP-TO-DATE
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+2026-09-21T12:36:49.759Z  INFO 56805 --- [campnav-backend] [           main] c.c.backend.CampNavBackendApplication    : Starting CampNavBackendApplication using Java 21.0.11 with PID 56805 (/home/kali/CAMPNAV/backend/build/classes/java/main started by kali in /home/kali/CAMPNAV/backend)
+2026-09-21T12:36:49.764Z  INFO 56805 --- [campnav-backend] [           main] c.c.backend.CampNavBackendApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-09-21T12:36:50.627Z  INFO 56805 --- [campnav-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-21T12:36:50.715Z  INFO 56805 --- [campnav-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 70 ms. Found 9 JPA repository interfaces.
+2026-09-21T12:36:51.329Z  INFO 56805 --- [campnav-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-09-21T12:36:51.345Z  INFO 56805 --- [campnav-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-09-21T12:36:51.346Z  INFO 56805 --- [campnav-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.28]
+2026-09-21T12:36:51.399Z  INFO 56805 --- [campnav-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-09-21T12:36:51.400Z  INFO 56805 --- [campnav-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1563 ms
+2026-09-21T12:36:51.439Z  INFO 56805 --- [campnav-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-09-21T12:36:51.605Z  INFO 56805 --- [campnav-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:campnavdb user=SA
+2026-09-21T12:36:51.606Z  INFO 56805 --- [campnav-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-09-21T12:36:51.617Z  INFO 56805 --- [campnav-backend] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:campnavdb'
+2026-09-21T12:36:51.895Z  INFO 56805 --- [campnav-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:campnavdb (H2 2.2)
+2026-09-21T12:36:51.901Z  WARN 56805 --- [campnav-backend] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-09-21T12:36:51.928Z  INFO 56805 --- [campnav-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-09-21T12:36:51.931Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 10 migrations (execution time 00:00.018s)
+2026-09-21T12:36:51.939Z  INFO 56805 --- [campnav-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-09-21T12:36:51.970Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-09-21T12:36:51.981Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - init schema"
+2026-09-21T12:36:52.015Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "2 - update category schema"
+2026-09-21T12:36:52.050Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "3 - update university schema"
+2026-09-21T12:36:52.065Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "4 - update location schema"
+2026-09-21T12:36:52.076Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "5 - add provenance and campus"
+2026-09-21T12:36:52.154Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "6 - rebuild udsm canonical"
+2026-09-21T12:36:52.204Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "7 - update udsm dataset"
+2026-09-21T12:36:52.235Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "8 - rebuild udsm with verified coords"
+2026-09-21T12:36:52.268Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "9 - community issue reporting schema"
+2026-09-21T12:36:52.286Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "10 - add media editor overlays"
+2026-09-21T12:36:52.298Z  INFO 56805 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 10 migrations to schema "PUBLIC", now at version v10 (execution time 00:00.224s)
+2026-09-21T12:36:52.381Z  INFO 56805 --- [campnav-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-21T12:36:52.438Z  INFO 56805 --- [campnav-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+2026-09-21T12:36:52.465Z  INFO 56805 --- [campnav-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-21T12:36:52.736Z  INFO 56805 --- [campnav-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-21T12:36:54.330Z  INFO 56805 --- [campnav-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-21T12:36:54.356Z  INFO 56805 --- [campnav-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-21T12:36:54.816Z  INFO 56805 --- [campnav-backend] [           main] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2026-09-21T12:36:54.817Z  WARN 56805 --- [campnav-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used for username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider.
+2026-09-21T12:36:54.853Z  INFO 56805 --- [campnav-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-21T12:36:55.352Z  WARN 56805 --- [campnav-backend] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-21T12:36:55.889Z  INFO 56805 --- [campnav-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-09-21T12:36:55.898Z  INFO 56805 --- [campnav-backend] [           main] c.c.backend.CampNavBackendApplication    : Started CampNavBackendApplication in 6.543 seconds (process running for 7.629)
+
+> Task :bootRun FAILED
+
+[Incubating] Problems report is available at: file:///home/kali/CAMPNAV/backend/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+4 actionable tasks: 1 executed, 3 up-to-date
