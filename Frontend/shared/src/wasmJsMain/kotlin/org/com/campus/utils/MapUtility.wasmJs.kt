@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalWasmJsInterop::class)
 package org.com.campus.utils
 
 actual fun openExternalMap(latitude: Double, longitude: Double, label: String) {
@@ -15,4 +16,20 @@ actual fun openGoogleMapsNavigation(
     openUrl(url)
 }
 
+actual fun getCurrentUserLocation(onLocationReceived: (Double, Double) -> Unit) {
+    jsFetchGeoLocation(onLocationReceived)
+}
+
 private fun openUrl(url: String): Unit = js("window.open(url, '_blank')")
+
+@JsFun("""(onSelected) => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => { onSelected(pos.coords.latitude, pos.coords.longitude); },
+            (err) => { onSelected(-6.7824, 39.2083); }
+        );
+    } else {
+        onSelected(-6.7824, 39.2083);
+    }
+}""")
+private external fun jsFetchGeoLocation(onSelected: (Double, Double) -> Unit)

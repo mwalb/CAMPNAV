@@ -221,8 +221,16 @@ fun CampusDestinationScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            val scrollToCategory = { slug: String ->
-                                val category = categories.find { it.slug == slug }
+                            fun scrollToCategory(vararg keywords: String) {
+                                val category = categories.find { cat ->
+                                    val slug = cat.slug?.lowercase() ?: ""
+                                    val name = cat.name.lowercase()
+                                    val desc = cat.description?.lowercase() ?: ""
+                                    keywords.any { key ->
+                                        val k = key.lowercase()
+                                        slug.contains(k) || name.contains(k) || desc.contains(k)
+                                    }
+                                }
                                 if (category != null) {
                                     expandedCategoryId = category.id
                                     searchQuery = ""
@@ -237,15 +245,15 @@ fun CampusDestinationScreen(
                                 }
                             }
 
-                            QuickDestButton("Academics", Icons.Default.School) { scrollToCategory("academic") }
-                            QuickDestButton("Hostels", Icons.Default.Hotel) { scrollToCategory("hostel") }
-                            QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) { scrollToCategory("library") }
-                            QuickDestButton("Food", Icons.Default.Restaurant) { scrollToCategory("food") }
-                            QuickDestButton("Health", Icons.Default.LocalHospital) { scrollToCategory("health") }
-                            QuickDestButton("Banking", Icons.Default.Payments) { scrollToCategory("banking") }
-                            QuickDestButton("Religious", Icons.Default.AccountBalance) { scrollToCategory("religious") }
-                            QuickDestButton("Sports", Icons.Default.SportsSoccer) { scrollToCategory("sports") }
-                            QuickDestButton("Security", Icons.Default.Security) { scrollToCategory("security") }
+                            QuickDestButton("Academics", Icons.Default.School) { scrollToCategory("academic", "school") }
+                            QuickDestButton("Hostels", Icons.Default.Hotel) { scrollToCategory("hostel", "accommodation") }
+                            QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) { scrollToCategory("library", "academic") }
+                            QuickDestButton("Food", Icons.Default.Restaurant) { scrollToCategory("food", "dining", "cafeteria") }
+                            QuickDestButton("Health", Icons.Default.LocalHospital) { scrollToCategory("health", "medical", "hospital") }
+                            QuickDestButton("Banking", Icons.Default.Payments) { scrollToCategory("banking", "bank", "commercial", "shopping", "finance") }
+                            QuickDestButton("Religious", Icons.Default.AccountBalance) { scrollToCategory("religious", "worship", "church", "mosque") }
+                            QuickDestButton("Sports", Icons.Default.SportsSoccer) { scrollToCategory("sports", "recreation") }
+                            QuickDestButton("Security", Icons.Default.Security) { scrollToCategory("security", "administration", "infrastructure") }
                         }
                     }
                     Spacer(Modifier.height(32.dp))

@@ -1,8 +1,6 @@
 package com.campnav.backend.config;
 
 import com.campnav.backend.model.Campus;
-import com.campnav.backend.model.CampusLocation;
-import com.campnav.backend.model.Category;
 import com.campnav.backend.model.University;
 import com.campnav.backend.service.UniversityService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,13 +26,14 @@ public class DataSeeder implements CommandLineRunner {
         // 2. Seed Campus
         seedCampus("UDSM-MLIMANI", "Mwalimu Julius K. Nyerere Mlimani Campus", udsm);
 
-        // NOTE: UDSM Categories and Locations are handled by Flyway V8 migration 
+        // NOTE: UDSM Categories and Locations are handled by Flyway V8 migration
         // to ensure the exact verified coordinates and names are preserved.
-        
+
         // Placeholder Universities
-        seedUniversity("UDOM", "University of Dodoma", "University of Dodoma", "UDOM", "Dodoma", -6.2033, 35.8000, 14f, 
+        University udom = seedUniversity("UDOM", "University of Dodoma", "University of Dodoma", "UDOM", "Dodoma", -6.2033, 35.8000, 14f,
                 "Embracing Knowledge", "https://upload.wikimedia.org/wikipedia/en/1/1b/UDOM_Logo.png", 2, 6000.0);
-        seedUniversity("MUST", "Mbeya University of Science and Technology", "Mbeya University of Science and Technology", "MUST", "Mbeya", -8.9328, 33.3980, 15f, 
+        seedCampus("UDOM-MAIN", "University of Dodoma Main Campus", udom);
+        seedUniversity("MUST", "Mbeya University of Science and Technology", "Mbeya University of Science and Technology", "MUST", "Mbeya", -8.9328, 33.3980, 15f,
                 "Science and Technology for Development", "https://upload.wikimedia.org/wikipedia/en/a/a2/Mbeya_University_of_Science_and_Technology_Logo.png", 3, null);
         seedUniversity("SUA", "Sokoine University of Agriculture", "Sokoine University of Agriculture", "SUA", "Morogoro", -6.8475, 37.6591, 15f, 
                 "Ardhi ni Hazina", "https://upload.wikimedia.org/wikipedia/en/3/3d/Sua_logo.png", 4, null);

@@ -9,6 +9,8 @@ expect fun openGoogleMapsNavigation(
     destLng: Double
 )
 
+expect fun getCurrentUserLocation(onLocationReceived: (Double, Double) -> Unit)
+
 fun isValidCoordinate(lat: Double, lng: Double): Boolean {
     return lat.isFinite() && lat in -90.0..90.0 &&
            lng.isFinite() && lng in -180.0..180.0

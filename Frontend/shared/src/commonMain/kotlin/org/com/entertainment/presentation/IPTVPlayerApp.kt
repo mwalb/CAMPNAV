@@ -38,40 +38,55 @@ enum class Screen {
 @Composable
 fun IPTVPlayerApp(onBackToSelection: () -> Unit) {
     var selectedScreen by remember { mutableStateOf(Screen.Home) }
-    var playlistUrl by remember { mutableStateOf("https://iptv-org.github.io/iptv/index.m3u") }
     var channels by remember { mutableStateOf<List<Channel>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
+    var selectedCategoryFilter by remember { mutableStateOf<String?>(null) }
     var selectedChannel by remember { mutableStateOf<Channel?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
 
+    val defaultPlaylists = listOf(
+        "https://iptv-org.github.io/iptv/index.m3u",
+        "https://iptv-org.github.io/iptv/languages/swa.m3u",
+        "https://raw.githubusercontent.com/iptv-org/iptv/master/streams/tz.m3u"
+    )
+
+    fun loadGlobalStreams() {
+        isLoading = true
+        error = null
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val loadedChannels = M3UParser().parseWithFallbacks(defaultPlaylists)
+                withContext(Dispatchers.Main) {
+                    channels = loadedChannels
+                    selectedScreen = Screen.Channels
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    // Fallback to high strength default channels if network fails completely
+                    channels = M3UParser.defaultHighStrengthChannels
+                    selectedScreen = Screen.Channels
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    // Auto-load channels on start for instant zero-friction playback
+    LaunchedEffect(Unit) {
+        if (channels.isEmpty()) {
+            loadGlobalStreams()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         when (selectedScreen) {
             Screen.Home -> HomeScreen(
-                playlistUrl = playlistUrl,
-                onPlaylistUrlChange = { playlistUrl = it },
-                onLoadPlaylist = {
-                    isLoading = true
-                    error = null
-                    CoroutineScope(Dispatchers.Default).launch {
-                        try {
-                            val loadedChannels = M3UParser().parse(playlistUrl)
-                            withContext(Dispatchers.Main) {
-                                channels = loadedChannels
-                                selectedScreen = Screen.Channels
-                            }
-                        } catch (e: Exception) {
-                            withContext(Dispatchers.Main) {
-                                error = "${e::class.simpleName}: ${e.message}"
-                            }
-                        } finally {
-                            withContext(Dispatchers.Main) {
-                                isLoading = false
-                            }
-                        }
-                    }
-                },
+                onLoadPlaylist = { loadGlobalStreams() },
                 isLoading = isLoading,
                 error = error,
                 onBack = onBackToSelection
@@ -81,15 +96,18 @@ fun IPTVPlayerApp(onBackToSelection: () -> Unit) {
                 channels = channels,
                 searchQuery = searchQuery,
                 onSearchQueryChange = { searchQuery = it },
+                selectedCategory = selectedCategoryFilter,
+                onCategorySelect = { selectedCategoryFilter = it },
                 onChannelClick = {
                     selectedChannel = it
                     isPlaying = true
                 },
-                onBack = { selectedScreen = Screen.Home }
+                onBack = { selectedScreen = Screen.Home },
+                onReload = { loadGlobalStreams() }
             )
         }
 
-        // Video Player Overlay
+        // Fullscreen Video Player Overlay
         if (selectedChannel != null) {
             FullscreenVideoPlayer(
                 channel = selectedChannel!!,
@@ -104,11 +122,9 @@ fun IPTVPlayerApp(onBackToSelection: () -> Unit) {
     }
 }
 
-// Home Screen with Animated Background
+// Home Screen with Animated Particles & No Raw Links Exposed
 @Composable
 fun HomeScreen(
-    playlistUrl: String,
-    onPlaylistUrlChange: (String) -> Unit,
     onLoadPlaylist: () -> Unit,
     isLoading: Boolean,
     error: String?,
@@ -155,66 +171,37 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "IPTV Player",
-                style = MaterialTheme.typography.displayLarge,
+                text = "Campus Live TV & IPTV",
+                style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
-                modifier = Modifier.shadow(10.dp, RoundedCornerShape(8.dp))
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Stream your favorite channels anywhere",
+                text = "Stream news, sports, education, and entertainment worldwide",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
-            // Playlist URL Input
-            OutlinedTextField(
-                value = playlistUrl,
-                onValueChange = onPlaylistUrlChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                placeholder = { Text("Enter M3U playlist URL...") },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Link,
-                        contentDescription = "URL",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.3F),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f)
-                ),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Load Button with animation
+            // Load / Enter Button with animation
             Button(
                 onClick = onLoadPlaylist,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .fillMaxWidth(0.85f)
+                    .height(60.dp)
+                    .clip(RoundedCornerShape(20.dp)),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = Color.White
                 ),
-                shape = RoundedCornerShape(16.dp),
-                elevation = ButtonDefaults.buttonElevation(8.dp)
+                shape = RoundedCornerShape(20.dp),
+                elevation = ButtonDefaults.buttonElevation(12.dp)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -223,17 +210,19 @@ fun HomeScreen(
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Loading...")
+                    Text("CONNECTING HIGH-STRENGTH STREAMS...")
                 } else {
                     Icon(
                         Icons.Default.PlayArrow,
-                        contentDescription = "Load Playlist"
+                        contentDescription = "Watch Streams",
+                        modifier = Modifier.size(28.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Load Channels",
+                        text = "WATCH LIVE STREAMS",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
                     )
                 }
             }
@@ -379,23 +368,29 @@ data class Particle(
     val color: Color
 )
 
-// Channels Screen with Search
+// Channels Screen with Search & Categories
 @Composable
 fun ChannelsScreen(
     channels: List<Channel>,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
+    selectedCategory: String?,
+    onCategorySelect: (String?) -> Unit,
     onChannelClick: (Channel) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onReload: () -> Unit
 ) {
-    val filteredChannels = remember(channels, searchQuery) {
-        if (searchQuery.isEmpty()) {
-            channels
-        } else {
-            channels.filter { channel ->
-                channel.name.contains(searchQuery, ignoreCase = true) ||
-                        channel.category?.contains(searchQuery, ignoreCase = true) == true
-            }
+    val categories = remember(channels) {
+        channels.mapNotNull { it.category }.distinct().filter { it.isNotBlank() }
+    }
+
+    val filteredChannels = remember(channels, searchQuery, selectedCategory) {
+        channels.filter { channel ->
+            val matchesQuery = searchQuery.isEmpty() ||
+                    channel.name.contains(searchQuery, ignoreCase = true) ||
+                    channel.category?.contains(searchQuery, ignoreCase = true) == true
+            val matchesCategory = selectedCategory == null || channel.category == selectedCategory
+            matchesQuery && matchesCategory
         }
     }
 
@@ -428,22 +423,28 @@ fun ChannelsScreen(
             }
 
             Text(
-                text = "Channels",
+                text = "Live Channels",
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
 
-            Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "${filteredChannels.size}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onReload) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Reload", tint = Color.White)
+                }
+
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "${filteredChannels.size}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
 
@@ -486,7 +487,30 @@ fun ChannelsScreen(
             singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Categories Row
+        if (categories.isNotEmpty()) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = selectedCategory == null,
+                        onClick = { onCategorySelect(null) },
+                        label = { Text("All Categories") }
+                    )
+                }
+                items(categories) { cat ->
+                    FilterChip(
+                        selected = selectedCategory == cat,
+                        onClick = { onCategorySelect(if (selectedCategory == cat) null else cat) },
+                        label = { Text(cat) }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Channels Grid
         LazyVerticalGrid(
@@ -529,7 +553,7 @@ fun ChannelsScreen(
                                 color = Color.Gray
                             )
                             Text(
-                                text = "Try a different search term",
+                                text = "Try a different search term or reload",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Gray.copy(alpha = 0.7f)
                             )

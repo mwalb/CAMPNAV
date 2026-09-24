@@ -1,8 +1,10 @@
 package org.com.campus.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.google.android.gms.location.LocationServices
 
 private var applicationContext: Context? = null
 
@@ -35,7 +37,6 @@ actual fun openGoogleMapsNavigation(
     destLng: Double
 ) {
     val context = applicationContext ?: return
-    // https://developers.google.com/maps/documentation/urls/get-started#directions-action
     val uri = Uri.parse("https://www.google.com/maps/dir/?api=1&origin=$originLat,$originLng&destination=$destLat,$destLng&travelmode=driving")
     val intent = Intent(Intent.ACTION_VIEW, uri).apply {
         setPackage("com.google.android.apps.maps")
@@ -45,10 +46,32 @@ actual fun openGoogleMapsNavigation(
     if (intent.resolveActivity(context.packageManager) != null) {
         context.startActivity(intent)
     } else {
-        // Fallback to web browser if Maps app is not available
         val webIntent = Intent(Intent.ACTION_VIEW, uri).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(webIntent)
+    }
+}
+
+@SuppressLint("MissingPermission")
+actual fun getCurrentUserLocation(onLocationReceived: (Double, Double) -> Unit) {
+    val context = applicationContext
+    if (context == null) {
+        onLocationReceived(-6.7824, 39.2083)
+        return
+    }
+    try {
+        val client = LocationServices.getFusedLocationProviderClient(context)
+        client.lastLocation.addOnSuccessListener { loc ->
+            if (loc != null && isValidCoordinate(loc.latitude, loc.longitude)) {
+                onLocationReceived(loc.latitude, loc.longitude)
+            } else {
+                onLocationReceived(-6.7824, 39.2083)
+            }
+        }.addOnFailureListener {
+            onLocationReceived(-6.7824, 39.2083)
+        }
+    } catch (e: Exception) {
+        onLocationReceived(-6.7824, 39.2083)
     }
 }
