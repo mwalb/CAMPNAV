@@ -29,12 +29,14 @@ public class DataSeeder implements CommandLineRunner {
         // NOTE: UDSM Categories and Locations are handled by Flyway V8 migration
         // to ensure the exact verified coordinates and names are preserved.
 
-        // Placeholder Universities
+        // Universities with dataset
         University udom = seedUniversity("UDOM", "University of Dodoma", "University of Dodoma", "UDOM", "Dodoma", -6.2033, 35.8000, 14f,
                 "Embracing Knowledge", "https://upload.wikimedia.org/wikipedia/en/1/1b/UDOM_Logo.png", 2, 6000.0);
         seedCampus("UDOM-MAIN", "University of Dodoma Main Campus", udom);
-        seedUniversity("MUST", "Mbeya University of Science and Technology", "Mbeya University of Science and Technology", "MUST", "Mbeya", -8.9328, 33.3980, 15f,
+
+        University must = seedUniversity("MUST", "Mbeya University of Science and Technology", "Mbeya University of Science and Technology", "MUST", "Mbeya", -8.94315, 33.41636, 15f,
                 "Science and Technology for Development", "https://upload.wikimedia.org/wikipedia/en/a/a2/Mbeya_University_of_Science_and_Technology_Logo.png", 3, null);
+        seedCampus("MUST-MAIN", "Mbeya University Main Campus", must);
         seedUniversity("SUA", "Sokoine University of Agriculture", "Sokoine University of Agriculture", "SUA", "Morogoro", -6.8475, 37.6591, 15f, 
                 "Ardhi ni Hazina", "https://upload.wikimedia.org/wikipedia/en/3/3d/Sua_logo.png", 4, null);
         seedUniversity("MU", "Mzumbe University", "Mzumbe University", "MU", "Morogoro", -6.8167, 37.6667, 15f, 
