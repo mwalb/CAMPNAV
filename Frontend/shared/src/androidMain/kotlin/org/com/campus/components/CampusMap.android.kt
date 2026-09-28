@@ -61,6 +61,7 @@ actual fun CampusMap(
     modifier: Modifier,
     university: University,
     locations: List<CampusLocation>,
+    allLocations: List<CampusLocation>,
     onLocationSelected: (CampusLocation) -> Unit,
     onBack: () -> Unit,
     initialSelectedLocation: CampusLocation?,

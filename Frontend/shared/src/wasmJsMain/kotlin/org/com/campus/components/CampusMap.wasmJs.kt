@@ -19,6 +19,7 @@ actual fun CampusMap(
     modifier: Modifier,
     university: University,
     locations: List<CampusLocation>,
+    allLocations: List<CampusLocation>,
     onLocationSelected: (CampusLocation) -> Unit,
     onBack: () -> Unit,
     initialSelectedLocation: CampusLocation?,
@@ -31,7 +32,7 @@ actual fun CampusMap(
 ) {
     Box(modifier = modifier)
 
-    LaunchedEffect(university, locations, navigationState.destination, navigationState.selectedStartPoint) {
+    LaunchedEffect(university, locations, allLocations, navigationState.destination, navigationState.selectedStartPoint) {
         val mapDiv = document.getElementById("campus-map") as? HTMLElement
         if (mapDiv != null) {
             mapDiv.style.display = "block"
@@ -59,8 +60,8 @@ actual fun CampusMap(
         }
     }
 
-    LaunchedEffect(navigationState, locations) {
-        val locationsJson = Json.encodeToString(locations)
+    LaunchedEffect(navigationState, allLocations) {
+        val locationsJson = Json.encodeToString(allLocations)
         syncWebLocations(locationsJson)
         
         when (navigationState.status) {
@@ -92,8 +93,11 @@ actual fun CampusMap(
                 document.getElementById("native-nav-panel")?.remove()
                 document.getElementById("native-map-overlay")?.remove()
                 document.getElementById("native-info-card")?.remove()
+                document.getElementById("select-point-overlay")?.remove()
                 stopTrackingUserLocation()
             }
+            println("[CAMPNAV] RESET SOURCE = component disposal")
+            resetWebMapState()
         }
     }
 }
@@ -103,15 +107,15 @@ private var onStatusChangeInternal: (NavigationStatus) -> Unit = {}
 
 private fun syncWebMarkers(locations: List<CampusLocation>, selectedId: Long?, startPoint: RoutePoint?, onLocationSelected: (CampusLocation) -> Unit) {
     clearWebMarkers()
-    val selected = locations.find { it.id == selectedId }
-    if (selected != null) {
+    locations.forEach { location ->
+        val isSelected = (location.id == selectedId)
         addWebMarker(
-            selected.latitude, 
-            selected.longitude, 
-            selected.name, 
-            selected.id.toString(), 
-            true, 
-            onLocationSelected = { id: String ->
+            location.latitude,
+            location.longitude,
+            location.name,
+            location.id.toString(),
+            isSelected,
+            onLocationSelected = { id ->
                 val loc = locations.find { it.id.toString() == id }
                 if (loc != null) onLocationSelected(loc)
             }
@@ -145,6 +149,9 @@ private external fun triggerOriginSelectionJS(destId: String)
 @JsFun("(locationsJson) => { window.campusLocationsData = JSON.parse(locationsJson); }")
 private external fun syncWebLocations(locationsJson: String)
 
+@JsFun("""() => { if (window.mapMarkers) { window.mapMarkers.forEach(m => m.map = null); } window.mapMarkers = []; window.campusMap = null; window.mapInitialized = false; }""")
+private external fun resetWebMapState()
+
 @JsFun("""() => {
     if (navigator.geolocation && !window.watchId) {
         const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 };
@@ -176,79 +183,110 @@ private external fun startTrackingUserLocation()
 private external fun stopTrackingUserLocation()
 
 @JsFun("""(element, lat, lng, zoom, onBack, onLocationUpdate, onEndNav, onMapClick, onStatusChange) => {
-    const init = async () => {
-        while (element.clientWidth === 0 || element.clientHeight === 0) {
-            await new Promise(resolve => setTimeout(resolve, 50));
+    const init = () => {
+        if (element.clientWidth === 0 || element.clientHeight === 0) {
+            setTimeout(init, 50);
+            return;
         }
 
-        while (!window.google || !window.google.maps || !window.google.maps.importLibrary) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+        if (!window.google || !window.google.maps || !window.google.maps.importLibrary) {
+            setTimeout(init, 100);
+            return;
         }
 
-        const { Map, LatLngBounds, Polyline } = await google.maps.importLibrary("maps");
-        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-        
-        const mapOptions = {
-            center: { lat: Number(lat), lng: Number(lng) },
-            zoom: Number(zoom),
-            mapId: "DEMO_MAP_ID",
-            disableDefaultUI: false,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-            tilt: 0,
-            heading: 0
-        };
-
-        if (!window.campusMap) {
-            window.campusMap = new Map(element, mapOptions);
+        Promise.all([
+            google.maps.importLibrary("maps"),
+            google.maps.importLibrary("marker")
+        ]).then(([mapsLib, markerLib]) => {
+            const { Map, LatLngBounds, Polyline } = mapsLib;
+            const { AdvancedMarkerElement } = markerLib;
             
-            window.navState = { active: false };
+            const mapOptions = {
+                center: { lat: Number(lat), lng: Number(lng) },
+                zoom: Number(zoom),
+                mapId: "DEMO_MAP_ID",
+                disableDefaultUI: false,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                tilt: 0,
+                heading: 0
+            };
 
-            const overlay = document.createElement("div");
-            overlay.id = "native-map-overlay";
-            overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:999; background:rgba(0,0,0,0.7); display:none; pointer-events:auto; backdrop-filter: blur(2px);";
-            element.appendChild(overlay);
+            if (!window.campusMap) {
+                window.campusMap = new Map(element, mapOptions);
+                window.navState = { active: false };
+            } else {
+                window.campusMap.setCenter({ lat: Number(lat), lng: Number(lng) });
+                window.campusMap.setZoom(Number(zoom));
+            }
 
-            const navPanel = document.createElement("div");
-            navPanel.id = "native-nav-panel";
-            navPanel.style.cssText = "position:absolute; z-index:1200; display:none; flex-direction:column; font-family: sans-serif;";
-            element.appendChild(navPanel);
-            
             window.onLocationUpdate = onLocationUpdate;
             window.onEndNav = onEndNav;
             window.onStatusChange = onStatusChange;
             window.onMapClick = onMapClick;
 
             window.openGoogleMapsNavigation = (oLat, oLng, dLat, dLng) => {
-                const url = `https://www.google.com/maps/dir/?api=1&origin=${'$'}{oLat},${'$'}{oLng}&destination=${'$'}{dLat},${'$'}{dLng}&travelmode=driving`;
+                const url = 'https://www.google.com/maps/dir/?api=1&origin=' + oLat + ',' + oLng + '&destination=' + dLat + ',' + dLng + '&travelmode=driving';
                 window.open(url, '_blank');
             };
 
             window.hideNavOverlays = () => {
-                overlay.style.display = "none";
-                navPanel.style.display = "none";
+                const overlay = document.getElementById("native-map-overlay");
+                if (overlay) overlay.style.display = "none";
+                const navPanel = document.getElementById("native-nav-panel");
+                if (navPanel) navPanel.style.display = "none";
                 const selOverlay = document.getElementById("select-point-overlay");
                 if (selOverlay) selOverlay.style.display = "none";
             };
 
             window.showNavChoicePopup = (destId, destName) => {
+                const sessionId = Math.random().toString(36).substring(2, 9);
+                window.currentNavSessionId = sessionId;
+                console.log("[CAMPNAV] NAVIGATION START");
+                console.log("[CAMPNAV] SESSION ID = " + sessionId);
+                console.log("[CAMPNAV] DESTINATION = " + destName + " (ID: " + destId + ")");
+
                 const locations = window.campusLocationsData || [];
                 const dest = locations.find(l => String(l.id) === String(destId));
-                if (!dest) return;
+                if (!dest) {
+                    console.warn("[CAMPNAV] Destination not found for ID:", destId);
+                    return;
+                }
                 window.lastSelectedDest = dest;
 
-                overlay.style.display = "block";
+                const mapDiv = document.getElementById("campus-map");
+                if (!mapDiv) return;
+
+                let overlay = document.getElementById("native-map-overlay");
+                if (!overlay) {
+                    overlay = document.createElement("div");
+                    overlay.id = "native-map-overlay";
+                    mapDiv.appendChild(overlay);
+                }
+                overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:999; background:rgba(0,0,0,0.7); display:block; pointer-events:auto; backdrop-filter: blur(2px);";
+
+                let navPanel = document.getElementById("native-nav-panel");
+                if (!navPanel) {
+                    navPanel = document.createElement("div");
+                    navPanel.id = "native-nav-panel";
+                    mapDiv.appendChild(navPanel);
+                }
+
+                console.log("[CAMPNAV] START POPUP STATE BEFORE = false");
+                console.log("[CAMPNAV] OPENING START POPUP");
+
                 navPanel.style.display = "flex";
                 navPanel.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1200; background:#0F0F23; color:white; padding:32px; border-radius:24px; border:2px solid #6C63FF; display:flex; flex-direction:column; gap:16px; font-family: sans-serif; width: 85%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);";
                 
-                navPanel.innerHTML = `
-                    <div style="text-align: center;">
-                        <div style="font-size: 14px; color: #AAA;">Navigate to</div>
-                        <div style="font-weight:bold; font-size: 24px; color: white; margin-top: 4px;">${'$'}{destName}</div>
-                        <div style="font-size: 16px; color: white; margin-top: 16px; margin-bottom: 24px;">How would you like to start?</div>
-                    </div>
-                `;
+                console.log("[CAMPNAV] START POPUP STATE AFTER = true");
+
+                navPanel.innerHTML = 
+                    '<div style="text-align: center;">' +
+                    '<div style="font-size: 14px; color: #AAA;">Navigate to</div>' +
+                    '<div style="font-weight:bold; font-size: 24px; color: white; margin-top: 4px;">' + destName + '</div>' +
+                    '<div style="font-size: 16px; color: white; margin-top: 16px; margin-bottom: 24px;">How would you like to start?</div>' +
+                    '</div>';
 
                 const btnStyle = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left; display: flex; align-items: center; gap: 12px;";
                 
@@ -256,13 +294,23 @@ private external fun stopTrackingUserLocation()
                 currentLocBtn.innerHTML = "Use my current location";
                 currentLocBtn.style.cssText = btnStyle;
                 currentLocBtn.onclick = () => {
+                    console.log("[CAMPNAV] START POPUP OPEN - Current Location chosen, SESSION ID = " + window.currentNavSessionId);
                     navigator.geolocation.getCurrentPosition((pos) => {
-                        window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, dest.latitude, dest.longitude);
+                        const oLat = pos.coords.latitude;
+                        const oLng = pos.coords.longitude;
+                        console.log("[CAMPNAV] ORIGIN RESOLVED = " + oLat + ", " + oLng);
+                        console.log("[CAMPNAV] GOOGLE MAPS HANDOFF");
+                        console.log("[CAMPNAV] SESSION HANDED OFF = " + window.currentNavSessionId);
+                        window.openGoogleMapsNavigation(oLat, oLng, dest.latitude, dest.longitude);
                         window.hideNavOverlays();
+                        console.log("[CAMPNAV] RESET SOURCE = current_location_completion");
+                        console.log("[CAMPNAV] CAMPNAV RETURNED / RESET REQUESTED BY = current_location_completion");
+                        console.log("[CAMPNAV] SESSION RESET");
+                        console.log("[CAMPNAV] SESSION ID = " + window.currentNavSessionId);
                         window.onEndNav();
                     }, (err) => {
                         alert("Could not get location. Please allow location access.");
-                    });
+                    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 });
                 };
                 navPanel.appendChild(currentLocBtn);
 
@@ -270,6 +318,7 @@ private external fun stopTrackingUserLocation()
                 selectOnMapBtn.innerHTML = "Select starting point";
                 selectOnMapBtn.style.cssText = btnStyle;
                 selectOnMapBtn.onclick = () => {
+                    console.log("[CAMPNAV] START POPUP OPEN - Select starting point chosen, SESSION ID = " + window.currentNavSessionId);
                     window.hideNavOverlays();
                     window.onStatusChange("SELECTING_START_POINT");
                 };
@@ -279,6 +328,8 @@ private external fun stopTrackingUserLocation()
                 cancelBtn.innerText = "Cancel";
                 cancelBtn.style.cssText = "padding:12px; background:transparent; color:#FF4B4B; border:none; cursor:pointer; font-weight: bold; font-size: 16px; margin-top: 8px;";
                 cancelBtn.onclick = () => { 
+                    console.log("[CAMPNAV] RESET REQUESTED BY = cancel_nav_choice, SESSION ID = " + window.currentNavSessionId);
+                    console.log("[CAMPNAV] RESET SOURCE = cancel_nav_choice");
                     window.hideNavOverlays(); 
                     window.onEndNav(); 
                 };
@@ -286,11 +337,15 @@ private external fun stopTrackingUserLocation()
             };
 
             window.showStartPointSelectionOverlay = () => {
+                console.log("[CAMPNAV] START POPUP OPEN (Manual Search), SESSION ID = " + window.currentNavSessionId);
+                const mapDiv = document.getElementById("campus-map");
+                if (!mapDiv) return;
+
                 let selOverlay = document.getElementById("select-point-overlay");
                 if (!selOverlay) {
                     selOverlay = document.createElement("div");
                     selOverlay.id = "select-point-overlay";
-                    element.appendChild(selOverlay);
+                    mapDiv.appendChild(selOverlay);
                 }
                 selOverlay.style.display = "flex";
                 selOverlay.style.flexDirection = "column";
@@ -310,30 +365,18 @@ private external fun stopTrackingUserLocation()
                 selOverlay.style.width = "90%";
                 selOverlay.style.maxWidth = "380px";
 
-                selOverlay.innerHTML = `
-                    <div style="margin-bottom: 12px; text-align: center; color: #0F0F23; font-size: 20px; font-weight: 800;">Select a starting point</div>
-                    
-                    <div style="position: relative; width: 100%; margin-bottom: 8px;">
-                        <input id="start-point-search" type="text" placeholder="Search location..." 
-                               style="padding: 16px 44px 16px 16px; border-radius: 16px; border: 2px solid #F0F0F0; width: 100%; box-sizing: border-box; font-size: 16px; outline: none; transition: all 0.2s; background: #F8F9FA;">
-                        <span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #AAA; font-size: 18px;">🔍</span>
-                    </div>
-                    
-                    <div id="start-point-results" style="display: none; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; background: white; border-radius: 16px; padding: 8px; border: 1px solid #EEE; font-weight: normal; margin-bottom: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></div>
-                    
-                    <button id="start-point-action-btn" style="width: 100%; padding: 16px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3); transition: transform 0.1s;">
-                        Start
-                    </button>
-                    
-                    <div style="display: flex; gap: 10px; width: 100%; margin-top: 4px;">
-                        <button id="start-point-tap-map" style="flex: 1; padding: 14px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(108, 99, 255, 0.2);">
-                            Tap on the Map
-                        </button>
-                        <button id="start-point-cancel" style="padding: 14px; border-radius: 16px; border: 2px solid #F0F0F0; background: white; color: #666; cursor: pointer; font-weight: 700; font-size: 14px;">
-                            Cancel
-                        </button>
-                    </div>
-                `;
+                selOverlay.innerHTML = 
+                    '<div style="margin-bottom: 12px; text-align: center; color: #0F0F23; font-size: 20px; font-weight: 800;">Select a starting point</div>' +
+                    '<div style="position: relative; width: 100%; margin-bottom: 8px;">' +
+                    '<input id="start-point-search" type="text" placeholder="Search location..." style="padding: 16px 44px 16px 16px; border-radius: 16px; border: 2px solid #F0F0F0; width: 100%; box-sizing: border-box; font-size: 16px; outline: none; transition: all 0.2s; background: #F8F9FA;">' +
+                    '<span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #AAA; font-size: 18px;">🔍</span>' +
+                    '</div>' +
+                    '<div id="start-point-results" style="display: none; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; background: white; border-radius: 16px; padding: 8px; border: 1px solid #EEE; font-weight: normal; margin-bottom: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></div>' +
+                    '<button id="start-point-action-btn" style="width: 100%; padding: 16px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);">Start</button>' +
+                    '<div style="display: flex; gap: 10px; width: 100%; margin-top: 4px;">' +
+                    '<button id="start-point-tap-map" style="flex: 1; padding: 14px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px;">Tap on the Map</button>' +
+                    '<button id="start-point-cancel" style="padding: 14px; border-radius: 16px; border: 2px solid #F0F0F0; background: white; color: #666; cursor: pointer; font-weight: 700; font-size: 14px;">Cancel</button>' +
+                    '</div>';
 
                 const searchInput = document.getElementById("start-point-search");
                 const resultsDiv = document.getElementById("start-point-results");
@@ -341,16 +384,27 @@ private external fun stopTrackingUserLocation()
                 const tapMapBtn = document.getElementById("start-point-tap-map");
                 const cancelBtn = document.getElementById("start-point-cancel");
                 
+                let selectedStartLoc = null;
+
                 searchInput.focus();
                 searchInput.oninput = (e) => {
-                    const query = e.target.value.toLowerCase();
+                    const query = e.target.value.toLowerCase().trim();
+                    console.log("[CAMPNAV] START POPUP QUERY = '" + query + "'");
                     const locations = window.campusLocationsData || [];
 
                     if (query.length < 1) {
                         resultsDiv.style.display = "none";
+                        console.log("[CAMPNAV] START SEARCH SUGGESTIONS = 0");
                         return;
                     }
-                    const filtered = locations.filter(l => l.name.toLowerCase().includes(query)).slice(0, 8);
+                    const filtered = locations.filter(l => 
+                        l.name.toLowerCase().includes(query) || 
+                        (l.officialName && l.officialName.toLowerCase().includes(query)) ||
+                        (l.buildingCode && l.buildingCode.toLowerCase().includes(query))
+                    ).slice(0, 8);
+                    
+                    console.log("[CAMPNAV] START SEARCH SUGGESTIONS = " + filtered.map(l => l.name).join(", "));
+                    
                     if (filtered.length > 0) {
                         resultsDiv.style.display = "flex";
                         resultsDiv.innerHTML = "";
@@ -364,8 +418,10 @@ private external fun stopTrackingUserLocation()
                             btn.onmouseover = () => { btn.style.background = "#F8F9FA"; };
                             btn.onmouseout = () => { btn.style.background = "transparent"; };
                             btn.onclick = () => {
-                                window.onMapClick(loc.latitude, loc.longitude);
-                                window.hideNavOverlays();
+                                selectedStartLoc = loc;
+                                searchInput.value = loc.name;
+                                resultsDiv.style.display = "none";
+                                console.log("[CAMPNAV] START SUGGESTION SELECTED = " + loc.name + " (" + loc.latitude + ", " + loc.longitude + ")");
                             };
                             resultsDiv.appendChild(btn);
                         });
@@ -375,37 +431,55 @@ private external fun stopTrackingUserLocation()
                 };
 
                 actionBtn.onclick = () => {
-                    const query = searchInput.value.toLowerCase();
+                    const query = searchInput.value.toLowerCase().trim();
                     const locations = window.campusLocationsData || [];
                     const finalDest = window.lastSelectedDest;
 
-                    if (query.length > 0) {
-                        const filtered = locations.filter(l => l.name.toLowerCase().includes(query));
-                        if (filtered.length > 0 && finalDest) {
-                            window.openGoogleMapsNavigation(filtered[0].latitude, filtered[0].longitude, finalDest.latitude, finalDest.longitude);
-                            window.hideNavOverlays();
-                            window.onEndNav();
-                        } else {
-                            alert("Location not found or destination missing.");
-                        }
+                    let startLoc = selectedStartLoc;
+                    if (!startLoc && query.length > 0) {
+                        const matched = locations.find(l => l.name.toLowerCase() === query || l.name.toLowerCase().includes(query));
+                        if (matched) startLoc = matched;
+                    }
+
+                    if (startLoc && finalDest) {
+                        console.log("[CAMPNAV] ORIGIN RESOLVED = " + startLoc.name + " (" + startLoc.latitude + ", " + startLoc.longitude + ")");
+                        console.log("[CAMPNAV] GOOGLE MAPS HANDOFF");
+                        console.log("[CAMPNAV] SESSION HANDED OFF = " + window.currentNavSessionId);
+                        window.openGoogleMapsNavigation(startLoc.latitude, startLoc.longitude, finalDest.latitude, finalDest.longitude);
+                        window.hideNavOverlays();
+                        console.log("[CAMPNAV] RESET SOURCE = manual_search_start");
+                        console.log("[CAMPNAV] CAMPNAV RETURNED / RESET REQUESTED BY = manual_search_start");
+                        console.log("[CAMPNAV] SESSION RESET");
+                        console.log("[CAMPNAV] SESSION ID = " + window.currentNavSessionId);
+                        window.onEndNav();
+                    } else if (!finalDest) {
+                        alert("Destination missing.");
                     } else {
                         navigator.geolocation.getCurrentPosition((pos) => {
-                            if (finalDest) {
-                                window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, finalDest.latitude, finalDest.longitude);
-                                window.hideNavOverlays();
-                                window.onEndNav();
-                            }
+                            console.log("[CAMPNAV] ORIGIN RESOLVED (Fallback Geolocation) = " + pos.coords.latitude + ", " + pos.coords.longitude);
+                            console.log("[CAMPNAV] GOOGLE MAPS HANDOFF");
+                            console.log("[CAMPNAV] SESSION HANDED OFF = " + window.currentNavSessionId);
+                            window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, finalDest.latitude, finalDest.longitude);
+                            window.hideNavOverlays();
+                            console.log("[CAMPNAV] RESET SOURCE = fallback_geolocation_start");
+                            console.log("[CAMPNAV] CAMPNAV RETURNED / RESET REQUESTED BY = fallback_geolocation_start");
+                            console.log("[CAMPNAV] SESSION RESET");
+                            console.log("[CAMPNAV] SESSION ID = " + window.currentNavSessionId);
+                            window.onEndNav();
                         }, (err) => {
-                            alert("Could not get location. Please allow location access or search for a place.");
-                        });
+                            alert("Please select or search for a starting point, or allow location access.");
+                        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 });
                     }
                 };
                 
                 tapMapBtn.onclick = () => {
+                    console.log("[CAMPNAV] START POPUP - Tap on Map chosen, SESSION ID = " + window.currentNavSessionId);
                     window.hideNavOverlays();
                 };
                 
                 cancelBtn.onclick = () => {
+                    console.log("[CAMPNAV] RESET REQUESTED BY = start_point_cancel, SESSION ID = " + window.currentNavSessionId);
+                    console.log("[CAMPNAV] RESET SOURCE = start_point_cancel");
                     window.hideNavOverlays();
                     window.onEndNav();
                 };
@@ -416,7 +490,24 @@ private external fun stopTrackingUserLocation()
                 const dest = locations.find(l => String(l.id) === String(destId));
                 if (!dest) return;
 
-                overlay.style.display = "block";
+                const mapDiv = document.getElementById("campus-map");
+                if (!mapDiv) return;
+
+                let overlay = document.getElementById("native-map-overlay");
+                if (!overlay) {
+                    overlay = document.createElement("div");
+                    overlay.id = "native-map-overlay";
+                    mapDiv.appendChild(overlay);
+                }
+                overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:1000; background:rgba(0,0,0,0.7); display:block; pointer-events:auto; backdrop-filter: blur(2px);";
+
+                let navPanel = document.getElementById("native-nav-panel");
+                if (!navPanel) {
+                    navPanel = document.createElement("div");
+                    navPanel.id = "native-nav-panel";
+                    mapDiv.appendChild(navPanel);
+                }
+
                 navPanel.style.display = "flex";
                 navPanel.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; background:#0F0F23; color:white; padding:24px; border-radius:24px; border:2px solid #6C63FF; display:flex; flex-direction:column; gap:16px; font-family: sans-serif; width: 85%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);";
                 
@@ -439,50 +530,52 @@ private external fun stopTrackingUserLocation()
                 currentLocBtn.innerText = "Use My Current Location";
                 currentLocBtn.style.cssText = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left;";
                 
-                currentLocBtn.onclick = async () => {
+                currentLocBtn.onclick = () => {
                     navigator.geolocation.getCurrentPosition((pos) => {
                         window.hideNavOverlays();
-                        window.runRoutingJS({ lat: pos.coords.latitude, lng: pos.coords.longitude }, dest);
+                        window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, dest.latitude, dest.longitude);
+                        console.log("[CAMPNAV] RESET SOURCE = origin_selection_popup");
+                        window.onEndNav();
                     }, (err) => {
                         alert("Location tracking failed.");
-                    });
+                    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 });
                 };
                 selectionContainer.appendChild(currentLocBtn);
                 
                 const cancelBtn = document.createElement("button");
                 cancelBtn.innerText = "Cancel";
                 cancelBtn.style.cssText = "padding:12px; background:transparent; color:#FF4B4B; border:none; cursor:pointer; font-weight: bold;";
-                cancelBtn.onclick = () => { window.hideNavOverlays(); window.onEndNav(); };
+                cancelBtn.onclick = () => { 
+                    console.log("[CAMPNAV] RESET SOURCE = cancel_origin_selection");
+                    window.hideNavOverlays(); 
+                    window.onEndNav(); 
+                };
                 navPanel.appendChild(cancelBtn);
             };
 
-            const backBtn = document.createElement("button");
-            backBtn.id = "native-back-btn";
-            backBtn.innerHTML = "<span>⬅</span>";
-            backBtn.style.cssText = "position:absolute; top:20px; left:20px; z-index:1100; width:48px; height:48px; border-radius:24px; background:white; border:none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size: 20px; color:#3C4043; transition: transform 0.1s;";
-            backBtn.onclick = () => { onBack(); };
-            backBtn.onmousedown = () => { backBtn.style.transform = "scale(0.9)"; };
-            backBtn.onmouseup = () => { backBtn.style.transform = "scale(1)"; };
-            element.appendChild(backBtn);
+            let backBtn = document.getElementById("native-back-btn");
+            if (!backBtn) {
+                backBtn = document.createElement("button");
+                backBtn.id = "native-back-btn";
+                backBtn.innerHTML = "<span>⬅</span>";
+                backBtn.style.cssText = "position:absolute; top:20px; left:20px; z-index:1100; width:48px; height:48px; border-radius:24px; background:white; border:none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size: 20px; color:#3C4043; transition: transform 0.1s;";
+                backBtn.onclick = () => { onBack(); };
+                backBtn.onmousedown = () => { backBtn.style.transform = "scale(0.9)"; };
+                backBtn.onmouseup = () => { backBtn.style.transform = "scale(1)"; };
+                element.appendChild(backBtn);
+            }
 
-            window.campusMap.addListener("click", (e) => {
-                if (window.onMapClick) {
-                    window.onMapClick(e.latLng.lat(), e.latLng.lng());
-                }
-            });
-            window.campusMap.addListener("dragstart", () => {
-                if (window.navState.active) {
-                    window.navState.isFollowing = false;
-                }
-            });
+            if (!window.mapClickListener) {
+                window.mapClickListener = window.campusMap.addListener("click", (e) => {
+                    if (window.onMapClick) {
+                        window.onMapClick(e.latLng.lat(), e.latLng.lng());
+                    }
+                });
+            }
 
-        } else {
-            window.campusMap.setCenter({ lat: Number(lat), lng: Number(lng) });
-            window.campusMap.setZoom(Number(zoom));
-        }
-        
-        window.AdvancedMarkerElement = AdvancedMarkerElement;
-        window.mapInitialized = true;
+            window.AdvancedMarkerElement = AdvancedMarkerElement;
+            window.mapInitialized = true;
+        });
     };
     init();
 }""")
@@ -514,9 +607,10 @@ private fun startWebMapLifecycle(
 private external fun clearWebMarkers()
 
 @JsFun("""(lat, lng, title, id, isSelected, onLocationSelected) => {
-    (async () => {
-        while (!window.mapInitialized || !window.AdvancedMarkerElement) {
-            await new Promise(resolve => setTimeout(resolve, 50));
+    const createMarker = () => {
+        if (!window.mapInitialized || !window.AdvancedMarkerElement) {
+            setTimeout(createMarker, 50);
+            return;
         }
 
         const marker = new window.AdvancedMarkerElement({
@@ -526,14 +620,29 @@ private external fun clearWebMarkers()
         });
         
         const infoWindow = new google.maps.InfoWindow({
-            content: '<div style="color:black; padding:12px; font-family: sans-serif; min-width: 180px;"><div style="font-weight:bold; margin-bottom:12px; font-size:16px; color:#0F0F23;">' + title + '</div><button id="nav-btn-wasm-' + id + '" style="width:100%; padding:12px; background:#6C63FF; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">NAVIGATE</button></div>'
+            content: '<div style="color:black; padding:12px; font-family: sans-serif; min-width: 180px;"><div style="font-weight:bold; margin-bottom:12px; font-size:16px; color:#0F0F23;">' + title + '</div><button id="nav-btn-js-' + id + '" style="width:100%; padding:12px; background:#6C63FF; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">NAVIGATE</button></div>'
         });
 
         const setupNavBtn = () => {
-            const btn = document.getElementById('nav-btn-wasm-' + id);
+            const btn = document.getElementById('nav-btn-js-' + id);
             if (btn) {
                 btn.onclick = (e) => {
                     e.stopPropagation();
+                    console.log("[CAMPNAV] NAVIGATE CLICKED");
+                    console.log("[CAMPNAV] DESTINATION = " + title + " (ID: " + id + ")");
+                    console.log("[CAMPNAV] NAVIGATION STATUS BEFORE = " + (window.currentNavStatus || "IDLE"));
+                    console.log("[CAMPNAV] START POPUP STATE BEFORE = false");
+                    console.log("[CAMPNAV] OPENING START POPUP");
+
+                    const locations = window.campusLocationsData || [];
+                    const dest = locations.find(l => String(l.id) === String(id));
+                    if (dest) {
+                        window.lastSelectedDest = dest;
+                    }
+
+                    if (window.onStatusChange) {
+                        window.onStatusChange("SHOWING_NAV_CHOICE");
+                    }
                     if (window.showNavChoicePopup) {
                         window.showNavChoicePopup(String(id), title);
                     } else if (window.showOriginSelectionPopup) {
@@ -557,7 +666,8 @@ private external fun clearWebMarkers()
 
         if (!window.mapMarkers) window.mapMarkers = [];
         window.mapMarkers.push(marker);
-    })();
+    };
+    createMarker();
 }""")
 private external fun addWebMarkerInternal(lat: Double, lng: Double, title: String, id: String, isSelected: Boolean, onLocationSelected: (String) -> Unit)
 

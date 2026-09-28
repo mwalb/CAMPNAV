@@ -247,7 +247,7 @@ fun CampusDestinationScreen(
 
                             QuickDestButton("Academics", Icons.Default.School) { scrollToCategory("academic", "school") }
                             QuickDestButton("Hostels", Icons.Default.Hotel) { scrollToCategory("hostel", "accommodation") }
-                            QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) { scrollToCategory("library", "academic") }
+                            QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) { scrollToCategory("library") }
                             QuickDestButton("Food", Icons.Default.Restaurant) { scrollToCategory("food", "dining", "cafeteria") }
                             QuickDestButton("Health", Icons.Default.LocalHospital) { scrollToCategory("health", "medical", "hospital") }
                             QuickDestButton("Banking", Icons.Default.Payments) { scrollToCategory("banking", "bank", "commercial", "shopping", "finance") }

@@ -10,6 +10,7 @@ import kotlinx.serialization.json.Json
 import org.com.getPlatform
 
 object ApiConfig {
+
     const val WEB_BASE_URL = "http://localhost:8080"
     const val ANDROID_BASE_URL = "http://10.0.2.2:8080"
     

@@ -14,6 +14,7 @@ expect fun CampusMap(
     modifier: Modifier = Modifier,
     university: University,
     locations: List<CampusLocation>,
+    allLocations: List<CampusLocation> = locations,
     onLocationSelected: (CampusLocation) -> Unit,
     onBack: () -> Unit = {},
     initialSelectedLocation: CampusLocation? = null,
