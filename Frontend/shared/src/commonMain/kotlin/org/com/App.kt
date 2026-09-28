@@ -14,12 +14,7 @@ import org.com.community.presentation.CommunityReportScreen
 import org.com.community.presentation.IssueDetailScreen
 import org.com.community.presentation.ReportingLandingScreen
 import org.com.core.ui.theme.CampNavTheme
-import org.com.creator.presentation.ContentCreatorScreen
 import org.com.entertainment.presentation.IPTVPlayerApp
-import org.com.plant.data.PlantRepository
-import org.com.plant.presentation.PlantDashboardScreen
-import org.com.plant.presentation.PlantDetailScreen
-import org.com.plant.presentation.PlantRegistrationScreen
 
 enum class AppMode {
     Landing,
@@ -31,10 +26,6 @@ enum class AppMode {
     CommunityDashboard,
     CommunityMap,
     IssueDetail,
-    PlantManagement,
-    PlantRegistration,
-    PlantDetail,
-    ContentCreator,
     Entertainment
 }
 
@@ -45,54 +36,17 @@ fun MainApp() {
     var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
     var selectedIssueId by remember { mutableStateOf<String?>(null) }
-    var selectedPlantId by remember { mutableStateOf<String?>(null) }
-
-    val plantRepository = remember { PlantRepository() }
 
     CampNavTheme {
         when (mode) {
             AppMode.Landing -> LandingScreen(
                 onExploreCampuses = { mode = AppMode.UniversitySelection },
                 onReportIssue = { mode = AppMode.ReportingLanding },
-                onManagePlants = { mode = AppMode.PlantManagement },
-                onContentCreator = { mode = AppMode.ContentCreator },
                 onEntertainment = { mode = AppMode.Entertainment }
             )
             AppMode.Entertainment -> IPTVPlayerApp(
                 onBackToSelection = { mode = AppMode.Landing }
             )
-            AppMode.ContentCreator -> ContentCreatorScreen(
-                onBack = { mode = AppMode.Landing },
-                onSave = { _ ->
-                    mode = AppMode.Landing
-                }
-            )
-            AppMode.PlantManagement -> PlantDashboardScreen(
-                repository = plantRepository,
-                onBack = { mode = AppMode.Landing },
-                onPlantNewTree = { mode = AppMode.PlantRegistration },
-                onTreeSelected = { id ->
-                    selectedPlantId = id
-                    mode = AppMode.PlantDetail
-                }
-            )
-            AppMode.PlantRegistration -> PlantRegistrationScreen(
-                repository = plantRepository,
-                onBack = { mode = AppMode.PlantManagement },
-                onPlantCreated = { id ->
-                    selectedPlantId = id
-                    mode = AppMode.PlantDetail
-                }
-            )
-            AppMode.PlantDetail -> selectedPlantId?.let { id ->
-                PlantDetailScreen(
-                    plantId = id,
-                    repository = plantRepository,
-                    onBack = { mode = AppMode.PlantManagement }
-                )
-            } ?: run {
-                mode = AppMode.PlantManagement
-            }
             AppMode.ReportingLanding -> ReportingLandingScreen(
                 onReportNew = { mode = AppMode.CommunityReport },
                 onViewDashboard = { mode = AppMode.CommunityDashboard },

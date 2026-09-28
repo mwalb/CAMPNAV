@@ -106,7 +106,7 @@ private fun startWebPickerLifecycle(
             map: map,
             position: { lat: Number(lat), lng: Number(lng) },
             gmpDraggable: true,
-            title: "Plant Location"
+            title: "Pinned Location"
         });
         window.currentPickerMarker = marker;
 

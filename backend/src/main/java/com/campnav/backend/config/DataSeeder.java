@@ -37,10 +37,9 @@ public class DataSeeder implements CommandLineRunner {
         University must = seedUniversity("MUST", "Mbeya University of Science and Technology", "Mbeya University of Science and Technology", "MUST", "Mbeya", -8.94315, 33.41636, 15f,
                 "Science and Technology for Development", "https://upload.wikimedia.org/wikipedia/en/a/a2/Mbeya_University_of_Science_and_Technology_Logo.png", 3, null);
         seedCampus("MUST-MAIN", "Mbeya University Main Campus", must);
-        seedUniversity("SUA", "Sokoine University of Agriculture", "Sokoine University of Agriculture", "SUA", "Morogoro", -6.8475, 37.6591, 15f, 
+        University sua = seedUniversity("SUA", "Sokoine University of Agriculture", "Sokoine University of Agriculture", "SUA", "Morogoro", -6.8475, 37.6591, 15f, 
                 "Ardhi ni Hazina", "https://upload.wikimedia.org/wikipedia/en/3/3d/Sua_logo.png", 4, null);
-        seedUniversity("MU", "Mzumbe University", "Mzumbe University", "MU", "Morogoro", -6.8167, 37.6667, 15f, 
-                "Muscente Discimus", "https://upload.wikimedia.org/wikipedia/en/e/e0/Mzumbe_University_logo.png", 5, 4926.75);
+        seedCampus("SUA-MAIN", "Sokoine University of Agriculture Main Campus", sua);
     }
 
     private University seedUniversity(String externalId, String name, String officialName, String shortName, String city, Double lat, Double lng, Float zoom, 

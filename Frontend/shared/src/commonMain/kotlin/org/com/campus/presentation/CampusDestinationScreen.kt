@@ -525,6 +525,10 @@ fun getCategoryIcon(iconName: String?): ImageVector {
         "account_balance" -> Icons.Default.AccountBalance
         "group" -> Icons.Default.Group
         "more_horiz" -> Icons.Default.MoreHoriz
+        "shopping_cart" -> Icons.Default.ShoppingCart
+        "park" -> Icons.Default.Park
+        "science" -> Icons.Default.Science
+        "place" -> Icons.Default.Place
         else -> Icons.Default.Place
     }
 }

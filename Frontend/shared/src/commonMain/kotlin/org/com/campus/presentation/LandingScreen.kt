@@ -11,8 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,8 +31,6 @@ import org.com.core.ui.theme.AppColorScheme
 fun LandingScreen(
     onExploreCampuses: () -> Unit,
     onReportIssue: () -> Unit,
-    onManagePlants: () -> Unit = {},
-    onContentCreator: () -> Unit = {},
     onEntertainment: () -> Unit = {}
 ) {
     var startAnimation by remember { mutableStateOf(false) }
@@ -95,7 +91,7 @@ fun LandingScreen(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                maxItemsInEachRow = 5
+                maxItemsInEachRow = 3
             ) {
                 LandingActionCard(
                     title = "Explore\nCampuses",
@@ -108,32 +104,12 @@ fun LandingScreen(
                 )
 
                 LandingActionCard(
-                    title = "Plant & Tree\nTracker",
-                    subtitle = "Manage & navigate to planted trees",
-                    icon = Icons.Default.Park,
-                    color = Color(0xFF4CAF50),
-                    visible = startAnimation,
-                    delay = 400,
-                    onClick = onManagePlants
-                )
-
-                LandingActionCard(
-                    title = "Content\nCreator",
-                    subtitle = "Create & edit media for campus",
-                    icon = Icons.Default.Movie,
-                    color = Color(0xFFE91E63),
-                    visible = startAnimation,
-                    delay = 500,
-                    onClick = onContentCreator
-                )
-
-                LandingActionCard(
                     title = "Campus\nEntertainment",
                     subtitle = "Stream live TV & IPTV channels",
                     icon = Icons.Default.LiveTv,
                     color = Color(0xFF00E5FF),
                     visible = startAnimation,
-                    delay = 600,
+                    delay = 400,
                     onClick = onEntertainment
                 )
 
@@ -143,7 +119,7 @@ fun LandingScreen(
                     icon = Icons.Default.Warning,
                     color = MaterialTheme.colorScheme.secondary,
                     visible = startAnimation,
-                    delay = 700,
+                    delay = 500,
                     onClick = onReportIssue
                 )
             }
