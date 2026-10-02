@@ -38,10 +38,10 @@ actual fun CampusMap(
             onEndNavInternal = onEndNavigation
             onStatusChangeInternal = onStatusChange
             
-            val selectedDest = navigationState.destination
-            val startLat = selectedDest?.latitude ?: initialSelectedLocation?.latitude ?: university.latitude ?: 0.0
-            val startLng = selectedDest?.longitude ?: initialSelectedLocation?.longitude ?: university.longitude ?: 0.0
-            val startZoom = if (selectedDest != null || initialSelectedLocation != null) 18f else university.defaultZoom ?: 15f
+            val selectedDest = navigationState.destination ?: initialSelectedLocation
+            val startLat = selectedDest?.latitude ?: university.latitude ?: 0.0
+            val startLng = selectedDest?.longitude ?: university.longitude ?: 0.0
+            val startZoom = if (selectedDest != null) 18f else university.defaultZoom ?: 15f
             
             startWebMapLifecycle(
                 mapDiv, 
@@ -62,14 +62,24 @@ actual fun CampusMap(
     LaunchedEffect(navigationState, allLocations) {
         val locationsJson = Json.encodeToString(allLocations)
         syncWebLocations(locationsJson)
+
+        navigationState.destination?.let { dest ->
+            val destJson = Json.encodeToString(dest)
+            syncSelectedDestinationJS(destJson)
+        }
         
         when (navigationState.status) {
             NavigationStatus.SHOWING_NAV_CHOICE -> {
                 navigationState.destination?.let { dest ->
+                    println("[CAMPNAV][NAV] navigate clicked: ${dest.name}")
+                    println("[CAMPNAV][NAV] destination id: ${dest.id}")
+                    println("[CAMPNAV][NAV] destination latitude: ${dest.latitude}")
+                    println("[CAMPNAV][NAV] destination longitude: ${dest.longitude}")
                     triggerNavChoiceJS(dest.id.toString(), dest.name)
                 }
             }
             NavigationStatus.SELECTING_START_POINT -> {
+                println("[CAMPNAV][NAV] starting-point dialog opened")
                 triggerStartPointSelectionJS()
             }
             NavigationStatus.SELECTING_ORIGIN -> {
@@ -95,7 +105,7 @@ actual fun CampusMap(
                 document.getElementById("select-point-overlay")?.remove()
                 stopTrackingUserLocation()
             }
-            println("[CAMPNAV] RESET SOURCE = component disposal")
+            println("[CAMPNAV][NAV] navigation state reset")
             resetWebMapState()
         }
     }
@@ -148,6 +158,9 @@ private external fun triggerOriginSelectionJS(destId: String)
 @JsFun("(locationsJson) => { window.campusLocationsData = JSON.parse(locationsJson); }")
 private external fun syncWebLocations(locationsJson: String)
 
+@JsFun("(destJson) => { try { window.lastSelectedDest = JSON.parse(destJson); } catch(e){} }")
+private external fun syncSelectedDestinationJS(destJson: String)
+
 @JsFun("""() => { if (window.mapMarkers) { window.mapMarkers.forEach(m => m.map = null); } window.mapMarkers = []; window.campusMap = null; window.mapInitialized = false; }""")
 private external fun resetWebMapState()
 
@@ -163,7 +176,7 @@ private external fun resetWebMapState()
                 if (!window.userMarker.map) window.userMarker.map = window.campusMap;
             }
         }, (err) => {
-            console.warn("Location tracking failed:", err.message);
+            console.warn("[CAMPNAV] Location tracking warning:", err.message);
         }, options);
     }
 }""")
@@ -226,8 +239,32 @@ private external fun stopTrackingUserLocation()
             window.onMapClick = onMapClick;
 
             window.openGoogleMapsNavigation = (oLat, oLng, dLat, dLng) => {
+                console.log("[CAMPNAV][NAV] maps URL generated");
+                console.log("[CAMPNAV][NAV] maps launch: origin=" + oLat + "," + oLng + " dest=" + dLat + "," + dLng);
                 const url = 'https://www.google.com/maps/dir/?api=1&origin=' + oLat + ',' + oLng + '&destination=' + dLat + ',' + dLng + '&travelmode=driving';
                 window.open(url, '_blank');
+            };
+
+            window.getPositionWithFallback = (onSuccess, onError) => {
+                if (!navigator.geolocation) {
+                    onError("Geolocation not supported");
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => onSuccess(pos),
+                    (err1) => {
+                        console.warn("[CAMPNAV] High accuracy location timeout/fail, trying standard accuracy...", err1.message);
+                        navigator.geolocation.getCurrentPosition(
+                            (pos2) => onSuccess(pos2),
+                            (err2) => {
+                                console.warn("[CAMPNAV] Standard location fail:", err2.message);
+                                onError(err2.message || "Location access failed");
+                            },
+                            { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+                        );
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 3000 }
+                );
             };
 
             window.hideNavOverlays = () => {
@@ -242,14 +279,19 @@ private external fun stopTrackingUserLocation()
             window.showNavChoicePopup = (destId, destName) => {
                 const sessionId = Math.random().toString(36).substring(2, 9);
                 window.currentNavSessionId = sessionId;
-                console.log("[CAMPNAV] NAVIGATION START");
-                console.log("[CAMPNAV] SESSION ID = " + sessionId);
-                console.log("[CAMPNAV] DESTINATION = " + destName + " (ID: " + destId + ")");
+                console.log("[CAMPNAV][NAV] starting-point dialog opened");
+                console.log("[CAMPNAV][NAV] destination id: " + destId);
 
                 const locations = window.campusLocationsData || [];
-                const dest = locations.find(l => String(l.id) === String(destId));
+                let dest = locations.find(l => String(l.id) === String(destId));
+                if (!dest && window.lastSelectedDest && String(window.lastSelectedDest.id) === String(destId)) {
+                    dest = window.lastSelectedDest;
+                }
+                if (!dest && window.lastSelectedDest) {
+                    dest = window.lastSelectedDest;
+                }
                 if (!dest) {
-                    console.warn("[CAMPNAV] Destination not found for ID:", destId);
+                    console.warn("[CAMPNAV] Destination missing for ID:", destId);
                     return;
                 }
                 window.lastSelectedDest = dest;
@@ -272,13 +314,8 @@ private external fun stopTrackingUserLocation()
                     mapDiv.appendChild(navPanel);
                 }
 
-                console.log("[CAMPNAV] START POPUP STATE BEFORE = false");
-                console.log("[CAMPNAV] OPENING START POPUP");
-
                 navPanel.style.display = "flex";
                 navPanel.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1200; background:#0F0F23; color:white; padding:32px; border-radius:24px; border:2px solid #6C63FF; display:flex; flex-direction:column; gap:16px; font-family: sans-serif; width: 85%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);";
-                
-                console.log("[CAMPNAV] START POPUP STATE AFTER = true");
 
                 navPanel.innerHTML = 
                     '<div style="text-align: center;">' +
@@ -293,26 +330,23 @@ private external fun stopTrackingUserLocation()
                 currentLocBtn.innerHTML = "Use my current location";
                 currentLocBtn.style.cssText = btnStyle;
                 currentLocBtn.onclick = () => {
-                    console.log("[CAMPNAV] START POPUP OPEN - Current Location chosen, SESSION ID = " + window.currentNavSessionId);
-                    navigator.geolocation.getCurrentPosition((pos) => {
+                    console.log("[CAMPNAV][NAV] origin selection: current location");
+                    window.getPositionWithFallback((pos) => {
                         const oLat = pos.coords.latitude;
                         const oLng = pos.coords.longitude;
-                        console.log("[CAMPNAV] ORIGIN RESOLVED = " + oLat + ", " + oLng);
-                        console.log("[CAMPNAV] GOOGLE MAPS HANDOFF");
-                        console.log("[CAMPNAV] SESSION HANDED OFF = " + window.currentNavSessionId);
+                        console.log("[CAMPNAV][NAV] origin latitude: " + oLat);
+                        console.log("[CAMPNAV][NAV] origin longitude: " + oLng);
+                        console.log("[CAMPNAV][NAV] destination consumed: " + dest.name + " (" + dest.latitude + ", " + dest.longitude + ")");
                         window.openGoogleMapsNavigation(oLat, oLng, dest.latitude, dest.longitude);
                         window.hideNavOverlays();
-                        console.log("[CAMPNAV] RESET SOURCE = current_location_completion");
-                        console.log("[CAMPNAV] CAMPNAV RETURNED / RESET REQUESTED BY = current_location_completion");
-                        console.log("[CAMPNAV] SESSION RESET");
-                        console.log("[CAMPNAV] SESSION ID = " + window.currentNavSessionId);
+                        console.log("[CAMPNAV][NAV] navigation state reset");
                         window.onEndNav();
                     }, (err) => {
-                        console.warn("[CAMPNAV] Geolocation failed, falling back to university coordinates");
-                        window.openGoogleMapsNavigation(-6.7801, 39.2041, dest.latitude, dest.longitude);
+                        console.warn("[CAMPNAV] Geolocation failed:", err);
+                        alert("We couldn't access your current location. Please allow location permissions in your browser or select a starting point manually.");
                         window.hideNavOverlays();
                         window.onEndNav();
-                    }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 });
+                    });
                 };
                 navPanel.appendChild(currentLocBtn);
 
@@ -320,7 +354,7 @@ private external fun stopTrackingUserLocation()
                 selectOnMapBtn.innerHTML = "Select starting point";
                 selectOnMapBtn.style.cssText = btnStyle;
                 selectOnMapBtn.onclick = () => {
-                    console.log("[CAMPNAV] START POPUP OPEN - Select starting point chosen, SESSION ID = " + window.currentNavSessionId);
+                    console.log("[CAMPNAV][NAV] origin selection: select starting point");
                     window.hideNavOverlays();
                     window.onStatusChange("SELECTING_START_POINT");
                 };
@@ -330,8 +364,7 @@ private external fun stopTrackingUserLocation()
                 cancelBtn.innerText = "Cancel";
                 cancelBtn.style.cssText = "padding:12px; background:transparent; color:#FF4B4B; border:none; cursor:pointer; font-weight: bold; font-size: 16px; margin-top: 8px;";
                 cancelBtn.onclick = () => { 
-                    console.log("[CAMPNAV] RESET REQUESTED BY = cancel_nav_choice, SESSION ID = " + window.currentNavSessionId);
-                    console.log("[CAMPNAV] RESET SOURCE = cancel_nav_choice");
+                    console.log("[CAMPNAV][NAV] navigation state reset");
                     window.hideNavOverlays(); 
                     window.onEndNav(); 
                 };
@@ -339,7 +372,7 @@ private external fun stopTrackingUserLocation()
             };
 
             window.showStartPointSelectionOverlay = () => {
-                console.log("[CAMPNAV] START POPUP OPEN (Manual Search), SESSION ID = " + window.currentNavSessionId);
+                console.log("[CAMPNAV][NAV] starting-point dialog opened (manual search)");
                 const mapDiv = document.getElementById("campus-map");
                 if (!mapDiv) return;
 
@@ -391,12 +424,10 @@ private external fun stopTrackingUserLocation()
                 searchInput.focus();
                 searchInput.oninput = (e) => {
                     const query = e.target.value.toLowerCase().trim();
-                    console.log("[CAMPNAV] START POPUP QUERY = '" + query + "'");
                     const locations = window.campusLocationsData || [];
 
                     if (query.length < 1) {
                         resultsDiv.style.display = "none";
-                        console.log("[CAMPNAV] START SEARCH SUGGESTIONS = 0");
                         return;
                     }
                     const filtered = locations.filter(l => 
@@ -404,8 +435,6 @@ private external fun stopTrackingUserLocation()
                         (l.officialName && l.officialName.toLowerCase().includes(query)) ||
                         (l.buildingCode && l.buildingCode.toLowerCase().includes(query))
                     ).slice(0, 8);
-                    
-                    console.log("[CAMPNAV] START SEARCH SUGGESTIONS = " + filtered.map(l => l.name).join(", "));
                     
                     if (filtered.length > 0) {
                         resultsDiv.style.display = "flex";
@@ -423,7 +452,6 @@ private external fun stopTrackingUserLocation()
                                 selectedStartLoc = loc;
                                 searchInput.value = loc.name;
                                 resultsDiv.style.display = "none";
-                                console.log("[CAMPNAV] START SUGGESTION SELECTED = " + loc.name + " (" + loc.latitude + ", " + loc.longitude + ")");
                             };
                             resultsDiv.appendChild(btn);
                         });
@@ -444,44 +472,38 @@ private external fun stopTrackingUserLocation()
                     }
 
                     if (startLoc && finalDest) {
-                        console.log("[CAMPNAV] ORIGIN RESOLVED = " + startLoc.name + " (" + startLoc.latitude + ", " + startLoc.longitude + ")");
-                        console.log("[CAMPNAV] GOOGLE MAPS HANDOFF");
-                        console.log("[CAMPNAV] SESSION HANDED OFF = " + window.currentNavSessionId);
+                        console.log("[CAMPNAV][NAV] origin selection: manual search (" + startLoc.name + ")");
+                        console.log("[CAMPNAV][NAV] origin latitude: " + startLoc.latitude);
+                        console.log("[CAMPNAV][NAV] origin longitude: " + startLoc.longitude);
+                        console.log("[CAMPNAV][NAV] destination consumed: " + finalDest.name + " (" + finalDest.latitude + ", " + finalDest.longitude + ")");
                         window.openGoogleMapsNavigation(startLoc.latitude, startLoc.longitude, finalDest.latitude, finalDest.longitude);
                         window.hideNavOverlays();
-                        console.log("[CAMPNAV] RESET SOURCE = manual_search_start");
-                        console.log("[CAMPNAV] CAMPNAV RETURNED / RESET REQUESTED BY = manual_search_start");
-                        console.log("[CAMPNAV] SESSION RESET");
-                        console.log("[CAMPNAV] SESSION ID = " + window.currentNavSessionId);
+                        console.log("[CAMPNAV][NAV] navigation state reset");
                         window.onEndNav();
                     } else if (!finalDest) {
                         alert("Destination missing.");
                     } else {
-                        navigator.geolocation.getCurrentPosition((pos) => {
-                            console.log("[CAMPNAV] ORIGIN RESOLVED (Fallback Geolocation) = " + pos.coords.latitude + ", " + pos.coords.longitude);
-                            console.log("[CAMPNAV] GOOGLE MAPS HANDOFF");
-                            console.log("[CAMPNAV] SESSION HANDED OFF = " + window.currentNavSessionId);
+                        window.getPositionWithFallback((pos) => {
+                            console.log("[CAMPNAV][NAV] origin selection: fallback current location");
+                            console.log("[CAMPNAV][NAV] origin latitude: " + pos.coords.latitude);
+                            console.log("[CAMPNAV][NAV] origin longitude: " + pos.coords.longitude);
+                            console.log("[CAMPNAV][NAV] destination consumed: " + finalDest.name);
                             window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, finalDest.latitude, finalDest.longitude);
                             window.hideNavOverlays();
-                            console.log("[CAMPNAV] RESET SOURCE = fallback_geolocation_start");
-                            console.log("[CAMPNAV] CAMPNAV RETURNED / RESET REQUESTED BY = fallback_geolocation_start");
-                            console.log("[CAMPNAV] SESSION RESET");
-                            console.log("[CAMPNAV] SESSION ID = " + window.currentNavSessionId);
+                            console.log("[CAMPNAV][NAV] navigation state reset");
                             window.onEndNav();
                         }, (err) => {
-                            alert("Please select or search for a starting point, or allow location access.");
-                        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 });
+                            alert("Please select or search for a starting point.");
+                        });
                     }
                 };
                 
                 tapMapBtn.onclick = () => {
-                    console.log("[CAMPNAV] START POPUP - Tap on Map chosen, SESSION ID = " + window.currentNavSessionId);
                     window.hideNavOverlays();
                 };
                 
                 cancelBtn.onclick = () => {
-                    console.log("[CAMPNAV] RESET REQUESTED BY = start_point_cancel, SESSION ID = " + window.currentNavSessionId);
-                    console.log("[CAMPNAV] RESET SOURCE = start_point_cancel");
+                    console.log("[CAMPNAV][NAV] navigation state reset");
                     window.hideNavOverlays();
                     window.onEndNav();
                 };
@@ -489,7 +511,8 @@ private external fun stopTrackingUserLocation()
 
             window.showOriginSelectionPopup = (destId) => {
                 const locations = window.campusLocationsData || [];
-                const dest = locations.find(l => String(l.id) === String(destId));
+                let dest = locations.find(l => String(l.id) === String(destId));
+                if (!dest && window.lastSelectedDest) dest = window.lastSelectedDest;
                 if (!dest) return;
 
                 const mapDiv = document.getElementById("campus-map");
@@ -515,7 +538,7 @@ private external fun stopTrackingUserLocation()
                 
                 navPanel.innerHTML = "";
                 const title = document.createElement("div");
-                title.innerText = "Set Starting Point (Internal)";
+                title.innerText = "Set Starting Point";
                 title.style.cssText = "font-weight:bold; font-size: 20px; color: white; text-align: center;";
                 navPanel.appendChild(title);
                 
@@ -533,14 +556,14 @@ private external fun stopTrackingUserLocation()
                 currentLocBtn.style.cssText = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left;";
                 
                 currentLocBtn.onclick = () => {
-                    navigator.geolocation.getCurrentPosition((pos) => {
+                    window.getPositionWithFallback((pos) => {
                         window.hideNavOverlays();
                         window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, dest.latitude, dest.longitude);
-                        console.log("[CAMPNAV] RESET SOURCE = origin_selection_popup");
+                        console.log("[CAMPNAV][NAV] navigation state reset");
                         window.onEndNav();
                     }, (err) => {
                         alert("Location tracking failed.");
-                    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 });
+                    });
                 };
                 selectionContainer.appendChild(currentLocBtn);
                 
@@ -548,7 +571,7 @@ private external fun stopTrackingUserLocation()
                 cancelBtn.innerText = "Cancel";
                 cancelBtn.style.cssText = "padding:12px; background:transparent; color:#FF4B4B; border:none; cursor:pointer; font-weight: bold;";
                 cancelBtn.onclick = () => { 
-                    console.log("[CAMPNAV] RESET SOURCE = cancel_origin_selection");
+                    console.log("[CAMPNAV][NAV] navigation state reset");
                     window.hideNavOverlays(); 
                     window.onEndNav(); 
                 };
@@ -630,17 +653,14 @@ private external fun clearWebMarkers()
             if (btn) {
                 btn.onclick = (e) => {
                     e.stopPropagation();
-                    console.log("[CAMPNAV] NAVIGATE CLICKED");
-                    console.log("[CAMPNAV] DESTINATION = " + title + " (ID: " + id + ")");
-                    console.log("[CAMPNAV] NAVIGATION STATUS BEFORE = " + (window.currentNavStatus || "IDLE"));
-                    console.log("[CAMPNAV] START POPUP STATE BEFORE = false");
-                    console.log("[CAMPNAV] OPENING START POPUP");
+                    console.log("[CAMPNAV][NAV] navigate clicked: " + title);
+                    console.log("[CAMPNAV][NAV] destination id: " + id);
+                    console.log("[CAMPNAV][NAV] destination latitude: " + lat);
+                    console.log("[CAMPNAV][NAV] destination longitude: " + lng);
 
                     const locations = window.campusLocationsData || [];
-                    const dest = locations.find(l => String(l.id) === String(id));
-                    if (dest) {
-                        window.lastSelectedDest = dest;
-                    }
+                    const dest = locations.find(l => String(l.id) === String(id)) || { id: id, name: title, latitude: Number(lat), longitude: Number(lng) };
+                    window.lastSelectedDest = dest;
 
                     if (window.onStatusChange) {
                         window.onStatusChange("SHOWING_NAV_CHOICE");

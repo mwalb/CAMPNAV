@@ -39,6 +39,7 @@ fun AdminDashboardScreen(
 
     var rejectTargetId by remember { mutableStateOf<Long?>(null) }
     var rejectFeedbackTargetId by remember { mutableStateOf<Long?>(null) }
+    var rejectReviewTargetId by remember { mutableStateOf<Long?>(null) }
     var rejectionReason by remember { mutableStateOf("") }
 
     val communityRepo = remember { CommunityRepository() }
@@ -169,13 +170,45 @@ fun AdminDashboardScreen(
                                     shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
+                                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                             Text(review.contributorName ?: "Anonymous", color = Color.White, fontWeight = FontWeight.Bold)
-                                            Text("Rating: ${review.rating} ⭐", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Text("Rating: ${review.rating} ⭐", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+                                                Text(review.status, color = when(review.status) {
+                                                    "APPROVED" -> Color(0xFF4CAF50)
+                                                    "REJECTED" -> Color(0xFFF44336)
+                                                    else -> Color(0xFFFFB74D)
+                                                }, fontWeight = FontWeight.Bold)
+                                            }
                                         }
                                         Spacer(Modifier.height(4.dp))
                                         Text(review.comment, color = Color.LightGray)
+
+                                        if (review.status == "PENDING") {
+                                            Spacer(Modifier.height(8.dp))
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Button(
+                                                    onClick = {
+                                                        scope.launch {
+                                                            communityRepo.approveReview(token, review.id)
+                                                            loadData()
+                                                        }
+                                                    },
+                                                    modifier = Modifier.weight(1f),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                                ) {
+                                                    Text("Approve")
+                                                }
+                                                Button(
+                                                    onClick = { rejectReviewTargetId = review.id },
+                                                    modifier = Modifier.weight(1f),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                                                ) {
+                                                    Text("Reject")
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -338,6 +371,47 @@ fun AdminDashboardScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { rejectFeedbackTargetId = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Rejection Dialog for Reviews
+        if (rejectReviewTargetId != null) {
+            AlertDialog(
+                onDismissRequest = { rejectReviewTargetId = null },
+                title = { Text("Reject Community Review") },
+                text = {
+                    Column {
+                        Text("Please provide a reason for rejection:")
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = rejectionReason,
+                            onValueChange = { rejectionReason = it },
+                            label = { Text("Rejection Reason") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val id = rejectReviewTargetId!!
+                            scope.launch {
+                                communityRepo.rejectReview(token, id, rejectionReason.ifBlank { "Inappropriate content" })
+                                rejectReviewTargetId = null
+                                rejectionReason = ""
+                                loadData()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                    ) {
+                        Text("Confirm Reject")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { rejectReviewTargetId = null }) {
                         Text("Cancel")
                     }
                 }

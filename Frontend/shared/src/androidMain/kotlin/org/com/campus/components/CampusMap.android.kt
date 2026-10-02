@@ -208,9 +208,7 @@ actual fun CampusMap(
                                 Button(
                                     onClick = {
                                         println("[CAMPNAV] [DIAGNOSTIC] Current location requested")
-                                        val fallbackLat = university.latitude ?: -6.7801
-                                        val fallbackLng = university.longitude ?: 39.2041
-                                        locationClient.lastLocation.addOnSuccessListener { loc ->
+                                        locationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).addOnSuccessListener { loc ->
                                             if (loc != null && isValidCoordinate(loc.latitude, loc.longitude)) {
                                                 println("[CAMPNAV] [DIAGNOSTIC] Current location received: lat=${loc.latitude}, lng=${loc.longitude}")
                                                 println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
@@ -219,20 +217,21 @@ actual fun CampusMap(
                                                 println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
                                                 onEndNavigation()
                                             } else {
-                                                println("[CAMPNAV] [DIAGNOSTIC] Current location fallback used")
-                                                println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
-                                                println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
-                                                openGoogleMapsNavigation(fallbackLat, fallbackLng, navigationState.destination.latitude, navigationState.destination.longitude)
-                                                println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
-                                                onEndNavigation()
+                                                locationClient.lastLocation.addOnSuccessListener { lastLoc ->
+                                                    if (lastLoc != null && isValidCoordinate(lastLoc.latitude, lastLoc.longitude)) {
+                                                        println("[CAMPNAV] [DIAGNOSTIC] Current location received via lastLocation")
+                                                        openGoogleMapsNavigation(lastLoc.latitude, lastLoc.longitude, navigationState.destination.latitude, navigationState.destination.longitude)
+                                                        onEndNavigation()
+                                                    } else {
+                                                        println("[CAMPNAV] [DIAGNOSTIC] Current location unavailable")
+                                                        android.widget.Toast.makeText(context, "Could not access current location. Please allow location permissions and try again.", android.widget.Toast.LENGTH_LONG).show()
+                                                    }
+                                                }.addOnFailureListener {
+                                                    android.widget.Toast.makeText(context, "Could not access current location. Please allow location permissions.", android.widget.Toast.LENGTH_LONG).show()
+                                                }
                                             }
                                         }.addOnFailureListener {
-                                            println("[CAMPNAV] [DIAGNOSTIC] Current location failed, fallback used")
-                                            println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
-                                            println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
-                                            openGoogleMapsNavigation(fallbackLat, fallbackLng, navigationState.destination.latitude, navigationState.destination.longitude)
-                                            println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
-                                            onEndNavigation()
+                                            android.widget.Toast.makeText(context, "Location access failed. Please enable GPS and location permissions.", android.widget.Toast.LENGTH_LONG).show()
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),

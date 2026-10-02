@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface CommunityReviewRepository extends JpaRepository<CommunityReview, Long> {
     List<CommunityReview> findByUniversityId(Long universityId);
+    List<CommunityReview> findByUniversityIdAndStatus(Long universityId, String status);
     List<CommunityReview> findByLocationId(Long locationId);
 }

@@ -40,6 +40,29 @@ public class CommunityReviewController {
         return ResponseEntity.ok(reviewService.getAllReviews());
     }
 
+    @PostMapping("/admin/reviews/{id}/approve")
+    public ResponseEntity<CommunityReview> approveReview(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication) {
+        String adminUsername = authentication != null && authentication.getName() != null 
+                ? authentication.getName() 
+                : "admin";
+        CommunityReview approved = reviewService.approveReviewAction(id, adminUsername);
+        return ResponseEntity.ok(approved);
+    }
+
+    @PostMapping("/admin/reviews/{id}/reject")
+    public ResponseEntity<CommunityReview> rejectReview(
+            @PathVariable Long id,
+            @RequestBody AdminController.RejectRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        String adminUsername = authentication != null && authentication.getName() != null 
+                ? authentication.getName() 
+                : "admin";
+        CommunityReview rejected = reviewService.rejectReview(id, request.getReason(), adminUsername);
+        return ResponseEntity.ok(rejected);
+    }
+
     @Data
     public static class ReviewRequest {
         private Long universityId;

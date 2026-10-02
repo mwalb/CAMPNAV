@@ -32,10 +32,9 @@ private fun openUrl(url: String): Unit = js("window.open(url, '_blank')")
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (pos) => { onSelected(pos.coords.latitude, pos.coords.longitude); },
-            (err) => { onSelected(-6.7824, 39.2083); }
+            (err) => { console.warn("Geolocation failed:", err.message); },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-    } else {
-        onSelected(-6.7824, 39.2083);
     }
 }""")
 private external fun jsFetchGeoLocation(onSelected: (Double, Double) -> Unit)

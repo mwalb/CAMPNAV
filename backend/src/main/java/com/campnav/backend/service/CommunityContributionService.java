@@ -27,6 +27,7 @@ public class CommunityContributionService {
             String locationName,
             String areaType,
             Long categoryId,
+            String customCategory,
             String description,
             Double latitude,
             Double longitude,
@@ -36,7 +37,25 @@ public class CommunityContributionService {
         University university = universityRepository.findById(universityId)
                 .orElseThrow(() -> new RuntimeException("University not found"));
 
-        Category category = categoryId != null ? categoryRepository.findById(categoryId).orElse(null) : null;
+        Category category = null;
+        if (categoryId != null) {
+            category = categoryRepository.findById(categoryId).orElse(null);
+        } else if (customCategory != null && !customCategory.trim().isEmpty()) {
+            String customName = customCategory.trim();
+            category = categoryRepository.findByUniversityIdAndNameIgnoreCase(universityId, customName)
+                    .orElseGet(() -> {
+                        Category newCat = Category.builder()
+                                .university(university)
+                                .name(customName)
+                                .slug(customName.toLowerCase().replaceAll("[^a-z0-9]", "-"))
+                                .description("Custom category submitted by user")
+                                .iconName("place")
+                                .isActive(true)
+                                .sortOrder(99)
+                                .build();
+                        return categoryRepository.save(newCat);
+                    });
+        }
 
         // Duplicate protection check
         boolean exists = contributionRepository.existsByUniversityIdAndLocationNameIgnoreCaseAndLatitudeAndLongitude(

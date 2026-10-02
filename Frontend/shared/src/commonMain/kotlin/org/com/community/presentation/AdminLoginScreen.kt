@@ -25,7 +25,7 @@ fun AdminLoginScreen(
     onBack: () -> Unit,
     onLoginSuccess: (String) -> Unit
 ) {
-    var username by remember { mutableStateOf("admin") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -56,7 +56,7 @@ fun AdminLoginScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                     }
                     Spacer(Modifier.width(8.dp))
-                    Text("Admin Login", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Administrator Login", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(Modifier.height(24.dp))
@@ -64,7 +64,7 @@ fun AdminLoginScreen(
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
-                    label = { Text("Username or Email (raphaelfrank01@gmail.com)") },
+                    label = { Text("Email or Username") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -92,7 +92,7 @@ fun AdminLoginScreen(
                 Button(
                     onClick = {
                         if (username.isBlank() || password.isBlank()) {
-                            errorMessage = "Please enter both username and password."
+                            errorMessage = "Please enter both username/email and password."
                             return@Button
                         }
                         isLoading = true
@@ -103,10 +103,10 @@ fun AdminLoginScreen(
                                 if (!res.token.isBlank()) {
                                     onLoginSuccess(res.token)
                                 } else {
-                                    errorMessage = "Invalid login response."
+                                    errorMessage = "Invalid credentials or authorization failed."
                                 }
                             } catch (e: Exception) {
-                                errorMessage = "Login failed: Unauthorized or incorrect credentials."
+                                errorMessage = "Login failed: Incorrect email/username or password."
                             } finally {
                                 isLoading = false
                             }
@@ -121,7 +121,7 @@ fun AdminLoginScreen(
                     if (isLoading) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                     } else {
-                        Text("Login as Admin", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("Sign In", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

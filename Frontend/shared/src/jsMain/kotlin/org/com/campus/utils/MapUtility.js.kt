@@ -26,10 +26,9 @@ actual fun getCurrentUserLocation(onLocationReceived: (Double, Double) -> Unit) 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function(pos) { onLocationReceived(pos.coords.latitude, pos.coords.longitude); },
-                function(err) { onLocationReceived(-6.7824, 39.2083); }
+                function(err) { console.warn("Geolocation failed:", err.message); },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
-        } else {
-            onLocationReceived(-6.7824, 39.2083);
         }
     """)
 }

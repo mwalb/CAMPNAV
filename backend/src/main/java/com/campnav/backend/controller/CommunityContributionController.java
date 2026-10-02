@@ -24,6 +24,7 @@ public class CommunityContributionController {
                 request.getLocationName(),
                 request.getAreaType(),
                 request.getCategoryId(),
+                request.getCustomCategory(),
                 request.getDescription(),
                 request.getLatitude(),
                 request.getLongitude(),
@@ -55,6 +56,7 @@ public class CommunityContributionController {
         private String locationName;
         private String areaType;
         private Long categoryId;
+        private String customCategory;
         private String description;
         private Double latitude;
         private Double longitude;

@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,6 +24,8 @@ import kotlinx.coroutines.launch
 import org.com.campus.data.CampusRepository
 import org.com.campus.data.Category
 import org.com.campus.data.University
+import org.com.campus.utils.getCurrentUserLocation
+import org.com.community.components.LocationPickerMap
 import org.com.community.data.CommunityRepository
 import org.com.community.model.ContributionRequest
 import org.com.community.model.CommunityContribution
@@ -37,6 +41,8 @@ fun AddLocationScreen(
     var categories by remember { mutableStateOf(emptyList<Category>()) }
     var selectedUniversity by remember { mutableStateOf<University?>(null) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
+    var isCustomCategory by remember { mutableStateOf(false) }
+    var customCategoryText by remember { mutableStateOf("") }
 
     var locationName by remember { mutableStateOf("") }
     var areaType by remember { mutableStateOf("UNIVERSITY_AREA") } // UNIVERSITY_AREA or COMMERCIAL_AREA
@@ -47,6 +53,7 @@ fun AddLocationScreen(
     var contributorContact by remember { mutableStateOf("") }
 
     var isLoading by remember { mutableStateOf(false) }
+    var isFetchingLocation by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var submittedContribution by remember { mutableStateOf<CommunityContribution?>(null) }
 
@@ -55,16 +62,14 @@ fun AddLocationScreen(
     val scope = rememberCoroutineScope()
 
     var showMapPicker by remember { mutableStateOf(false) }
+    var tempPickedLat by remember { mutableStateOf<Double?>(null) }
+    var tempPickedLng by remember { mutableStateOf<Double?>(null) }
 
     LaunchedEffect(Unit) {
         try {
             universities = campusRepo.getUniversities()
             if (universities.isNotEmpty()) {
                 selectedUniversity = universities.first()
-                categories = campusRepo.getCategories(selectedUniversity?.id)
-                if (categories.isNotEmpty()) {
-                    selectedCategory = categories.first()
-                }
             }
         } catch (e: Exception) {
             errorMessage = "Failed to load universities: ${e.message}"
@@ -75,11 +80,11 @@ fun AddLocationScreen(
         selectedUniversity?.id?.let { uniId ->
             try {
                 categories = campusRepo.getCategories(uniId)
-                if (categories.isNotEmpty()) {
-                    selectedCategory = categories.first()
-                }
+                selectedCategory = null
+                isCustomCategory = false
+                customCategoryText = ""
             } catch (e: Exception) {
-                // ignore
+                categories = emptyList()
             }
         }
     }
@@ -89,7 +94,65 @@ fun AddLocationScreen(
             .fillMaxSize()
             .background(AppColorScheme.background)
     ) {
-        if (submittedContribution != null) {
+        if (showMapPicker) {
+            // Full-screen Map Picker
+            Box(modifier = Modifier.fillMaxSize()) {
+                val initLat = latitudeStr.toDoubleOrNull() ?: selectedUniversity?.latitude ?: -6.7801
+                val initLng = longitudeStr.toDoubleOrNull() ?: selectedUniversity?.longitude ?: 39.2041
+
+                LocationPickerMap(
+                    modifier = Modifier.fillMaxSize(),
+                    initialLatitude = initLat,
+                    initialLongitude = initLng,
+                    onLocationSelected = { lat, lng ->
+                        tempPickedLat = lat
+                        tempPickedLng = lng
+                    }
+                )
+
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = AppColorScheme.surfaceVariant.copy(alpha = 0.95f),
+                    shadowElevation = 8.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("TAP ANYWHERE ON MAP TO PICK LOCATION", style = MaterialTheme.typography.labelMedium, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                            Text("Lat: ${tempPickedLat?.let { ((it * 1000000.0).toLong() / 1000000.0).toString() } ?: "Tap map"}", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("Lng: ${tempPickedLng?.let { ((it * 1000000.0).toLong() / 1000000.0).toString() } ?: "Tap map"}", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    tempPickedLat?.let { latitudeStr = it.toString() }
+                                    tempPickedLng?.let { longitudeStr = it.toString() }
+                                    showMapPicker = false
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary),
+                                enabled = tempPickedLat != null && tempPickedLng != null
+                            ) {
+                                Text("Confirm Location", fontWeight = FontWeight.Bold)
+                            }
+                            TextButton(
+                                onClick = { showMapPicker = false },
+                                modifier = Modifier.weight(0.6f)
+                            ) {
+                                Text("Cancel", color = Color.Red)
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (submittedContribution != null) {
             // Success State View
             Column(
                 modifier = Modifier
@@ -158,8 +221,8 @@ fun AddLocationScreen(
                 item {
                     Text("Select University", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        universities.forEach { uni ->
+                    LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(universities) { uni ->
                             val isSelected = selectedUniversity?.id == uni.id
                             FilterChip(
                                 selected = isSelected,
@@ -214,15 +277,48 @@ fun AddLocationScreen(
                 }
 
                 item {
-                    Text("Category", color = Color.White, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(8.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        categories.take(5).forEach { cat ->
-                            val isSelected = selectedCategory?.id == cat.id
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { selectedCategory = cat },
-                                label = { Text(cat.name) }
+                    Column {
+                        Text("Category (Optional)", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(8.dp))
+                        LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(categories) { cat ->
+                                val isSelected = !isCustomCategory && selectedCategory?.id == cat.id
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        if (isSelected) {
+                                            selectedCategory = null
+                                        } else {
+                                            selectedCategory = cat
+                                            isCustomCategory = false
+                                        }
+                                    },
+                                    label = { Text(cat.name) }
+                                )
+                            }
+                            item {
+                                FilterChip(
+                                    selected = isCustomCategory,
+                                    onClick = {
+                                        isCustomCategory = !isCustomCategory
+                                        if (isCustomCategory) {
+                                            selectedCategory = null
+                                        }
+                                    },
+                                    label = { Text("+ Custom Category") }
+                                )
+                            }
+                        }
+
+                        if (isCustomCategory) {
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = customCategoryText,
+                                onValueChange = { customCategoryText = it },
+                                label = { Text("Enter your custom category name") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
                             )
                         }
                     }
@@ -240,38 +336,40 @@ fun AddLocationScreen(
                 }
 
                 item {
-                    Text("Location Coordinates (Choose Option)", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text("Location Coordinates", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = {
-                                // Option B: Current Location Simulation / Preset
-                                selectedUniversity?.let {
-                                    latitudeStr = (it.latitude ?: -6.7801).toString()
-                                    longitudeStr = (it.longitude ?: 39.2041).toString()
+                                isFetchingLocation = true
+                                getCurrentUserLocation { lat, lng ->
+                                    latitudeStr = lat.toString()
+                                    longitudeStr = lng.toString()
+                                    isFetchingLocation = false
                                 }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.surfaceVariant)
                         ) {
-                            Icon(Icons.Default.MyLocation, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Current Loc", fontSize = 12.sp)
+                            if (isFetchingLocation) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                            } else {
+                                Icon(Icons.Default.MyLocation, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Use Current Loc", fontSize = 12.sp)
+                            }
                         }
 
                         Button(
                             onClick = {
-                                selectedUniversity?.let {
-                                    latitudeStr = (it.latitude?.plus(0.001) ?: -6.7801).toString()
-                                    longitudeStr = (it.longitude?.plus(0.001) ?: 39.2041).toString()
-                                }
+                                showMapPicker = true
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.surfaceVariant)
                         ) {
                             Icon(Icons.Default.Map, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Pick Map", fontSize = 12.sp)
+                            Text("Pick From Map", fontSize = 12.sp)
                         }
                     }
                 }
@@ -335,7 +433,8 @@ fun AddLocationScreen(
                                         universityId = selectedUniversity!!.id,
                                         locationName = locationName.trim(),
                                         areaType = areaType,
-                                        categoryId = selectedCategory?.id,
+                                        categoryId = if (isCustomCategory) null else selectedCategory?.id,
+                                        customCategory = if (isCustomCategory) customCategoryText.ifBlank { null } else null,
                                         description = description.ifBlank { null },
                                         latitude = latitudeStr.toDouble(),
                                         longitude = longitudeStr.toDouble(),

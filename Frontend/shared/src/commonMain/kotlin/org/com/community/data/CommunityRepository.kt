@@ -127,6 +127,19 @@ class CommunityRepository {
         }
     }
 
+    suspend fun approveReview(token: String, id: Long): CommunityReview {
+        return apiClient.post("/api/admin/reviews/$id/approve") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }.body()
+    }
+
+    suspend fun rejectReview(token: String, id: Long, reason: String): CommunityReview {
+        return apiClient.post("/api/admin/reviews/$id/reject") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            setBody(RejectRequest(reason))
+        }.body()
+    }
+
     suspend fun getAdminLogs(token: String): List<AdminActivityLog> {
         return try {
             apiClient.get("/api/admin/logs") {

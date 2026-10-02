@@ -67,23 +67,21 @@ actual fun openUri(uriString: String) {
 
 @SuppressLint("MissingPermission")
 actual fun getCurrentUserLocation(onLocationReceived: (Double, Double) -> Unit) {
-    val context = applicationContext
-    if (context == null) {
-        onLocationReceived(-6.7824, 39.2083)
-        return
-    }
+    val context = applicationContext ?: return
     try {
         val client = LocationServices.getFusedLocationProviderClient(context)
-        client.lastLocation.addOnSuccessListener { loc ->
+        client.getCurrentLocation(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, null).addOnSuccessListener { loc ->
             if (loc != null && isValidCoordinate(loc.latitude, loc.longitude)) {
                 onLocationReceived(loc.latitude, loc.longitude)
             } else {
-                onLocationReceived(-6.7824, 39.2083)
+                client.lastLocation.addOnSuccessListener { lastLoc ->
+                    if (lastLoc != null && isValidCoordinate(lastLoc.latitude, lastLoc.longitude)) {
+                        onLocationReceived(lastLoc.latitude, lastLoc.longitude)
+                    }
+                }
             }
-        }.addOnFailureListener {
-            onLocationReceived(-6.7824, 39.2083)
         }
     } catch (e: Exception) {
-        onLocationReceived(-6.7824, 39.2083)
+        println("[CAMPNAV] Geolocation failed: ${e.message}")
     }
 }
