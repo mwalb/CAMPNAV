@@ -17,6 +17,10 @@ actual fun openGoogleMapsNavigation(
     window.open(url, "_blank")
 }
 
+actual fun openUri(uriString: String) {
+    window.open(uriString, "_blank")
+}
+
 actual fun getCurrentUserLocation(onLocationReceived: (Double, Double) -> Unit) {
     js("""
         if (navigator.geolocation) {

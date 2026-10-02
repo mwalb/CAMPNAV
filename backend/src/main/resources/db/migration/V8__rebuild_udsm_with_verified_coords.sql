@@ -54,11 +54,13 @@ INSERT INTO campus_location (university_id, category_id, name, official_name, al
 (1, 1, 'Coict Tele Education Centre', 'Coict Tele Education Centre', 'Tele Education', 'Tele-Ed', 'Coict Tele Education Centre', -6.781249, 39.204434, 'VERIFIED', true),
 (1, 1, 'Transportation Building (TGES)', 'Transportation Building', 'TGES', 'TGES', 'Transportation Building (TGES)', -6.781002, 39.207700, 'VERIFIED', true),
 (1, 1, 'CoET Block A', 'CoET Block A', 'Block A', 'Block A', 'CoET Block A', -6.780934, 39.206854, 'VERIFIED', true),
-(1, 1, 'Block Q', 'Block Q', 'Block Q', 'Block Q', 'Block Q', -6.783515, 39.206983, 'VERIFIED', true);
+(1, 1, 'Block Q', 'Block Q', 'Block Q', 'Block Q', 'Block Q', -6.783515, 39.206983, 'VERIFIED', true),
+(1, 1, 'CoICT', 'College of Information and Communication Technologies', 'CoICT; Sayansi Campus; Kijitonyama Campus; ICT College', 'CoICT', 'College of Information and Communication Technologies at Kijitonyama Sayansi', -6.771471, 39.239928, 'VERIFIED', true),
+(1, 1, 'SJMC', 'School of Journalism and Mass Communication', 'SJMC; Journalism School; Mikocheni Campus', 'SJMC', 'School of Journalism and Mass Communication at Mikocheni', -6.770842, 39.250056, 'VERIFIED', true);
 
 -- CATEGORY 2: LECTURE HALLS & CLASSROOMS
 INSERT INTO campus_location (university_id, category_id, name, official_name, aliases, building_code, description, latitude, longitude, verification_status, is_active) VALUES
-(1, 2, 'Nkrumah Hall', 'Nkrumah Hall', 'Nkrumah', 'Nkrumah', 'Nkrumah Hall', -6.780937, 39.204989, 'VERIFIED', true),
+(1, 2, 'Nkrumah Hall', 'Nkrumah Hall', 'Nkrumah', 'Nkrumah', 'Nkrumah Hall', -6.780925, 39.204594, 'VERIFIED', true),
 (1, 2, 'Theatre 1', 'Theatre 1', 'T1', 'T1', 'Theatre 1', -6.780214, 39.206274, 'VERIFIED', true),
 (1, 2, 'Theatre Two', 'Theatre Two', 'T2', 'T2', 'Theatre Two', -6.780292, 39.206312, 'VERIFIED', true),
 (1, 2, 'A21 Theater Room', 'A21 Theater Room', 'A21', 'A21', 'A21 Theater Room', -6.780912, 39.206982, 'VERIFIED', true),
@@ -108,7 +110,10 @@ INSERT INTO campus_location (university_id, category_id, name, official_name, al
 (1, 4, 'Hall 6 Block C', 'Hall 6 Block C', 'H6C', 'H6C', 'Hall 6 Block C', -6.775817, 39.202499, 'VERIFIED', true),
 (1, 4, 'Hall VI Block A', 'Hall VI Block A', 'H6A', 'H6A', 'Hall VI Block A', -6.775841, 39.202895, 'VERIFIED', true),
 (1, 4, 'Water Resources Hostel', 'Water Resources Hostel', 'Water Hostel', 'WaterH', 'Water Resources Hostel', -6.775541, 39.202719, 'VERIFIED', true),
-(1, 4, 'Hall 3 Residency', 'Hall 3 Residency', 'Hall 3', 'H3', 'Hall 3 Residency', -6.775372, 39.205991, 'VERIFIED', true),
+(1, 4, 'Hall 3 (Block B / Block 113)', 'Hall 3 Block B (Block 113)', 'Hall 3; Block B; Block 113', 'H3-B', 'Hall 3 Block B (Block 113) student residence', -6.774677, 39.207443, 'VERIFIED', true),
+(1, 4, 'Mabibo Hostel (Main Entrance)', 'Mabibo Hostels Complex Main Entrance', 'Mabibo Hostel; Mabibo Complex; Mabibo Main Gate', 'MABIBO', 'Mabibo Hostels main entrance and general complex landmark', -6.805792, 39.208399, 'VERIFIED', true),
+(1, 4, 'Mabibo Hostel Block A', 'Mabibo Hostel Block A Residency', 'Mabibo Block A; Block A', 'MAB-A', 'Mabibo Hostel Block A student residence', -6.803610, 39.206607, 'VERIFIED', true),
+(1, 4, 'Mabibo Hostel Block C', 'Mabibo Hostel Block C Residency', 'Mabibo Block C; Block C', 'MAB-C', 'Mabibo Hostel Block C student residence', -6.804374, 39.205730, 'VERIFIED', true),
 (1, 4, 'Julie Manning Hall Residency', 'Julie Manning Hall Residency', 'Julie Manning', 'JMH', 'Julie Manning Hall Residency', -6.775060, 39.207313, 'VERIFIED', true),
 (1, 4, 'Hall 4', 'Hall 4', 'Hall 4', 'H4', 'Hall 4', -6.776344, 39.205845, 'VERIFIED', true),
 (1, 4, 'Hall 5', 'Hall 5', 'Hall 5', 'H5', 'Hall 5', -6.776308, 39.206993, 'VERIFIED', true),
@@ -127,7 +132,9 @@ INSERT INTO campus_location (university_id, category_id, name, official_name, al
 (1, 5, 'DARUSO Office', 'DARUSO Office', 'DARUSO', 'DARUSO', 'DARUSO Office', -6.776553, 39.202580, 'VERIFIED', true),
 (1, 5, 'Estate Department', 'Estate Department', 'Estate', 'Estate', 'Estate Department', -6.780212, 39.214415, 'VERIFIED', true),
 (1, 5, 'UDSM PMU Office', 'UDSM PMU Office', 'PMU', 'PMU', 'UDSM PMU Office', -6.778651, 39.206377, 'VERIFIED', true),
-(1, 5, 'UDSM Post Office', 'UDSM Post Office', 'Post Office', 'Post', 'UDSM Post Office', -6.778803, 39.206383, 'VERIFIED', true);
+(1, 5, 'UDSM Post Office', 'UDSM Post Office', 'Post Office', 'Post', 'UDSM Post Office', -6.778803, 39.206383, 'VERIFIED', true),
+(1, 5, 'USAB', 'University Student Accommodation Bureau', 'USAB; Accommodation Bureau; Hostel Management Office', 'USAB', 'University Student Accommodation Bureau office', -6.776476, 39.207032, 'VERIFIED', true),
+(1, 5, 'Ofisi ya Bodi ya Mikopo (HESLB Office)', 'Higher Education Students Loans Board Office (HESLB)', 'HESLB; Bodi ya Mikopo; Loan Board Office', 'HESLB', 'Higher Education Students Loans Board (HESLB) helpdesk & office', -6.849142, 39.249344, 'VERIFIED', true);
 
 -- CATEGORY 6: HEALTH & MEDICAL SERVICES
 INSERT INTO campus_location (university_id, category_id, name, official_name, aliases, building_code, description, latitude, longitude, verification_status, is_active) VALUES
@@ -161,7 +168,9 @@ INSERT INTO campus_location (university_id, category_id, name, official_name, al
 (1, 8, 'Mlimani Football Ground', 'Mlimani Football Ground', 'Football', 'Football', 'Mlimani Football Ground', -6.782184, 39.210979, 'VERIFIED', true),
 (1, 8, 'UDSM Cricket Playground', 'UDSM Cricket Playground', 'Cricket', 'Cricket', 'UDSM Cricket Playground', -6.783591, 39.209399, 'VERIFIED', true),
 (1, 8, 'Tanzania Cricket Arena', 'Tanzania Cricket Arena', 'Cricket Arena', 'Arena', 'Tanzania Cricket Arena', -6.784289, 39.209938, 'VERIFIED', true),
-(1, 8, 'UDSM Gym', 'UDSM Gym', 'Gym', 'Gym', 'UDSM Gym', -6.779065, 39.206975, 'VERIFIED', true);
+(1, 8, 'UDSM Gym', 'UDSM Gym', 'Gym', 'Gym', 'UDSM Gym', -6.779065, 39.206975, 'VERIFIED', true),
+(1, 8, 'Mabibo Hostel Football Ground', 'Mabibo Hostel Football Ground', 'Mabibo Football Pitch; Mabibo Pitch; Mabibo Ground', 'MAB-FB', 'Football ground at Mabibo Hostels complex', -6.806000, 39.206980, 'VERIFIED', true),
+(1, 8, 'Mabibo Hostel Basketball Court', 'Mabibo Hostel Basketball Ground', 'Mabibo Basketball Court; Mabibo BB Ground', 'MAB-BB', 'Basketball court at Mabibo Hostels complex', -6.805924, 39.207475, 'VERIFIED', true);
 
 -- CATEGORY 9: BANKING & COMMERCIAL SERVICES
 INSERT INTO campus_location (university_id, category_id, name, official_name, aliases, building_code, description, latitude, longitude, verification_status, is_active) VALUES

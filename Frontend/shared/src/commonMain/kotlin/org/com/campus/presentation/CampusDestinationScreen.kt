@@ -245,15 +245,17 @@ fun CampusDestinationScreen(
                                 }
                             }
 
-                            QuickDestButton("Academics", Icons.Default.School) { scrollToCategory("academic", "school") }
-                            QuickDestButton("Hostels", Icons.Default.Hotel) { scrollToCategory("hostel", "accommodation") }
-                            QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) { scrollToCategory("library") }
-                            QuickDestButton("Food", Icons.Default.Restaurant) { scrollToCategory("food", "dining", "cafeteria") }
+                            QuickDestButton("Academics", Icons.Default.School) { scrollToCategory("academic") }
+                            QuickDestButton("Lecture Halls", Icons.Default.Groups) { scrollToCategory("lecture-halls", "lecture") }
+                            QuickDestButton("Libraries", Icons.AutoMirrored.Filled.MenuBook) { scrollToCategory("library", "libraries", "labs") }
+                            QuickDestButton("Hostels", Icons.Default.Hotel) { scrollToCategory("hostel", "residences", "housing") }
+                            QuickDestButton("Admin", Icons.Default.Business) { scrollToCategory("administration", "administrative") }
                             QuickDestButton("Health", Icons.Default.LocalHospital) { scrollToCategory("health", "medical", "hospital") }
-                            QuickDestButton("Banking", Icons.Default.Payments) { scrollToCategory("banking", "bank", "commercial", "shopping", "finance") }
-                            QuickDestButton("Religious", Icons.Default.AccountBalance) { scrollToCategory("religious", "worship", "church", "mosque") }
+                            QuickDestButton("Food", Icons.Default.Restaurant) { scrollToCategory("food", "dining", "cafeteria") }
                             QuickDestButton("Sports", Icons.Default.SportsSoccer) { scrollToCategory("sports", "recreation") }
-                            QuickDestButton("Security", Icons.Default.Security) { scrollToCategory("security", "administration", "infrastructure") }
+                            QuickDestButton("Banking", Icons.Default.Payments) { scrollToCategory("banking", "bank", "financial") }
+                            QuickDestButton("Security", Icons.Default.Security) { scrollToCategory("security", "parking", "transport") }
+                            QuickDestButton("Worship", Icons.Default.AccountBalance) { scrollToCategory("religious", "worship", "mosque", "church") }
                         }
                     }
                     Spacer(Modifier.height(32.dp))

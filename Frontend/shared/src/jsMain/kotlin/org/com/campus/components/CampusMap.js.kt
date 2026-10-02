@@ -308,8 +308,11 @@ private external fun stopTrackingUserLocation()
                         console.log("[CAMPNAV] SESSION ID = " + window.currentNavSessionId);
                         window.onEndNav();
                     }, (err) => {
-                        alert("Could not get location. Please allow location access.");
-                    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 });
+                        console.warn("[CAMPNAV] Geolocation failed, falling back to university coordinates");
+                        window.openGoogleMapsNavigation(-6.7801, 39.2041, dest.latitude, dest.longitude);
+                        window.hideNavOverlays();
+                        window.onEndNav();
+                    }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 });
                 };
                 navPanel.appendChild(currentLocBtn);
 

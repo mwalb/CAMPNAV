@@ -283,11 +283,13 @@ INSERT INTO campus_location (university_id, category_id, name, official_name, al
 (1, 1, 'Coict Tele Education Centre', 'Coict Tele Education Centre', 'Tele Education', 'Tele-Ed', 'Coict Tele Education Centre', -6.781249, 39.204434, 'VERIFIED', true),
 (1, 1, 'Transportation Building (TGES)', 'Transportation Building', 'TGES', 'TGES', 'Transportation Building (TGES)', -6.781002, 39.207700, 'VERIFIED', true),
 (1, 1, 'CoET Block A', 'CoET Block A', 'Block A', 'Block A', 'CoET Block A', -6.780934, 39.206854, 'VERIFIED', true),
-(1, 1, 'Block Q', 'Block Q', 'Block Q', 'Block Q', 'Block Q', -6.783515, 39.206983, 'VERIFIED', true);
+(1, 1, 'Block Q', 'Block Q', 'Block Q', 'Block Q', 'Block Q', -6.783515, 39.206983, 'VERIFIED', true),
+(1, 1, 'CoICT', 'College of Information and Communication Technologies', 'CoICT; Sayansi Campus; Kijitonyama Campus; ICT College', 'CoICT', 'College of Information and Communication Technologies at Kijitonyama Sayansi', -6.771471, 39.239928, 'VERIFIED', true),
+(1, 1, 'SJMC', 'School of Journalism and Mass Communication', 'SJMC; Journalism School; Mikocheni Campus', 'SJMC', 'School of Journalism and Mass Communication at Mikocheni', -6.770842, 39.250056, 'VERIFIED', true);
 
 -- CATEGORY 2: LECTURE HALLS & CLASSROOMS
 INSERT INTO campus_location (university_id, category_id, name, official_name, aliases, building_code, description, latitude, longitude, verification_status, is_active) VALUES
-(1, 2, 'Nkrumah Hall', 'Nkrumah Hall', 'Nkrumah', 'Nkrumah', 'Nkrumah Hall', -6.780937, 39.204989, 'VERIFIED', true),
+(1, 2, 'Nkrumah Hall', 'Nkrumah Hall', 'Nkrumah', 'Nkrumah', 'Nkrumah Hall', -6.780925, 39.204594, 'VERIFIED', true),
 (1, 2, 'Theatre 1', 'Theatre 1', 'T1', 'T1', 'Theatre 1', -6.780214, 39.206274, 'VERIFIED', true),
 (1, 2, 'Theatre Two', 'Theatre Two', 'T2', 'T2', 'Theatre Two', -6.780292, 39.206312, 'VERIFIED', true),
 (1, 2, 'A21 Theater Room', 'A21 Theater Room', 'A21', 'A21', 'A21 Theater Room', -6.780912, 39.206982, 'VERIFIED', true),

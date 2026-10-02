@@ -53,6 +53,18 @@ actual fun openGoogleMapsNavigation(
     }
 }
 
+actual fun openUri(uriString: String) {
+    val context = applicationContext ?: return
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uriString)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        println("[CAMPNAV] Failed to open URI: ${e.message}")
+    }
+}
+
 @SuppressLint("MissingPermission")
 actual fun getCurrentUserLocation(onLocationReceived: (Double, Double) -> Unit) {
     val context = applicationContext

@@ -1,21 +1,28 @@
 package com.campnav.backend.config;
 
 import com.campnav.backend.model.Campus;
+import com.campnav.backend.model.CommunityUser;
 import com.campnav.backend.model.University;
+import com.campnav.backend.repository.CommunityUserRepository;
 import com.campnav.backend.service.UniversityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.Map;
-import java.util.HashMap;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
 
     @Autowired
     private UniversityService universityService;
+
+    @Autowired
+    private CommunityUserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
@@ -25,9 +32,6 @@ public class DataSeeder implements CommandLineRunner {
 
         // 2. Seed Campus
         seedCampus("UDSM-MLIMANI", "Mwalimu Julius K. Nyerere Mlimani Campus", udsm);
-
-        // NOTE: UDSM Categories and Locations are handled by Flyway V8 migration
-        // to ensure the exact verified coordinates and names are preserved.
 
         // Universities with dataset
         University udom = seedUniversity("UDOM", "University of Dodoma", "University of Dodoma", "UDOM", "Dodoma", -6.2033, 35.8000, 14f,
@@ -40,6 +44,30 @@ public class DataSeeder implements CommandLineRunner {
         University sua = seedUniversity("SUA", "Sokoine University of Agriculture", "Sokoine University of Agriculture", "SUA", "Morogoro", -6.8475, 37.6591, 15f, 
                 "Ardhi ni Hazina", "https://upload.wikimedia.org/wikipedia/en/3/3d/Sua_logo.png", 4, null);
         seedCampus("SUA-MAIN", "Sokoine University of Agriculture Main Campus", sua);
+
+        // 3. Seed Initial Admin Account
+        seedInitialAdmin();
+    }
+
+    private void seedInitialAdmin() {
+        String adminEmail = "raphaelfrank01@gmail.com";
+        String adminUsername = "admin";
+        String adminPassword = System.getenv("ADMIN_PASSWORD") != null ? System.getenv("ADMIN_PASSWORD") : "Raphaelfrank1111";
+
+        if (userRepository.findByEmail(adminEmail).isEmpty() && userRepository.findByUsername(adminUsername).isEmpty()) {
+            CommunityUser adminUser = CommunityUser.builder()
+                    .externalId("ADMIN-RAPHAEL-01")
+                    .username(adminUsername)
+                    .email(adminEmail)
+                    .fullName("Raphael Frank (Admin)")
+                    .passwordHash(passwordEncoder.encode(adminPassword))
+                    .role(CommunityUser.UserRole.ADMIN)
+                    .isActive(true)
+                    .reputationScore(100)
+                    .build();
+            userRepository.save(adminUser);
+            System.out.println("Initialized Admin account for " + adminEmail);
+        }
     }
 
     private University seedUniversity(String externalId, String name, String officialName, String shortName, String city, Double lat, Double lng, Float zoom, 

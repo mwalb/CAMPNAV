@@ -111,7 +111,19 @@ actual fun CampusMap(
             properties = MapProperties(isMyLocationEnabled = navigationState.status != NavigationStatus.IDLE),
             uiSettings = MapUiSettings(zoomControlsEnabled = true),
             onMapClick = { latLng ->
-                onMapClick(RoutePoint(latLng.latitude, latLng.longitude))
+                if (navigationState.status == NavigationStatus.SELECTING_START_POINT) {
+                    navigationState.destination?.let { dest ->
+                        println("[CAMPNAV] [DIAGNOSTIC] Manual origin selected")
+                        println("[CAMPNAV] [DIAGNOSTIC] Origin latitude: ${latLng.latitude}, Origin longitude: ${latLng.longitude}")
+                        println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
+                        println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
+                        openGoogleMapsNavigation(latLng.latitude, latLng.longitude, dest.latitude, dest.longitude)
+                        println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
+                    }
+                    onEndNavigation()
+                } else {
+                    onMapClick(RoutePoint(latLng.latitude, latLng.longitude))
+                }
             }
         ) {
             // Marker for selected start point
@@ -137,6 +149,7 @@ actual fun CampusMap(
                     title = location.name,
                     snippet = "Tap to navigate",
                     onInfoWindowClick = {
+                        println("[CAMPNAV] [DIAGNOSTIC] Navigate button clicked via info window")
                         onStartNavigation(location, null)
                     },
                     onClick = {
@@ -159,7 +172,10 @@ actual fun CampusMap(
         // Navigate button when a location is selected
         if (navigationState.status == NavigationStatus.IDLE && navigationState.destination != null) {
             ExtendedFloatingActionButton(
-                onClick = { onStartNavigation(navigationState.destination, null) },
+                onClick = {
+                    println("[CAMPNAV] [DIAGNOSTIC] Navigate button clicked")
+                    onStartNavigation(navigationState.destination, null)
+                },
                 icon = { Icon(Icons.Default.Navigation, contentDescription = null) },
                 text = { Text("Navigate") },
                 modifier = Modifier
@@ -172,8 +188,12 @@ actual fun CampusMap(
         if (navigationState.status != NavigationStatus.IDLE && navigationState.destination != null) {
             when (navigationState.status) {
                 NavigationStatus.SHOWING_NAV_CHOICE -> {
+                    println("[CAMPNAV] [DIAGNOSTIC] Starting-point popup opened")
                     AlertDialog(
-                        onDismissRequest = { onEndNavigation() },
+                        onDismissRequest = {
+                            println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
+                            onEndNavigation()
+                        },
                         title = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                                 Text("Navigate to", style = MaterialTheme.typography.bodyMedium)
@@ -187,24 +207,32 @@ actual fun CampusMap(
                             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Button(
                                     onClick = {
+                                        println("[CAMPNAV] [DIAGNOSTIC] Current location requested")
+                                        val fallbackLat = university.latitude ?: -6.7801
+                                        val fallbackLng = university.longitude ?: 39.2041
                                         locationClient.lastLocation.addOnSuccessListener { loc ->
                                             if (loc != null && isValidCoordinate(loc.latitude, loc.longitude)) {
+                                                println("[CAMPNAV] [DIAGNOSTIC] Current location received: lat=${loc.latitude}, lng=${loc.longitude}")
+                                                println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
+                                                println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
                                                 openGoogleMapsNavigation(loc.latitude, loc.longitude, navigationState.destination.latitude, navigationState.destination.longitude)
+                                                println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
                                                 onEndNavigation()
                                             } else {
-                                                // Fallback to fresh location if lastLocation is null
-                                                val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000).setMaxUpdates(1).build()
-                                                locationClient.requestLocationUpdates(request, object : LocationCallback() {
-                                                    override fun onLocationResult(result: LocationResult) {
-                                                        result.lastLocation?.let { freshLoc ->
-                                                            if (isValidCoordinate(freshLoc.latitude, freshLoc.longitude)) {
-                                                                openGoogleMapsNavigation(freshLoc.latitude, freshLoc.longitude, navigationState.destination.latitude, navigationState.destination.longitude)
-                                                                onEndNavigation()
-                                                            }
-                                                        }
-                                                    }
-                                                }, null)
+                                                println("[CAMPNAV] [DIAGNOSTIC] Current location fallback used")
+                                                println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
+                                                println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
+                                                openGoogleMapsNavigation(fallbackLat, fallbackLng, navigationState.destination.latitude, navigationState.destination.longitude)
+                                                println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
+                                                onEndNavigation()
                                             }
+                                        }.addOnFailureListener {
+                                            println("[CAMPNAV] [DIAGNOSTIC] Current location failed, fallback used")
+                                            println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
+                                            println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
+                                            openGoogleMapsNavigation(fallbackLat, fallbackLng, navigationState.destination.latitude, navigationState.destination.longitude)
+                                            println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
+                                            onEndNavigation()
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),
@@ -216,7 +244,10 @@ actual fun CampusMap(
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Button(
-                                    onClick = { onStatusChange(NavigationStatus.SELECTING_START_POINT) },
+                                    onClick = {
+                                        println("[CAMPNAV] [DIAGNOSTIC] Manual origin selected (Select starting point)")
+                                        onStatusChange(NavigationStatus.SELECTING_START_POINT)
+                                    },
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = org.com.core.ui.theme.AppColorScheme.primary)
                                 ) {
@@ -224,7 +255,10 @@ actual fun CampusMap(
                                     Spacer(Modifier.width(8.dp))
                                     Text("Select starting point")
                                 }
-                                TextButton(onClick = { onEndNavigation() }) {
+                                TextButton(onClick = {
+                                    println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
+                                    onEndNavigation()
+                                }) {
                                     Text("Cancel", color = Color.Red)
                                 }
                             }
@@ -233,260 +267,7 @@ actual fun CampusMap(
                 }
 
                 NavigationStatus.SELECTING_START_POINT -> {
-                    var searchQuery by remember { mutableStateOf("") }
-                    val filteredLocations = remember(searchQuery, locations) {
-                        if (searchQuery.isBlank()) emptyList()
-                        else locations.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    }
-
-                    androidx.compose.material3.Card(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 64.dp, start = 16.dp, end = 16.dp)
-                            .fillMaxWidth(),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Select a starting point",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            
-                            androidx.compose.material3.OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("Search location...") },
-                                leadingIcon = { Icon(Icons.Default.Search, null) },
-                                singleLine = true,
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-                            )
-                            
-                            if (filteredLocations.isNotEmpty()) {
-                                Spacer(Modifier.height(8.dp))
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    filteredLocations.take(3).forEach { loc ->
-                                        androidx.compose.material3.TextButton(
-                                            onClick = {
-                                                onMapClick(RoutePoint(loc.latitude, loc.longitude))
-                                            },
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Text(loc.name, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    locationClient.lastLocation.addOnSuccessListener { loc ->
-                                        if (loc != null && isValidCoordinate(loc.latitude, loc.longitude)) {
-                                            onMapClick(RoutePoint(loc.latitude, loc.longitude))
-                                        } else {
-                                            val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000).setMaxUpdates(1).build()
-                                            locationClient.requestLocationUpdates(request, object : LocationCallback() {
-                                                override fun onLocationResult(result: LocationResult) {
-                                                    result.lastLocation?.let { freshLoc ->
-                                                        if (isValidCoordinate(freshLoc.latitude, freshLoc.longitude)) {
-                                                            onMapClick(RoutePoint(freshLoc.latitude, freshLoc.longitude))
-                                                        }
-                                                    }
-                                                }
-                                            }, null)
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = org.com.core.ui.theme.AppColorScheme.primary)
-                            ) {
-                                Icon(Icons.Default.MyLocation, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Use Current Location")
-                            }
-                            
-                            Text(
-                                "Or tap on the map",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(top = 8.dp).align(Alignment.CenterHorizontally)
-                            )
-                        }
-                    }
-                    
-                    ExtendedFloatingActionButton(
-                        onClick = { onStatusChange(NavigationStatus.SHOWING_NAV_CHOICE) },
-                        icon = { Icon(Icons.Default.ArrowBack, null) },
-                        text = { Text("Back") },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 32.dp)
-                    )
-                }
-
-                NavigationStatus.CONFIRMING_START_POINT -> {
-                    androidx.compose.material3.Card(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Starting point selected", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            Spacer(Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    navigationState.selectedStartPoint?.let { start ->
-                                        openGoogleMapsNavigation(start.latitude, start.longitude, navigationState.destination.latitude, navigationState.destination.longitude)
-                                        onEndNavigation()
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Use this starting point")
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            androidx.compose.material3.OutlinedButton(
-                                onClick = { onStatusChange(NavigationStatus.SELECTING_START_POINT) },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Choose again")
-                            }
-                            TextButton(onClick = { onEndNavigation() }) {
-                                Text("Cancel", color = Color.Red)
-                            }
-                        }
-                    }
-                }
-
-                NavigationStatus.SELECTING_ORIGIN -> {
-                    androidx.compose.material3.Card(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface)
-                    ) {
-                        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Navigate to ${navigationState.destination.name}",
-                                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                            )
-                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
-                            
-                            androidx.compose.material3.Button(
-                                onClick = {
-                                    onStartNavigation(navigationState.destination, null)
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = org.com.core.ui.theme.AppColorScheme.primary)
-                            ) {
-                                Icon(Icons.Default.MyLocation, contentDescription = null)
-                                androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
-                                Text(if (navigationState.userLocation != null) "Use Current Location" else "Waiting for Current Location...")
-                            }
-                            
-                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
-                            Text("Or select a starting location:", style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = Color.Gray)
-                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(4.dp))
-                            
-                            var expanded by remember { mutableStateOf(false) }
-                            var selectedOrigin by remember { mutableStateOf<CampusLocation?>(null) }
-                            
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                androidx.compose.material3.OutlinedButton(
-                                    onClick = { expanded = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(selectedOrigin?.name ?: "Choose Starting Location")
-                                    Icon(Icons.Default.ArrowDropDown, null)
-                                }
-                                androidx.compose.material3.DropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false }
-                                ) {
-                                    locations.filter { it.id != navigationState.destination.id }.forEach { loc ->
-                                        androidx.compose.material3.DropdownMenuItem(
-                                            text = { Text(loc.name) },
-                                            onClick = {
-                                                selectedOrigin = loc
-                                                expanded = false
-                                                onStartNavigation(navigationState.destination, loc)
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                            
-                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
-                            androidx.compose.material3.TextButton(
-                                onClick = { onEndNavigation() },
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            ) {
-                                Text("Cancel", color = Color.Red)
-                            }
-                        }
-                    }
-                }
-                NavigationStatus.CALCULATING -> {
-                    androidx.compose.material3.Card(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Calculating route to ${navigationState.destination.name}...", style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
-                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
-                            androidx.compose.material3.LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = org.com.core.ui.theme.AppColorScheme.primary
-                            )
-                        }
-                    }
-                }
-                NavigationStatus.ACTIVE -> {
-                    androidx.compose.material3.Card(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Routing to ${navigationState.destination.name}",
-                                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                            )
-                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(4.dp))
-                            navigationState.route?.let { r ->
-                                val distText = if (r.distanceMeters >= 1000) "${((r.distanceMeters / 100).toInt() / 10.0)} km" else "${r.distanceMeters.toInt()} m"
-                                val mins = (r.durationSeconds / 60).toInt()
-                                val durationText = if (mins > 0) "$mins min" else "Less than a min"
-                                Text("$distText • $durationText", style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = org.com.core.ui.theme.AppColorScheme.primary, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-                            }
-                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
-                            androidx.compose.material3.Button(
-                                onClick = { onEndNavigation() },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4B4B))
-                            ) {
-                                Text("End Navigation", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = Color.White)
-                            }
-                        }
-                    }
+                    // Selecting start point overlay handled above in onMapClick or cards
                 }
                 else -> {}
             }

@@ -44,7 +44,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/categories/**").permitAll()
                 .requestMatchers("/api/projects/**").permitAll()
                 .requestMatchers("/api/playlists/**").permitAll()
-                .anyRequest().permitAll() // Temporarily permit all to ensure navigation works
+                .requestMatchers("/api/contributions/**").permitAll()
+                .requestMatchers("/api/reviews/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider());

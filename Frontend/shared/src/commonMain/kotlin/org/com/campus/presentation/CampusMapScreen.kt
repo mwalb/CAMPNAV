@@ -42,9 +42,8 @@ fun CampusMapScreen(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(university.id) {
-        println("[CAMPNAV] UNIVERSITY SELECTED: ${university.name} (ID: ${university.id})")
+        println("[CAMPNAV] [DIAGNOSTIC] University selected: ${university.name} (ID: ${university.id})")
         searchQuery = ""
-        activeSelectedLocation = null
         try {
             val fetchedLocations = repository.getLocations(university.id)
             locations = fetchedLocations.filter { it.isActive }
@@ -57,6 +56,13 @@ fun CampusMapScreen(
     // Handle initial state and navigation flag (1001L)
     LaunchedEffect(initialSelectedLocation, selectedCategoryId) {
         if (initialSelectedLocation != null) {
+            println("[CAMPNAV] [DIAGNOSTIC] Destination selected: ${initialSelectedLocation.name}")
+            println("[CAMPNAV] [DIAGNOSTIC] Destination ID: ${initialSelectedLocation.id}")
+            println("[CAMPNAV] [DIAGNOSTIC] Destination name: ${initialSelectedLocation.name}")
+            println("[CAMPNAV] [DIAGNOSTIC] Destination latitude: ${initialSelectedLocation.latitude}")
+            println("[CAMPNAV] [DIAGNOSTIC] Destination longitude: ${initialSelectedLocation.longitude}")
+            println("[CAMPNAV] [DIAGNOSTIC] Navigation session created")
+
             activeSelectedLocation = initialSelectedLocation
             if (selectedCategoryId == 1001L) {
                 navigationState = navigationState.copy(
@@ -72,35 +78,38 @@ fun CampusMapScreen(
         }
     }
 
+    val effectiveLocations = remember(locations, activeSelectedLocation) {
+        if (activeSelectedLocation != null && !locations.any { it.id == activeSelectedLocation!!.id }) {
+            listOf(activeSelectedLocation!!) + locations
+        } else {
+            locations
+        }
+    }
+
     val searchSuggestions = remember(searchQuery, locations) {
         val q = searchQuery.trim()
         if (q.isBlank()) emptyList()
         else {
-            val results = locations.filter {
+            val results = effectiveLocations.filter {
                 it.name.contains(q, ignoreCase = true) ||
                         it.officialName?.contains(q, ignoreCase = true) == true ||
                         it.buildingCode?.contains(q, ignoreCase = true) == true ||
                         it.aliases?.split(";")?.any { alias -> alias.trim().contains(q, ignoreCase = true) } == true
             }.sortedBy { it.name }.take(8)
-            println("[CAMPNAV] SEARCH QUERY: '$q', SEARCH SUGGESTIONS count: ${results.size} for university ${university.name}")
             results
         }
     }
 
-    // Filter locations: display only selected content (Content View) or category locations (Category View) or all locations
-    val displayLocations = remember(locations, activeSelectedLocation, selectedCategoryId) {
+    val displayLocations = remember(effectiveLocations, activeSelectedLocation, selectedCategoryId) {
         when {
             activeSelectedLocation != null -> {
-                println("[CAMPNAV] CONTENT VIEW: displaying only selected location ${activeSelectedLocation!!.name} (${activeSelectedLocation!!.latitude}, ${activeSelectedLocation!!.longitude})")
                 listOf(activeSelectedLocation!!)
             }
             selectedCategoryId != null -> {
-                println("[CAMPNAV] CATEGORY VIEW: displaying category locations for id $selectedCategoryId")
-                locations.filter { it.categoryId == selectedCategoryId }
+                effectiveLocations.filter { it.categoryId == selectedCategoryId }
             }
             else -> {
-                println("[CAMPNAV] ALL LOCATIONS VIEW: displaying all active locations")
-                locations
+                effectiveLocations
             }
         }
     }
@@ -110,9 +119,9 @@ fun CampusMapScreen(
             modifier = Modifier.fillMaxSize(),
             university = university,
             locations = displayLocations,
-            allLocations = locations,
+            allLocations = effectiveLocations,
             onLocationSelected = { location ->
-                println("[CAMPNAV] LOCATION SELECTED ON MAP: ${location.name}")
+                println("[CAMPNAV] [DIAGNOSTIC] Destination selected: ${location.name}, ID: ${location.id}, Lat: ${location.latitude}, Lng: ${location.longitude}")
                 activeSelectedLocation = location
                 navigationState = navigationState.copy(
                     destination = location,
@@ -123,7 +132,7 @@ fun CampusMapScreen(
             initialSelectedLocation = activeSelectedLocation,
             navigationState = navigationState,
             onStartNavigation = { dest, _ ->
-                println("[CAMPNAV] NAVIGATION START: destination=${dest.name}")
+                println("[CAMPNAV] [DIAGNOSTIC] Navigate button clicked. Destination: ${dest.name}")
                 navigationState = navigationState.copy(
                     destination = dest,
                     status = NavigationStatus.SHOWING_NAV_CHOICE
@@ -131,25 +140,28 @@ fun CampusMapScreen(
             },
             onEndNavigation = {
                 if (navigationState.status != NavigationStatus.IDLE) {
-                    println("[CAMPNAV] NAVIGATION SESSION RESET / RETURNED TO IDLE")
+                    println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
                     navigationState = NavigationState()
                 }
             },
             onLocationUpdate = { point ->
-                val prevLoc = navigationState.userLocation
                 navigationState = navigationState.copy(userLocation = point)
             },
             onMapClick = { point ->
                 if (navigationState.status == NavigationStatus.SELECTING_START_POINT) {
                     navigationState.destination?.let { dest ->
-                        println("[CAMPNAV] GOOGLE MAPS HANDOFF (Manual Start): origin=${point.latitude},${point.longitude}, destination=${dest.latitude},${dest.longitude}")
+                        println("[CAMPNAV] [DIAGNOSTIC] Manual origin selected")
+                        println("[CAMPNAV] [DIAGNOSTIC] Origin latitude: ${point.latitude}")
+                        println("[CAMPNAV] [DIAGNOSTIC] Origin longitude: ${point.longitude}")
+                        println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
+                        println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
                         openGoogleMapsNavigation(point.latitude, point.longitude, dest.latitude, dest.longitude)
                     }
+                    println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
                     navigationState = NavigationState()
                 }
             },
             onStatusChange = { status ->
-                println("[CAMPNAV] NAVIGATION STATUS CHANGED: $status")
                 navigationState = navigationState.copy(status = status)
             }
         )
@@ -200,8 +212,7 @@ fun CampusMapScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        println("[CAMPNAV] CONTENT SELECTED: ${suggestion.name}")
-                                        println("[CAMPNAV] DESTINATION SELECTED: ${suggestion.name}")
+                                        println("[CAMPNAV] [DIAGNOSTIC] Destination selected: ${suggestion.name}, ID: ${suggestion.id}")
                                         activeSelectedLocation = suggestion
                                         navigationState = navigationState.copy(
                                             destination = suggestion,
@@ -222,18 +233,4 @@ fun CampusMapScreen(
             }
         }
     }
-}
-
-
-private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-    val r = 6371e3
-    val phi1 = lat1 * kotlin.math.PI / 180
-    val phi2 = lat2 * kotlin.math.PI / 180
-    val dphi = (lat2 - lat1) * kotlin.math.PI / 180
-    val dlambda = (lon2 - lon1) * kotlin.math.PI / 180
-    val a = kotlin.math.sin(dphi / 2) * kotlin.math.sin(dphi / 2) +
-            kotlin.math.cos(phi1) * kotlin.math.cos(phi2) *
-            kotlin.math.sin(dlambda / 2) * kotlin.math.sin(dlambda / 2)
-    val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
-    return r * c
 }

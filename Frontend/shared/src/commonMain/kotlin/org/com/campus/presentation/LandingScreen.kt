@@ -10,8 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +30,9 @@ import org.com.core.ui.theme.AppColorScheme
 fun LandingScreen(
     onExploreCampuses: () -> Unit,
     onReportIssue: () -> Unit,
-    onEntertainment: () -> Unit = {}
+    onEntertainment: () -> Unit = {},
+    onCommunity: () -> Unit = {},
+    onAdmin: () -> Unit = {}
 ) {
     var startAnimation by remember { mutableStateOf(false) }
     
@@ -121,6 +122,26 @@ fun LandingScreen(
                     visible = startAnimation,
                     delay = 500,
                     onClick = onReportIssue
+                )
+
+                LandingActionCard(
+                    title = "Community\nHub",
+                    subtitle = "Contribute locations & area reviews",
+                    icon = Icons.Default.Person,
+                    color = Color(0xFF4CAF50),
+                    visible = startAnimation,
+                    delay = 600,
+                    onClick = onCommunity
+                )
+
+                LandingActionCard(
+                    title = "Admin\nDashboard",
+                    subtitle = "Moderation, contributions & logs",
+                    icon = Icons.Default.Lock,
+                    color = Color(0xFFFFB74D),
+                    visible = startAnimation,
+                    delay = 700,
+                    onClick = onAdmin
                 )
             }
 

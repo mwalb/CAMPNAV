@@ -8,11 +8,7 @@ import org.com.campus.presentation.CampusMapScreen
 import org.com.campus.presentation.LandingScreen
 import org.com.campus.presentation.UniversitySelectionScreen
 import org.com.community.model.UserRole
-import org.com.community.presentation.CommunityDashboardScreen
-import org.com.community.presentation.CommunityMapScreen
-import org.com.community.presentation.CommunityReportScreen
-import org.com.community.presentation.IssueDetailScreen
-import org.com.community.presentation.ReportingLandingScreen
+import org.com.community.presentation.*
 import org.com.core.ui.theme.CampNavTheme
 import org.com.entertainment.presentation.IPTVPlayerApp
 
@@ -26,7 +22,15 @@ enum class AppMode {
     CommunityDashboard,
     CommunityMap,
     IssueDetail,
-    Entertainment
+    Entertainment,
+    CommunityHub,
+    CommunityAddLocation,
+    CommunityReviews,
+    CommunityFeedback,
+    ContactUs,
+    ContributionStatus,
+    AdminLogin,
+    AdminDashboard
 }
 
 @Composable
@@ -36,17 +40,76 @@ fun MainApp() {
     var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
     var selectedIssueId by remember { mutableStateOf<String?>(null) }
+    var contributionReference by remember { mutableStateOf<String?>(null) }
+    var adminToken by remember { mutableStateOf<String?>(null) }
 
     CampNavTheme {
         when (mode) {
             AppMode.Landing -> LandingScreen(
                 onExploreCampuses = { mode = AppMode.UniversitySelection },
                 onReportIssue = { mode = AppMode.ReportingLanding },
-                onEntertainment = { mode = AppMode.Entertainment }
+                onEntertainment = { mode = AppMode.Entertainment },
+                onCommunity = { mode = AppMode.CommunityHub },
+                onAdmin = {
+                    if (adminToken != null) mode = AppMode.AdminDashboard
+                    else mode = AppMode.AdminLogin
+                }
             )
             AppMode.Entertainment -> IPTVPlayerApp(
                 onBackToSelection = { mode = AppMode.Landing }
             )
+            AppMode.CommunityHub -> CommunityHubScreen(
+                onBack = { mode = AppMode.Landing },
+                onNavigateToAddLocation = { mode = AppMode.CommunityAddLocation },
+                onNavigateToReviews = { mode = AppMode.CommunityReviews },
+                onNavigateToFeedback = { mode = AppMode.CommunityFeedback },
+                onNavigateToContact = { mode = AppMode.ContactUs }
+            )
+            AppMode.CommunityAddLocation -> AddLocationScreen(
+                onBack = { mode = AppMode.CommunityHub },
+                onSubmissionSuccess = { ref ->
+                    contributionReference = ref
+                    mode = AppMode.ContributionStatus
+                }
+            )
+            AppMode.CommunityReviews -> AreaReviewsScreen(
+                onBack = { mode = AppMode.CommunityHub },
+                onNavigateToAdmin = {
+                    if (adminToken != null) mode = AppMode.AdminDashboard
+                    else mode = AppMode.AdminLogin
+                }
+            )
+            AppMode.CommunityFeedback -> UserFeedbackScreen(
+                onBack = { mode = AppMode.CommunityHub }
+            )
+            AppMode.ContactUs -> ContactUsScreen(
+                onBack = { mode = AppMode.CommunityHub }
+            )
+            AppMode.ContributionStatus -> ContributionStatusScreen(
+                initialReference = contributionReference,
+                onBack = { mode = AppMode.CommunityHub }
+            )
+            AppMode.AdminLogin -> AdminLoginScreen(
+                onBack = { mode = AppMode.CommunityHub },
+                onLoginSuccess = { token ->
+                    adminToken = token
+                    mode = AppMode.AdminDashboard
+                }
+            )
+            AppMode.AdminDashboard -> adminToken?.let { token ->
+                AdminDashboardScreen(
+                    token = token,
+                    onBack = { mode = AppMode.CommunityHub }
+                )
+            } ?: run {
+                AdminLoginScreen(
+                    onBack = { mode = AppMode.CommunityHub },
+                    onLoginSuccess = { token ->
+                        adminToken = token
+                        mode = AppMode.AdminDashboard
+                    }
+                )
+            }
             AppMode.ReportingLanding -> ReportingLandingScreen(
                 onReportNew = { mode = AppMode.CommunityReport },
                 onViewDashboard = { mode = AppMode.CommunityDashboard },
@@ -75,6 +138,7 @@ fun MainApp() {
             }
             AppMode.UniversitySelection -> UniversitySelectionScreen(
                 onUniversitySelected = { university ->
+                    println("[CAMPNAV] [DIAGNOSTIC] University selected: ${university.name} (ID: ${university.id})")
                     selectedUniversity = university
                     selectedLocation = null
                     selectedCategoryId = null
@@ -87,6 +151,7 @@ fun MainApp() {
                     university = university,
                     onBack = { mode = AppMode.UniversitySelection },
                     onFindOnMap = { location, categoryId ->
+                        println("[CAMPNAV] [DIAGNOSTIC] Destination selected: ${location.name}, Destination ID: ${location.id}, Lat: ${location.latitude}, Lng: ${location.longitude}")
                         selectedLocation = location
                         selectedCategoryId = categoryId
                         mode = AppMode.CampusNav
