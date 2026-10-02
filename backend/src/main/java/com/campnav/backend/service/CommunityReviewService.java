@@ -101,6 +101,21 @@ public class CommunityReviewService {
         return saved;
     }
 
+    @Transactional
+    public void deleteReview(Long id, String adminUsername) {
+        CommunityReview review = reviewRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Review not found with id: " + id));
+        reviewRepository.delete(review);
+
+        AdminActivityLog log = AdminActivityLog.builder()
+                .action("DELETE_REVIEW")
+                .actorUsername(adminUsername)
+                .description("Permanently deleted community review ID: " + id)
+                .relatedEntityId("REVIEW-" + id)
+                .build();
+        activityLogRepository.save(log);
+    }
+
     public List<CommunityReview> getReviewsByUniversity(Long universityId) {
         return reviewRepository.findByUniversityIdAndStatus(universityId, "APPROVED");
     }

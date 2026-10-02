@@ -7,6 +7,7 @@ import org.com.campus.presentation.CampusDestinationScreen
 import org.com.campus.presentation.CampusMapScreen
 import org.com.campus.presentation.LandingScreen
 import org.com.campus.presentation.UniversitySelectionScreen
+import org.com.community.model.CommunityContribution
 import org.com.community.model.UserRole
 import org.com.community.presentation.*
 import org.com.core.ui.theme.CampNavTheme
@@ -29,6 +30,7 @@ enum class AppMode {
     CommunityFeedback,
     ContactUs,
     ContributionStatus,
+    CommercialVerification,
     AdminLogin,
     AdminDashboard
 }
@@ -41,6 +43,7 @@ fun MainApp() {
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
     var selectedIssueId by remember { mutableStateOf<String?>(null) }
     var contributionReference by remember { mutableStateOf<String?>(null) }
+    var submittedCommercialContribution by remember { mutableStateOf<CommunityContribution?>(null) }
     var adminToken by remember { mutableStateOf<String?>(null) }
 
     CampNavTheme {
@@ -70,8 +73,26 @@ fun MainApp() {
                 onSubmissionSuccess = { ref ->
                     contributionReference = ref
                     mode = AppMode.ContributionStatus
+                },
+                onCommercialSubmitted = { contrib ->
+                    submittedCommercialContribution = contrib
+                    mode = AppMode.CommercialVerification
                 }
             )
+            AppMode.CommercialVerification -> submittedCommercialContribution?.let { contrib ->
+                CommercialVerificationScreen(
+                    contribution = contrib,
+                    onBackToHub = { mode = AppMode.CommunityHub }
+                )
+            } ?: run {
+                CommunityHubScreen(
+                    onBack = { mode = AppMode.Landing },
+                    onNavigateToAddLocation = { mode = AppMode.CommunityAddLocation },
+                    onNavigateToReviews = { mode = AppMode.CommunityReviews },
+                    onNavigateToFeedback = { mode = AppMode.CommunityFeedback },
+                    onNavigateToContact = { mode = AppMode.ContactUs }
+                )
+            }
             AppMode.CommunityReviews -> AreaReviewsScreen(
                 onBack = { mode = AppMode.CommunityHub },
                 onNavigateToAdmin = {

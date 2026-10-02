@@ -68,4 +68,18 @@ public class UserFeedbackService {
 
         return saved;
     }
+
+    public void deleteFeedback(Long id, String adminUsername) {
+        UserFeedback feedback = feedbackRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Feedback not found with id: " + id));
+        feedbackRepository.delete(feedback);
+
+        AdminActivityLog log = AdminActivityLog.builder()
+                .action("DELETE_FEEDBACK")
+                .actorUsername(adminUsername)
+                .description("Permanently deleted user feedback ID: " + id)
+                .relatedEntityId("FEEDBACK-" + id)
+                .build();
+        activityLogRepository.save(log);
+    }
 }

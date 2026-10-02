@@ -331,17 +331,24 @@ private external fun stopTrackingUserLocation()
                 currentLocBtn.style.cssText = btnStyle;
                 currentLocBtn.onclick = () => {
                     console.log("[CAMPNAV][NAV] origin selection: current location");
+                    const navWindow = window.open('about:blank', '_blank');
                     window.getPositionWithFallback((pos) => {
                         const oLat = pos.coords.latitude;
                         const oLng = pos.coords.longitude;
                         console.log("[CAMPNAV][NAV] origin latitude: " + oLat);
                         console.log("[CAMPNAV][NAV] origin longitude: " + oLng);
                         console.log("[CAMPNAV][NAV] destination consumed: " + dest.name + " (" + dest.latitude + ", " + dest.longitude + ")");
-                        window.openGoogleMapsNavigation(oLat, oLng, dest.latitude, dest.longitude);
+                        const url = 'https://www.google.com/maps/dir/?api=1&origin=' + oLat + ',' + oLng + '&destination=' + dest.latitude + ',' + dest.longitude + '&travelmode=driving';
+                        if (navWindow) {
+                            navWindow.location.href = url;
+                        } else {
+                            window.open(url, '_blank');
+                        }
                         window.hideNavOverlays();
                         console.log("[CAMPNAV][NAV] navigation state reset");
                         window.onEndNav();
                     }, (err) => {
+                        if (navWindow) navWindow.close();
                         console.warn("[CAMPNAV] Geolocation failed:", err);
                         alert("We couldn't access your current location. Please allow location permissions in your browser or select a starting point manually.");
                         window.hideNavOverlays();
@@ -483,16 +490,23 @@ private external fun stopTrackingUserLocation()
                     } else if (!finalDest) {
                         alert("Destination missing.");
                     } else {
+                        const navWindow = window.open('about:blank', '_blank');
                         window.getPositionWithFallback((pos) => {
                             console.log("[CAMPNAV][NAV] origin selection: fallback current location");
                             console.log("[CAMPNAV][NAV] origin latitude: " + pos.coords.latitude);
                             console.log("[CAMPNAV][NAV] origin longitude: " + pos.coords.longitude);
                             console.log("[CAMPNAV][NAV] destination consumed: " + finalDest.name);
-                            window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, finalDest.latitude, finalDest.longitude);
+                            const url = 'https://www.google.com/maps/dir/?api=1&origin=' + pos.coords.latitude + ',' + pos.coords.longitude + '&destination=' + finalDest.latitude + ',' + finalDest.longitude + '&travelmode=driving';
+                            if (navWindow) {
+                                navWindow.location.href = url;
+                            } else {
+                                window.open(url, '_blank');
+                            }
                             window.hideNavOverlays();
                             console.log("[CAMPNAV][NAV] navigation state reset");
                             window.onEndNav();
                         }, (err) => {
+                            if (navWindow) navWindow.close();
                             alert("Please select or search for a starting point.");
                         });
                     }
@@ -556,12 +570,19 @@ private external fun stopTrackingUserLocation()
                 currentLocBtn.style.cssText = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left;";
                 
                 currentLocBtn.onclick = () => {
+                    const navWindow = window.open('about:blank', '_blank');
                     window.getPositionWithFallback((pos) => {
                         window.hideNavOverlays();
-                        window.openGoogleMapsNavigation(pos.coords.latitude, pos.coords.longitude, dest.latitude, dest.longitude);
+                        const url = 'https://www.google.com/maps/dir/?api=1&origin=' + pos.coords.latitude + ',' + pos.coords.longitude + '&destination=' + dest.latitude + ',' + dest.longitude + '&travelmode=driving';
+                        if (navWindow) {
+                            navWindow.location.href = url;
+                        } else {
+                            window.open(url, '_blank');
+                        }
                         console.log("[CAMPNAV][NAV] navigation state reset");
                         window.onEndNav();
                     }, (err) => {
+                        if (navWindow) navWindow.close();
                         alert("Location tracking failed.");
                     });
                 };

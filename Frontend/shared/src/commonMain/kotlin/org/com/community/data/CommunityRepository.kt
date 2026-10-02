@@ -76,6 +76,17 @@ class CommunityRepository {
         }.body()
     }
 
+    suspend fun deleteFeedback(token: String, id: Long): Boolean {
+        return try {
+            apiClient.delete("/api/feedback/admin/$id") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     // --- Auth & Admin ---
     suspend fun login(request: LoginRequest): LoginResponse {
         return apiClient.post("/api/auth/login") {
@@ -138,6 +149,17 @@ class CommunityRepository {
             header(HttpHeaders.Authorization, "Bearer $token")
             setBody(RejectRequest(reason))
         }.body()
+    }
+
+    suspend fun deleteReview(token: String, id: Long): Boolean {
+        return try {
+            apiClient.delete("/api/admin/reviews/$id") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     suspend fun getAdminLogs(token: String): List<AdminActivityLog> {

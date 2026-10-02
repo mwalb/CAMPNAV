@@ -208,30 +208,46 @@ actual fun CampusMap(
                                 Button(
                                     onClick = {
                                         println("[CAMPNAV] [DIAGNOSTIC] Current location requested")
-                                        locationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).addOnSuccessListener { loc ->
-                                            if (loc != null && isValidCoordinate(loc.latitude, loc.longitude)) {
-                                                println("[CAMPNAV] [DIAGNOSTIC] Current location received: lat=${loc.latitude}, lng=${loc.longitude}")
-                                                println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
-                                                println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
-                                                openGoogleMapsNavigation(loc.latitude, loc.longitude, navigationState.destination.latitude, navigationState.destination.longitude)
-                                                println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
-                                                onEndNavigation()
+                                        val launchNav: (Double, Double) -> Unit = { lat, lng ->
+                                            println("[CAMPNAV] [DIAGNOSTIC] Current location received: lat=$lat, lng=$lng")
+                                            println("[CAMPNAV] [DIAGNOSTIC] Navigation URL generated")
+                                            println("[CAMPNAV] [DIAGNOSTIC] Google Maps launch requested")
+                                            openGoogleMapsNavigation(lat, lng, navigationState.destination.latitude, navigationState.destination.longitude)
+                                            println("[CAMPNAV] [DIAGNOSTIC] Navigation session reset")
+                                            onEndNavigation()
+                                        }
+
+                                        locationClient.lastLocation.addOnSuccessListener { lastLoc ->
+                                            if (lastLoc != null && isValidCoordinate(lastLoc.latitude, lastLoc.longitude)) {
+                                                launchNav(lastLoc.latitude, lastLoc.longitude)
                                             } else {
-                                                locationClient.lastLocation.addOnSuccessListener { lastLoc ->
-                                                    if (lastLoc != null && isValidCoordinate(lastLoc.latitude, lastLoc.longitude)) {
-                                                        println("[CAMPNAV] [DIAGNOSTIC] Current location received via lastLocation")
-                                                        openGoogleMapsNavigation(lastLoc.latitude, lastLoc.longitude, navigationState.destination.latitude, navigationState.destination.longitude)
-                                                        onEndNavigation()
+                                                locationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).addOnSuccessListener { loc ->
+                                                    if (loc != null && isValidCoordinate(loc.latitude, loc.longitude)) {
+                                                        launchNav(loc.latitude, loc.longitude)
                                                     } else {
-                                                        println("[CAMPNAV] [DIAGNOSTIC] Current location unavailable")
-                                                        android.widget.Toast.makeText(context, "Could not access current location. Please allow location permissions and try again.", android.widget.Toast.LENGTH_LONG).show()
+                                                        locationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null).addOnSuccessListener { loc2 ->
+                                                            if (loc2 != null && isValidCoordinate(loc2.latitude, loc2.longitude)) {
+                                                                launchNav(loc2.latitude, loc2.longitude)
+                                                            } else {
+                                                                println("[CAMPNAV] [DIAGNOSTIC] Current location unavailable")
+                                                                android.widget.Toast.makeText(context, "Could not access current location. Please allow location permissions and try again.", android.widget.Toast.LENGTH_LONG).show()
+                                                            }
+                                                        }.addOnFailureListener {
+                                                            android.widget.Toast.makeText(context, "Could not access current location. Please check location settings.", android.widget.Toast.LENGTH_LONG).show()
+                                                        }
                                                     }
                                                 }.addOnFailureListener {
-                                                    android.widget.Toast.makeText(context, "Could not access current location. Please allow location permissions.", android.widget.Toast.LENGTH_LONG).show()
+                                                    android.widget.Toast.makeText(context, "Location access failed. Please enable GPS and location permissions.", android.widget.Toast.LENGTH_LONG).show()
                                                 }
                                             }
                                         }.addOnFailureListener {
-                                            android.widget.Toast.makeText(context, "Location access failed. Please enable GPS and location permissions.", android.widget.Toast.LENGTH_LONG).show()
+                                            locationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).addOnSuccessListener { loc ->
+                                                if (loc != null && isValidCoordinate(loc.latitude, loc.longitude)) {
+                                                    launchNav(loc.latitude, loc.longitude)
+                                                } else {
+                                                    android.widget.Toast.makeText(context, "Location access failed. Please enable GPS.", android.widget.Toast.LENGTH_LONG).show()
+                                                }
+                                            }
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),

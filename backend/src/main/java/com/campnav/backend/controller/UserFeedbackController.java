@@ -61,6 +61,17 @@ public class UserFeedbackController {
         return ResponseEntity.ok(rejected);
     }
 
+    @DeleteMapping("/admin/{id}")
+    public ResponseEntity<java.util.Map<String, String>> deleteFeedback(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String adminUsername = authentication != null && authentication.getName() != null 
+                ? authentication.getName() 
+                : "admin";
+        feedbackService.deleteFeedback(id, adminUsername);
+        return ResponseEntity.ok(java.util.Map.of("message", "User feedback deleted successfully"));
+    }
+
     @Data
     public static class FeedbackRequest {
         private String feedbackText;

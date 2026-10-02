@@ -135,7 +135,7 @@ fun LandingScreen(
                 )
 
                 LandingActionCard(
-                    title = "Admin\nDashboard",
+                    title = "ADMIN",
                     subtitle = "Moderation, contributions & logs",
                     icon = Icons.Default.Lock,
                     color = Color(0xFFFFB74D),

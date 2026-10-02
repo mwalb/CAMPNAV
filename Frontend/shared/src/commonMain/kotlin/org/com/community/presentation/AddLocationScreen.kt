@@ -35,7 +35,8 @@ import org.com.core.ui.theme.AppColorScheme
 @Composable
 fun AddLocationScreen(
     onBack: () -> Unit,
-    onSubmissionSuccess: (String) -> Unit
+    onSubmissionSuccess: (String) -> Unit,
+    onCommercialSubmitted: (CommunityContribution) -> Unit = {}
 ) {
     var universities by remember { mutableStateOf(emptyList<University>()) }
     var categories by remember { mutableStateOf(emptyList<Category>()) }
@@ -269,57 +270,59 @@ fun AddLocationScreen(
                     OutlinedTextField(
                         value = locationName,
                         onValueChange = { locationName = it },
-                        label = { Text("Location Name (e.g. Campus Bookshop, NMB)") },
+                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Commercial Location Name *" else "Location Name (e.g. Campus Bookshop, NMB)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
                     )
                 }
 
-                item {
-                    Column {
-                        Text("Category (Optional)", color = Color.White, fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.height(8.dp))
-                        LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(categories) { cat ->
-                                val isSelected = !isCustomCategory && selectedCategory?.id == cat.id
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = {
-                                        if (isSelected) {
-                                            selectedCategory = null
-                                        } else {
-                                            selectedCategory = cat
-                                            isCustomCategory = false
-                                        }
-                                    },
-                                    label = { Text(cat.name) }
-                                )
-                            }
-                            item {
-                                FilterChip(
-                                    selected = isCustomCategory,
-                                    onClick = {
-                                        isCustomCategory = !isCustomCategory
-                                        if (isCustomCategory) {
-                                            selectedCategory = null
-                                        }
-                                    },
-                                    label = { Text("+ Custom Category") }
-                                )
-                            }
-                        }
-
-                        if (isCustomCategory) {
+                if (areaType == "UNIVERSITY_AREA") {
+                    item {
+                        Column {
+                            Text("Category (Optional)", color = Color.White, fontWeight = FontWeight.SemiBold)
                             Spacer(Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = customCategoryText,
-                                onValueChange = { customCategoryText = it },
-                                label = { Text("Enter your custom category name") },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
-                            )
+                            LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(categories) { cat ->
+                                    val isSelected = !isCustomCategory && selectedCategory?.id == cat.id
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            if (isSelected) {
+                                                selectedCategory = null
+                                            } else {
+                                                selectedCategory = cat
+                                                isCustomCategory = false
+                                            }
+                                        },
+                                        label = { Text(cat.name) }
+                                    )
+                                }
+                                item {
+                                    FilterChip(
+                                        selected = isCustomCategory,
+                                        onClick = {
+                                            isCustomCategory = !isCustomCategory
+                                            if (isCustomCategory) {
+                                                selectedCategory = null
+                                            }
+                                        },
+                                        label = { Text("+ Custom Category") }
+                                    )
+                                }
+                            }
+
+                            if (isCustomCategory) {
+                                Spacer(Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = customCategoryText,
+                                    onValueChange = { customCategoryText = it },
+                                    label = { Text("Enter custom category name") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                                )
+                            }
                         }
                     }
                 }
@@ -328,7 +331,7 @@ fun AddLocationScreen(
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text("Description & Details") },
+                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Description & Business Details *" else "Description & Details") },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -336,7 +339,7 @@ fun AddLocationScreen(
                 }
 
                 item {
-                    Text("Location Coordinates", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(if (areaType == "COMMERCIAL_AREA") "Location Coordinates *" else "Location Coordinates", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
@@ -379,7 +382,7 @@ fun AddLocationScreen(
                         OutlinedTextField(
                             value = latitudeStr,
                             onValueChange = { latitudeStr = it },
-                            label = { Text("Latitude") },
+                            label = { Text(if (areaType == "COMMERCIAL_AREA") "Latitude *" else "Latitude") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -387,7 +390,7 @@ fun AddLocationScreen(
                         OutlinedTextField(
                             value = longitudeStr,
                             onValueChange = { longitudeStr = it },
-                            label = { Text("Longitude") },
+                            label = { Text(if (areaType == "COMMERCIAL_AREA") "Longitude *" else "Longitude") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -396,12 +399,12 @@ fun AddLocationScreen(
                 }
 
                 item {
-                    Text("Contributor Information (Anonymous supported)", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(if (areaType == "COMMERCIAL_AREA") "Owner / Contact Information *" else "Contributor Information (Anonymous supported)", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = contributorName,
                         onValueChange = { contributorName = it },
-                        label = { Text("Your Name (Optional / Anonymous)") },
+                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Owner / Contributor Name *" else "Your Name (Optional / Anonymous)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -410,7 +413,7 @@ fun AddLocationScreen(
                     OutlinedTextField(
                         value = contributorContact,
                         onValueChange = { contributorContact = it },
-                        label = { Text("Contact Email or Phone (Optional)") },
+                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Owner Phone / Email Contact *" else "Contact Email or Phone (Optional)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -421,10 +424,24 @@ fun AddLocationScreen(
                     Spacer(Modifier.height(16.dp))
                     Button(
                         onClick = {
-                            if (selectedUniversity == null || locationName.isBlank() || latitudeStr.toDoubleOrNull() == null || longitudeStr.toDoubleOrNull() == null) {
-                                errorMessage = "Please fill in university, location name, and valid coordinates."
-                                return@Button
+                            if (areaType == "COMMERCIAL_AREA") {
+                                if (selectedUniversity == null ||
+                                    locationName.isBlank() ||
+                                    description.isBlank() ||
+                                    latitudeStr.toDoubleOrNull() == null ||
+                                    longitudeStr.toDoubleOrNull() == null ||
+                                    contributorName.isBlank() ||
+                                    contributorContact.isBlank()) {
+                                    errorMessage = "All fields are required for Commercial Area contributions. Please fill in location name, description, valid coordinates, owner name, and owner contact details."
+                                    return@Button
+                                }
+                            } else {
+                                if (selectedUniversity == null || locationName.isBlank() || latitudeStr.toDoubleOrNull() == null || longitudeStr.toDoubleOrNull() == null) {
+                                    errorMessage = "Please fill in university, location name, and valid coordinates."
+                                    return@Button
+                                }
                             }
+
                             isLoading = true
                             errorMessage = null
                             scope.launch {
@@ -433,8 +450,8 @@ fun AddLocationScreen(
                                         universityId = selectedUniversity!!.id,
                                         locationName = locationName.trim(),
                                         areaType = areaType,
-                                        categoryId = if (isCustomCategory) null else selectedCategory?.id,
-                                        customCategory = if (isCustomCategory) customCategoryText.ifBlank { null } else null,
+                                        categoryId = if (areaType == "COMMERCIAL_AREA") null else if (isCustomCategory) null else selectedCategory?.id,
+                                        customCategory = if (areaType == "COMMERCIAL_AREA") null else if (isCustomCategory) customCategoryText.ifBlank { null } else null,
                                         description = description.ifBlank { null },
                                         latitude = latitudeStr.toDouble(),
                                         longitude = longitudeStr.toDouble(),
@@ -443,6 +460,9 @@ fun AddLocationScreen(
                                     )
                                     val result = communityRepo.submitContribution(req)
                                     submittedContribution = result
+                                    if (areaType == "COMMERCIAL_AREA") {
+                                        onCommercialSubmitted(result)
+                                    }
                                 } catch (e: Exception) {
                                     errorMessage = "Submission failed: ${e.message}"
                                 } finally {

@@ -40,6 +40,8 @@ fun AdminDashboardScreen(
     var rejectTargetId by remember { mutableStateOf<Long?>(null) }
     var rejectFeedbackTargetId by remember { mutableStateOf<Long?>(null) }
     var rejectReviewTargetId by remember { mutableStateOf<Long?>(null) }
+    var deleteReviewTargetId by remember { mutableStateOf<Long?>(null) }
+    var deleteFeedbackTargetId by remember { mutableStateOf<Long?>(null) }
     var rejectionReason by remember { mutableStateOf("") }
 
     val communityRepo = remember { CommunityRepository() }
@@ -185,9 +187,9 @@ fun AdminDashboardScreen(
                                         Spacer(Modifier.height(4.dp))
                                         Text(review.comment, color = Color.LightGray)
 
-                                        if (review.status == "PENDING") {
-                                            Spacer(Modifier.height(8.dp))
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            if (review.status == "PENDING") {
                                                 Button(
                                                     onClick = {
                                                         scope.launch {
@@ -203,10 +205,19 @@ fun AdminDashboardScreen(
                                                 Button(
                                                     onClick = { rejectReviewTargetId = review.id },
                                                     modifier = Modifier.weight(1f),
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
                                                 ) {
                                                     Text("Reject")
                                                 }
+                                            }
+                                            Button(
+                                                onClick = { deleteReviewTargetId = review.id },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                                            ) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                                                Spacer(Modifier.width(4.dp))
+                                                Text("Delete")
                                             }
                                         }
                                     }
@@ -240,9 +251,9 @@ fun AdminDashboardScreen(
                                             Text("Date: ${fb.createdAt.take(19)}", color = Color.Gray, fontSize = 11.sp)
                                         }
 
-                                        if (fb.status == "PENDING") {
-                                            Spacer(Modifier.height(8.dp))
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            if (fb.status == "PENDING") {
                                                 Button(
                                                     onClick = {
                                                         scope.launch {
@@ -253,15 +264,24 @@ fun AdminDashboardScreen(
                                                     modifier = Modifier.weight(1f),
                                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                                                 ) {
-                                                    Text("Verify / Approve")
+                                                    Text("Approve")
                                                 }
                                                 Button(
                                                     onClick = { rejectFeedbackTargetId = fb.id },
                                                     modifier = Modifier.weight(1f),
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
                                                 ) {
                                                     Text("Reject")
                                                 }
+                                            }
+                                            Button(
+                                                onClick = { deleteFeedbackTargetId = fb.id },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                                            ) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                                                Spacer(Modifier.width(4.dp))
+                                                Text("Delete")
                                             }
                                         }
                                     }
@@ -412,6 +432,64 @@ fun AdminDashboardScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { rejectReviewTargetId = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Delete Review Confirmation Dialog
+        if (deleteReviewTargetId != null) {
+            AlertDialog(
+                onDismissRequest = { deleteReviewTargetId = null },
+                title = { Text("Delete Community Review") },
+                text = { Text("Are you sure you want to delete this review? This action cannot be undone and will permanently delete the review from the database.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val id = deleteReviewTargetId!!
+                            scope.launch {
+                                communityRepo.deleteReview(token, id)
+                                deleteReviewTargetId = null
+                                loadData()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                    ) {
+                        Text("Confirm Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteReviewTargetId = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Delete Feedback Confirmation Dialog
+        if (deleteFeedbackTargetId != null) {
+            AlertDialog(
+                onDismissRequest = { deleteFeedbackTargetId = null },
+                title = { Text("Delete User Feedback") },
+                text = { Text("Are you sure you want to delete this user feedback? This action cannot be undone and will permanently delete the feedback from the database.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val id = deleteFeedbackTargetId!!
+                            scope.launch {
+                                communityRepo.deleteFeedback(token, id)
+                                deleteFeedbackTargetId = null
+                                loadData()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                    ) {
+                        Text("Confirm Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteFeedbackTargetId = null }) {
                         Text("Cancel")
                     }
                 }

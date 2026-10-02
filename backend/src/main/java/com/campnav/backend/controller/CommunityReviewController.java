@@ -63,6 +63,17 @@ public class CommunityReviewController {
         return ResponseEntity.ok(rejected);
     }
 
+    @DeleteMapping("/admin/reviews/{id}")
+    public ResponseEntity<java.util.Map<String, String>> deleteReview(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication) {
+        String adminUsername = authentication != null && authentication.getName() != null 
+                ? authentication.getName() 
+                : "admin";
+        reviewService.deleteReview(id, adminUsername);
+        return ResponseEntity.ok(java.util.Map.of("message", "Review deleted successfully"));
+    }
+
     @Data
     public static class ReviewRequest {
         private Long universityId;
