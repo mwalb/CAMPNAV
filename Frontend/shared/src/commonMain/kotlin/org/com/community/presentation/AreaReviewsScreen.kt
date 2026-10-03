@@ -98,31 +98,6 @@ fun AreaReviewsScreen(
                 }
             }
 
-            // Admin Moderation entry point under Community Review
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable(onClick = onNavigateToAdmin),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFB74D).copy(alpha = 0.2f)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFB74D).copy(alpha = 0.5f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.AdminPanelSettings, null, tint = Color(0xFFFFB74D), modifier = Modifier.size(28.dp))
-                        Spacer(Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("ADMIN", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                            Text("Authorized administrator portal for location, review & feedback moderation", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                        }
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color(0xFFFFB74D))
-                    }
-                }
-            }
-
             item {
                 Text("Select University", color = Color.White, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))

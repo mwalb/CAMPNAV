@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -38,18 +39,18 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/feedback/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/community/reports/**").permitAll()
                 .requestMatchers("/api/universities/**").permitAll()
                 .requestMatchers("/api/categories/**").permitAll()
                 .requestMatchers("/api/projects/**").permitAll()
                 .requestMatchers("/api/playlists/**").permitAll()
                 .requestMatchers("/api/contributions/**").permitAll()
-                .requestMatchers("/api/reviews").permitAll()
                 .requestMatchers("/api/reviews/**").permitAll()
+                .requestMatchers("/api/reviews").permitAll()
                 .requestMatchers("/api/feedback").permitAll()
                 .requestMatchers("/api/feedback/approved").permitAll()
-                .requestMatchers("/api/feedback/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

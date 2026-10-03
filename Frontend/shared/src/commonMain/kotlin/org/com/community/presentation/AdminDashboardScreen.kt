@@ -5,9 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,7 +41,8 @@ enum class AdminSection(val title: String, val icon: ImageVector) {
 @Composable
 fun AdminDashboardScreen(
     token: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onLogout: () -> Unit
 ) {
     var selectedSection by remember { mutableStateOf(AdminSection.OVERVIEW) }
     var isMobileMenuOpen by remember { mutableStateOf(false) }
@@ -56,6 +60,7 @@ fun AdminDashboardScreen(
     var rejectReviewTargetId by remember { mutableStateOf<Long?>(null) }
     var deleteReviewTargetId by remember { mutableStateOf<Long?>(null) }
     var deleteFeedbackTargetId by remember { mutableStateOf<Long?>(null) }
+    var detailContributionTarget by remember { mutableStateOf<CommunityContribution?>(null) }
     var rejectionReason by remember { mutableStateOf("") }
 
     val communityRepo = remember { CommunityRepository() }
@@ -63,6 +68,7 @@ fun AdminDashboardScreen(
 
     fun loadData() {
         isLoading = true
+        errorMessage = null
         scope.launch {
             try {
                 contributions = communityRepo.getAdminContributions(token)
@@ -70,7 +76,12 @@ fun AdminDashboardScreen(
                 feedbacks = communityRepo.getAllFeedback(token)
                 logs = communityRepo.getAdminLogs(token)
             } catch (e: Exception) {
-                errorMessage = "Failed to load admin data: ${e.message}"
+                val msg = e.message ?: ""
+                if (msg.contains("401") || msg.contains("403") || msg.contains("Unauthorized") || msg.contains("Forbidden")) {
+                    onLogout()
+                } else {
+                    errorMessage = "Failed to load admin data: ${e.message}"
+                }
             } finally {
                 isLoading = false
             }
@@ -175,6 +186,17 @@ fun AdminDashboardScreen(
                                         onClick = { selectedSection = section }
                                     )
                                 }
+
+                                Spacer(Modifier.weight(1f))
+
+                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 8.dp))
+
+                                SidebarNavItem(
+                                    title = "Logout",
+                                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                                    isSelected = false,
+                                    onClick = onLogout
+                                )
                             }
                         }
                     }
@@ -208,7 +230,8 @@ fun AdminDashboardScreen(
                                 AdminSection.LOCATION_CONTRIBUTIONS -> ContributionsContent(
                                     contributions = contributions,
                                     onApprove = { id -> scope.launch { communityRepo.approveContribution(token, id); loadData() } },
-                                    onReject = { id -> rejectTargetId = id }
+                                    onReject = { id -> rejectTargetId = id },
+                                    onViewDetails = { item -> detailContributionTarget = item }
                                 )
                                 AdminSection.ACTIVITY_LOGS -> LogsContent(logs)
                             }
@@ -270,11 +293,83 @@ fun AdminDashboardScreen(
                                         }
                                     )
                                 }
+
+                                Spacer(Modifier.weight(1f))
+
+                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+
+                                SidebarNavItem(
+                                    title = "Logout",
+                                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                                    isSelected = false,
+                                    onClick = {
+                                        isMobileMenuOpen = false
+                                        onLogout()
+                                    }
+                                )
                             }
                         }
                     }
                 }
             }
+        }
+
+        // Location Contribution Details Dialog
+        if (detailContributionTarget != null) {
+            val item = detailContributionTarget!!
+            AlertDialog(
+                onDismissRequest = { detailContributionTarget = null },
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Contribution Details", fontWeight = FontWeight.Bold, color = Color.White)
+                        IconButton(onClick = { detailContributionTarget = null }) {
+                            Icon(Icons.Default.Close, "Close", tint = Color.White)
+                        }
+                    }
+                },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        DetailRow("Reference", item.reference)
+                        DetailRow("Location Name", item.locationName)
+                        DetailRow("University", item.university?.name ?: "N/A")
+                        DetailRow("Area Type", item.areaType)
+                        DetailRow("Category", item.category?.name ?: "N/A")
+                        DetailRow("Description", item.description ?: "None provided")
+                        DetailRow("Latitude", item.latitude.toString())
+                        DetailRow("Longitude", item.longitude.toString())
+                        DetailRow("Contributor Name", item.contributorName)
+                        DetailRow("Contributor Contact", item.contributorContact)
+                        DetailRow("Contribution Status", item.status)
+                        DetailRow("Payment Status", item.paymentStatus)
+                        if (!item.rejectionReason.isNullOrBlank()) {
+                            DetailRow("Rejection Reason", item.rejectionReason)
+                        }
+                        DetailRow("Submitted Date", item.createdAt ?: "N/A")
+                        if (!item.reviewedAt.isNullOrBlank()) {
+                            DetailRow("Reviewed Date", item.reviewedAt)
+                            DetailRow("Reviewed By", item.reviewedBy ?: "Admin")
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { detailContributionTarget = null },
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
+                    ) {
+                        Text("Close")
+                    }
+                },
+                containerColor = AppColorScheme.surfaceVariant
+            )
         }
 
         // Rejection Dialog for Contributions
@@ -457,6 +552,15 @@ fun AdminDashboardScreen(
                 }
             )
         }
+    }
+}
+
+@Composable
+fun DetailRow(label: String, value: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f), modifier = Modifier.padding(top = 4.dp))
     }
 }
 
@@ -781,7 +885,8 @@ fun FeedbackContent(
 fun ContributionsContent(
     contributions: List<CommunityContribution>,
     onApprove: (Long) -> Unit,
-    onReject: (Long) -> Unit
+    onReject: (Long) -> Unit,
+    onViewDetails: (CommunityContribution) -> Unit
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -798,36 +903,79 @@ fun ContributionsContent(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(item.locationName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text(item.status, color = when(item.status) {
-                                "APPROVED" -> Color(0xFF4CAF50)
-                                "REJECTED" -> Color(0xFFF44336)
-                                else -> Color(0xFFFFB74D)
-                            }, fontWeight = FontWeight.Bold)
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = when(item.status) {
+                                    "APPROVED" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                                    "REJECTED" -> Color(0xFFF44336).copy(alpha = 0.2f)
+                                    else -> Color(0xFFFFB74D).copy(alpha = 0.2f)
+                                }
+                            ) {
+                                Text(
+                                    item.status,
+                                    color = when(item.status) {
+                                        "APPROVED" -> Color(0xFF4CAF50)
+                                        "REJECTED" -> Color(0xFFF44336)
+                                        else -> Color(0xFFFFB74D)
+                                    },
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
-                        Text("Ref: ${item.reference} | Type: ${item.areaType}", color = Color.Gray, fontSize = 12.sp)
+
+                        Text("University: ${item.university?.name ?: "N/A"}", color = AppColorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text("Ref: ${item.reference} | Area Type: ${item.areaType}", color = Color.Gray, fontSize = 12.sp)
+
+                        // Mandatory Latitude and Longitude Display
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Black.copy(alpha = 0.3f),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Latitude: ${item.latitude}", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("Longitude: ${item.longitude}", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+
                         Text("Submitted by: ${item.contributorName} (${item.contributorContact})", color = Color.LightGray, fontSize = 12.sp)
                         if (!item.description.isNullOrBlank()) {
                             Text("Desc: ${item.description}", color = Color.LightGray, fontSize = 13.sp)
                         }
 
-                        if (item.status == "PENDING") {
-                            Spacer(Modifier.height(8.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { onViewDetails(item) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.Info, contentDescription = "View Details", modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("View Details", fontSize = 12.sp)
+                            }
+
+                            if (item.status == "PENDING") {
                                 Button(
                                     onClick = { onApprove(item.id) },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                                 ) {
-                                    Text("Approve")
+                                    Text("Approve", fontSize = 12.sp)
                                 }
                                 Button(
                                     onClick = { onReject(item.id) },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
                                 ) {
-                                    Text("Reject")
+                                    Text("Reject", fontSize = 12.sp)
                                 }
                             }
                         }

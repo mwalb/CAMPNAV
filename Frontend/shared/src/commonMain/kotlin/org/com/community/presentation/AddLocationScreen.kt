@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -64,8 +63,6 @@ fun AddLocationScreen(
     val scope = rememberCoroutineScope()
 
     var showMapPicker by remember { mutableStateOf(false) }
-    var tempPickedLat by remember { mutableStateOf<Double?>(null) }
-    var tempPickedLng by remember { mutableStateOf<Double?>(null) }
 
     LaunchedEffect(Unit) {
         try {
@@ -97,82 +94,22 @@ fun AddLocationScreen(
             .background(AppColorScheme.background)
     ) {
         if (showMapPicker) {
-            // Full-screen Map Picker
-            Box(modifier = Modifier.fillMaxSize()) {
-                val initLat = latitudeStr.toDoubleOrNull() ?: selectedUniversity?.latitude ?: -6.7801
-                val initLng = longitudeStr.toDoubleOrNull() ?: selectedUniversity?.longitude ?: 39.2041
+            val initLat = latitudeStr.toDoubleOrNull() ?: selectedUniversity?.latitude ?: -6.7801
+            val initLng = longitudeStr.toDoubleOrNull() ?: selectedUniversity?.longitude ?: 39.2041
 
-                LaunchedEffect(initLat, initLng) {
-                    tempPickedLat = initLat
-                    tempPickedLng = initLng
+            LocationPickerMap(
+                modifier = Modifier.fillMaxSize(),
+                initialLatitude = initLat,
+                initialLongitude = initLng,
+                onBack = {
+                    showMapPicker = false
+                },
+                onConfirm = { lat, lng ->
+                    latitudeStr = lat.toString()
+                    longitudeStr = lng.toString()
+                    showMapPicker = false
                 }
-
-                LocationPickerMap(
-                    modifier = Modifier.fillMaxSize(),
-                    initialLatitude = initLat,
-                    initialLongitude = initLng,
-                    onLocationSelected = { lat, lng ->
-                        tempPickedLat = lat
-                        tempPickedLng = lng
-                    }
-                )
-
-                // Top-Left Back Navigation Button `←`
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(20.dp)
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .clickable { showMapPicker = false },
-                    color = Color.White,
-                    shadowElevation = 8.dp
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back to form",
-                            tint = Color(0xFF3C4043),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-
-                // Bottom Confirmation Card
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = AppColorScheme.surfaceVariant.copy(alpha = 0.95f),
-                    shadowElevation = 8.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text("TAP ANYWHERE ON MAP TO PICK LOCATION", style = MaterialTheme.typography.labelMedium, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                            Text("Lat: ${tempPickedLat?.let { ((it * 1000000.0).toLong() / 1000000.0).toString() } ?: "Tap map"}", color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Lng: ${tempPickedLng?.let { ((it * 1000000.0).toLong() / 1000000.0).toString() } ?: "Tap map"}", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                        Button(
-                            onClick = {
-                                tempPickedLat?.let { latitudeStr = it.toString() }
-                                tempPickedLng?.let { longitudeStr = it.toString() }
-                                showMapPicker = false
-                            },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary),
-                            enabled = tempPickedLat != null && tempPickedLng != null
-                        ) {
-                            Text("Confirm Location", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        }
-                    }
-                }
-            }
+            )
         } else if (submittedContribution != null && areaType != "COMMERCIAL_AREA") {
             // Success State View for University Area
             Column(
@@ -284,7 +221,7 @@ fun AddLocationScreen(
                     OutlinedTextField(
                         value = locationName,
                         onValueChange = { locationName = it },
-                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Commercial Location Name *" else "Location Name * (e.g. Campus Bookshop, NMB)") },
+                        label = { Text("Location Name * (Required)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)

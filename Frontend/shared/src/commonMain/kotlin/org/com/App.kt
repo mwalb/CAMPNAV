@@ -55,11 +55,7 @@ fun MainApp() {
                 onExploreCampuses = { mode = AppMode.UniversitySelection },
                 onReportIssue = { mode = AppMode.ReportingLanding },
                 onEntertainment = { mode = AppMode.Entertainment },
-                onCommunity = { mode = AppMode.CommunityHub },
-                onAdmin = {
-                    if (adminToken != null) mode = AppMode.AdminDashboard
-                    else mode = AppMode.AdminLogin
-                }
+                onCommunity = { mode = AppMode.CommunityHub }
             )
             AppMode.Entertainment -> IPTVPlayerApp(
                 onBackToSelection = { mode = AppMode.Landing }
@@ -127,7 +123,11 @@ fun MainApp() {
             AppMode.AdminDashboard -> adminToken?.let { token ->
                 AdminDashboardScreen(
                     token = token,
-                    onBack = { mode = AppMode.CommunityHub }
+                    onBack = { mode = AppMode.CommunityHub },
+                    onLogout = {
+                        adminToken = null
+                        mode = AppMode.AdminLogin
+                    }
                 )
             } ?: run {
                 AdminLoginScreen(

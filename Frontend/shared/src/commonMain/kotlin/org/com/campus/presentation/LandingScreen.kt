@@ -31,8 +31,7 @@ fun LandingScreen(
     onExploreCampuses: () -> Unit,
     onReportIssue: () -> Unit,
     onEntertainment: () -> Unit = {},
-    onCommunity: () -> Unit = {},
-    onAdmin: () -> Unit = {}
+    onCommunity: () -> Unit = {}
 ) {
     var startAnimation by remember { mutableStateOf(false) }
     
@@ -132,16 +131,6 @@ fun LandingScreen(
                     visible = startAnimation,
                     delay = 600,
                     onClick = onCommunity
-                )
-
-                LandingActionCard(
-                    title = "ADMIN",
-                    subtitle = "Moderation, contributions & logs",
-                    icon = Icons.Default.Lock,
-                    color = Color(0xFFFFB74D),
-                    visible = startAnimation,
-                    delay = 700,
-                    onClick = onAdmin
                 )
             }
 

@@ -342,7 +342,8 @@ fun LocationStep(viewModel: CommunityReportViewModel) {
                     modifier = Modifier.fillMaxSize(),
                     initialLatitude = viewModel.issueLocation?.latitude,
                     initialLongitude = viewModel.issueLocation?.longitude,
-                    onLocationSelected = { lat, lng ->
+                    onBack = { viewModel.prevStep() },
+                    onConfirm = { lat, lng ->
                         viewModel.onLocationSelected(lat, lng)
                     }
                 )

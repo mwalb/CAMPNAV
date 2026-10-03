@@ -8,5 +8,6 @@ expect fun LocationPickerMap(
     modifier: Modifier = Modifier,
     initialLatitude: Double? = null,
     initialLongitude: Double? = null,
-    onLocationSelected: (Double, Double) -> Unit
+    onBack: () -> Unit,
+    onConfirm: (Double, Double) -> Unit
 )

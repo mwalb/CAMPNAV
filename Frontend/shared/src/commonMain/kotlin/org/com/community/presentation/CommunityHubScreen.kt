@@ -81,21 +81,21 @@ fun CommunityHubScreen(
 
                 item {
                     CommunityCard(
-                        title = "User Feedback",
-                        subtitle = "Send your suggestions, opinions and feedback to CAMPNAV",
-                        icon = Icons.Default.Feedback,
-                        color = Color(0xFF9C27B0),
-                        onClick = onNavigateToFeedback
-                    )
-                }
-
-                item {
-                    CommunityCard(
                         title = "Add New Location",
                         subtitle = "Suggest a new university or commercial location",
                         icon = Icons.Default.AddLocation,
                         color = MaterialTheme.colorScheme.primary,
                         onClick = onNavigateToAddLocation
+                    )
+                }
+
+                item {
+                    CommunityCard(
+                        title = "User Feedback",
+                        subtitle = "Send your suggestions, opinions and feedback to CAMPNAV",
+                        icon = Icons.Default.Feedback,
+                        color = Color(0xFF9C27B0),
+                        onClick = onNavigateToFeedback
                     )
                 }
 
@@ -111,7 +111,7 @@ fun CommunityHubScreen(
 
                 item {
                     CommunityCard(
-                        title = "ADMIN",
+                        title = "Admin",
                         subtitle = "Authorized administrator access",
                         icon = Icons.Default.AdminPanelSettings,
                         color = Color(0xFFFFB74D),
