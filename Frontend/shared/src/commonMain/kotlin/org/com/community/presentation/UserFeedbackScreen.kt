@@ -135,7 +135,7 @@ fun UserFeedbackScreen(
                             OutlinedTextField(
                                 value = contributorName,
                                 onValueChange = { contributorName = it },
-                                label = { Text("Your Name (Optional)") },
+                                label = { Text("Name *") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
@@ -176,13 +176,17 @@ fun UserFeedbackScreen(
                             )
 
                             if (errorMessage != null) {
-                                Text(errorMessage!!, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                                Text(errorMessage!!, color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                             }
 
                             Button(
                                 onClick = {
+                                    if (contributorName.isBlank()) {
+                                        errorMessage = "Name is required."
+                                        return@Button
+                                    }
                                     if (feedbackText.isBlank()) {
-                                        errorMessage = "Please enter feedback text."
+                                        errorMessage = "Please enter your feedback."
                                         return@Button
                                     }
                                     isSubmitting = true
@@ -191,8 +195,8 @@ fun UserFeedbackScreen(
                                         try {
                                             repository.submitFeedback(
                                                 FeedbackRequest(
-                                                    feedbackText = feedbackText,
-                                                    contributorName = contributorName.ifBlank { null },
+                                                    feedbackText = feedbackText.trim(),
+                                                    contributorName = contributorName.trim(),
                                                     contributorContact = contributorContact.ifBlank { null }
                                                 )
                                             )
@@ -288,7 +292,7 @@ fun UserFeedbackScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    "— ${fb.contributorName ?: "Anonymous"}",
+                                    "— ${fb.contributorName ?: "Contributor"}",
                                     color = AppColorScheme.primary,
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold

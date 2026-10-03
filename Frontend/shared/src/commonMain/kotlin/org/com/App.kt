@@ -37,6 +37,9 @@ enum class AppMode {
 
 @Composable
 fun MainApp() {
+    LaunchedEffect(Unit) {
+        println("[CAMPNAV] [DIAGNOSTIC] APP INITIALIZED")
+    }
     var mode by remember { mutableStateOf(AppMode.Landing) }
     var selectedUniversity by remember { mutableStateOf<University?>(null) }
     var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
@@ -66,7 +69,11 @@ fun MainApp() {
                 onNavigateToAddLocation = { mode = AppMode.CommunityAddLocation },
                 onNavigateToReviews = { mode = AppMode.CommunityReviews },
                 onNavigateToFeedback = { mode = AppMode.CommunityFeedback },
-                onNavigateToContact = { mode = AppMode.ContactUs }
+                onNavigateToContact = { mode = AppMode.ContactUs },
+                onNavigateToAdmin = {
+                    if (adminToken != null) mode = AppMode.AdminDashboard
+                    else mode = AppMode.AdminLogin
+                }
             )
             AppMode.CommunityAddLocation -> AddLocationScreen(
                 onBack = { mode = AppMode.CommunityHub },

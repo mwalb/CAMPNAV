@@ -31,6 +31,14 @@ public class CommunityReviewService {
             throw new RuntimeException("Rating must be between 1 and 5.");
         }
 
+        if (contributorName == null || contributorName.trim().isEmpty()) {
+            throw new RuntimeException("Contributor name is required.");
+        }
+
+        if (comment == null || comment.trim().isEmpty()) {
+            throw new RuntimeException("Review comment is required.");
+        }
+
         University university = universityRepository.findById(universityId)
                 .orElseThrow(() -> new RuntimeException("University not found"));
 
@@ -40,8 +48,8 @@ public class CommunityReviewService {
                 .university(university)
                 .location(location)
                 .rating(rating)
-                .comment(comment)
-                .contributorName(contributorName != null ? contributorName : "Anonymous")
+                .comment(comment.trim())
+                .contributorName(contributorName.trim())
                 .contributorContact(contributorContact)
                 .status("PENDING")
                 .createdAt(LocalDateTime.now())
@@ -59,10 +67,6 @@ public class CommunityReviewService {
         activityLogRepository.save(log);
 
         return saved;
-    }
-
-    public UserFeedback approveReview(Long id, String adminUsername) {
-        return null;
     }
 
     @Transactional

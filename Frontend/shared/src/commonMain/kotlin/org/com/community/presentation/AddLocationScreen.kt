@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -101,6 +102,11 @@ fun AddLocationScreen(
                 val initLat = latitudeStr.toDoubleOrNull() ?: selectedUniversity?.latitude ?: -6.7801
                 val initLng = longitudeStr.toDoubleOrNull() ?: selectedUniversity?.longitude ?: 39.2041
 
+                LaunchedEffect(initLat, initLng) {
+                    tempPickedLat = initLat
+                    tempPickedLng = initLng
+                }
+
                 LocationPickerMap(
                     modifier = Modifier.fillMaxSize(),
                     initialLatitude = initLat,
@@ -111,6 +117,28 @@ fun AddLocationScreen(
                     }
                 )
 
+                // Top-Left Back Navigation Button `←`
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(20.dp)
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .clickable { showMapPicker = false },
+                    color = Color.White,
+                    shadowElevation = 8.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back to form",
+                            tint = Color(0xFF3C4043),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                // Bottom Confirmation Card
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -130,31 +158,23 @@ fun AddLocationScreen(
                             Text("Lat: ${tempPickedLat?.let { ((it * 1000000.0).toLong() / 1000000.0).toString() } ?: "Tap map"}", color = Color.White, fontWeight = FontWeight.Bold)
                             Text("Lng: ${tempPickedLng?.let { ((it * 1000000.0).toLong() / 1000000.0).toString() } ?: "Tap map"}", color = Color.White, fontWeight = FontWeight.Bold)
                         }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = {
-                                    tempPickedLat?.let { latitudeStr = it.toString() }
-                                    tempPickedLng?.let { longitudeStr = it.toString() }
-                                    showMapPicker = false
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary),
-                                enabled = tempPickedLat != null && tempPickedLng != null
-                            ) {
-                                Text("Confirm Location", fontWeight = FontWeight.Bold)
-                            }
-                            TextButton(
-                                onClick = { showMapPicker = false },
-                                modifier = Modifier.weight(0.6f)
-                            ) {
-                                Text("Cancel", color = Color.Red)
-                            }
+                        Button(
+                            onClick = {
+                                tempPickedLat?.let { latitudeStr = it.toString() }
+                                tempPickedLng?.let { longitudeStr = it.toString() }
+                                showMapPicker = false
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary),
+                            enabled = tempPickedLat != null && tempPickedLng != null
+                        ) {
+                            Text("Confirm Location", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         }
                     }
                 }
             }
-        } else if (submittedContribution != null) {
-            // Success State View
+        } else if (submittedContribution != null && areaType != "COMMERCIAL_AREA") {
+            // Success State View for University Area
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -176,13 +196,7 @@ fun AddLocationScreen(
                         Text("Status: ${submittedContribution!!.status}", color = Color.Yellow, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
                         Text("Area Type: ${submittedContribution!!.areaType}", color = Color.White)
-                        if (submittedContribution!!.areaType == "COMMERCIAL_AREA") {
-                            Spacer(Modifier.height(4.dp))
-                            Text("Payment Status: ${submittedContribution!!.paymentStatus}", color = Color.Cyan)
-                            Text("Commercial submission requires administrator verification & payment processing.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                        } else {
-                            Text("University area submissions are reviewed for official mapping.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                        }
+                        Text("University area submissions are reviewed for official mapping.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }
                 }
                 Spacer(Modifier.height(24.dp))
@@ -220,7 +234,7 @@ fun AddLocationScreen(
                 }
 
                 item {
-                    Text("Select University", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text("Select University *", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
                     LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(universities) { uni ->
@@ -235,7 +249,7 @@ fun AddLocationScreen(
                 }
 
                 item {
-                    Text("Location Type", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text("Location Type *", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Card(
@@ -260,7 +274,7 @@ fun AddLocationScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text("Commercial Area", fontWeight = FontWeight.Bold, color = Color.White)
-                                Text("Chargeable (Pending Payment)", style = MaterialTheme.typography.bodySmall, color = Color(0xFFFFB74D))
+                                Text("Verification Required", style = MaterialTheme.typography.bodySmall, color = Color(0xFFFFB74D))
                             }
                         }
                     }
@@ -270,7 +284,7 @@ fun AddLocationScreen(
                     OutlinedTextField(
                         value = locationName,
                         onValueChange = { locationName = it },
-                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Commercial Location Name *" else "Location Name (e.g. Campus Bookshop, NMB)") },
+                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Commercial Location Name *" else "Location Name * (e.g. Campus Bookshop, NMB)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -331,7 +345,7 @@ fun AddLocationScreen(
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Description & Business Details *" else "Description & Details") },
+                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Description & Business Details *" else "Description & Details (Optional)") },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -339,7 +353,7 @@ fun AddLocationScreen(
                 }
 
                 item {
-                    Text(if (areaType == "COMMERCIAL_AREA") "Location Coordinates *" else "Location Coordinates", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(if (areaType == "COMMERCIAL_AREA") "Location Coordinates *" else "Location Coordinates *", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
@@ -382,7 +396,7 @@ fun AddLocationScreen(
                         OutlinedTextField(
                             value = latitudeStr,
                             onValueChange = { latitudeStr = it },
-                            label = { Text(if (areaType == "COMMERCIAL_AREA") "Latitude *" else "Latitude") },
+                            label = { Text("Latitude *") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -390,7 +404,7 @@ fun AddLocationScreen(
                         OutlinedTextField(
                             value = longitudeStr,
                             onValueChange = { longitudeStr = it },
-                            label = { Text(if (areaType == "COMMERCIAL_AREA") "Longitude *" else "Longitude") },
+                            label = { Text("Longitude *") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -399,12 +413,12 @@ fun AddLocationScreen(
                 }
 
                 item {
-                    Text(if (areaType == "COMMERCIAL_AREA") "Owner / Contact Information *" else "Contributor Information (Anonymous supported)", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(if (areaType == "COMMERCIAL_AREA") "Owner / Contact Information *" else "Contributor Information", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = contributorName,
                         onValueChange = { contributorName = it },
-                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Owner / Contributor Name *" else "Your Name (Optional / Anonymous)") },
+                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Owner / Contributor Name *" else "Your Name (Optional)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -432,7 +446,7 @@ fun AddLocationScreen(
                                     longitudeStr.toDoubleOrNull() == null ||
                                     contributorName.isBlank() ||
                                     contributorContact.isBlank()) {
-                                    errorMessage = "All fields are required for Commercial Area contributions. Please fill in location name, description, valid coordinates, owner name, and owner contact details."
+                                    errorMessage = "All fields are mandatory for Commercial Area locations. Please fill in location name, description, valid coordinates, owner name, and owner contact details."
                                     return@Button
                                 }
                             } else {

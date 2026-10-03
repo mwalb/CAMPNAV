@@ -16,9 +16,15 @@ public class UserFeedbackService {
     private final AdminActivityLogRepository activityLogRepository;
 
     public UserFeedback submitFeedback(String feedbackText, String contributorName, String contributorContact) {
+        if (contributorName == null || contributorName.trim().isEmpty()) {
+            throw new RuntimeException("Contributor name is required.");
+        }
+        if (feedbackText == null || feedbackText.trim().isEmpty()) {
+            throw new RuntimeException("Feedback text is required.");
+        }
         UserFeedback feedback = UserFeedback.builder()
-                .feedbackText(feedbackText)
-                .contributorName(contributorName != null && !contributorName.isBlank() ? contributorName : "Anonymous")
+                .feedbackText(feedbackText.trim())
+                .contributorName(contributorName.trim())
                 .contributorContact(contributorContact)
                 .status("PENDING")
                 .createdAt(LocalDateTime.now())

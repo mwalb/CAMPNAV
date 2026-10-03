@@ -36,7 +36,7 @@ fun AreaReviewsScreen(
     var selectedUniversity by remember { mutableStateOf<University?>(null) }
     var reviews by remember { mutableStateOf(emptyList<CommunityReview>()) }
 
-    var rating by remember { mutableStateOf(5) }
+    var rating by remember { mutableStateOf(0) } // Initial state: 0/5 stars (unselected)
     var comment by remember { mutableStateOf("") }
     var contributorName by remember { mutableStateOf("") }
     var contributorContact by remember { mutableStateOf("") }
@@ -115,7 +115,7 @@ fun AreaReviewsScreen(
                         Icon(Icons.Default.AdminPanelSettings, null, tint = Color(0xFFFFB74D), modifier = Modifier.size(28.dp))
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Admin Verification & Moderation", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                            Text("ADMIN", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
                             Text("Authorized administrator portal for location, review & feedback moderation", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                         }
                         Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color(0xFFFFB74D))
@@ -145,10 +145,10 @@ fun AreaReviewsScreen(
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        Text("Rate This Area", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Rate This Area *", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(12.dp))
 
-                        // Star selector
+                        // Star selector (1 to 5 stars)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             (1..5).forEach { star ->
                                 IconButton(onClick = { rating = star }) {
@@ -166,7 +166,7 @@ fun AreaReviewsScreen(
                         OutlinedTextField(
                             value = comment,
                             onValueChange = { comment = it },
-                            label = { Text("Write your review...") },
+                            label = { Text("Write your review *") },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3,
                             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -177,7 +177,7 @@ fun AreaReviewsScreen(
                             OutlinedTextField(
                                 value = contributorName,
                                 onValueChange = { contributorName = it },
-                                label = { Text("Your Name (Optional)") },
+                                label = { Text("Name *") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -192,6 +192,11 @@ fun AreaReviewsScreen(
                             )
                         }
 
+                        if (errorMessage != null) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(errorMessage!!, color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                        }
+
                         if (successMessage != null) {
                             Spacer(Modifier.height(8.dp))
                             Text(successMessage!!, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
@@ -200,10 +205,23 @@ fun AreaReviewsScreen(
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = {
-                                if (selectedUniversity == null || comment.isBlank()) {
+                                if (rating < 1 || rating > 5) {
+                                    errorMessage = "Please select a star rating from 1 to 5."
+                                    return@Button
+                                }
+                                if (contributorName.isBlank()) {
+                                    errorMessage = "Name is required."
+                                    return@Button
+                                }
+                                if (comment.isBlank()) {
                                     errorMessage = "Please enter a review comment."
                                     return@Button
                                 }
+                                if (selectedUniversity == null) {
+                                    errorMessage = "Please select a university."
+                                    return@Button
+                                }
+
                                 isSubmitting = true
                                 errorMessage = null
                                 successMessage = null
@@ -214,12 +232,13 @@ fun AreaReviewsScreen(
                                             locationId = null,
                                             rating = rating,
                                             comment = comment.trim(),
-                                            contributorName = contributorName.ifBlank { "Anonymous" },
+                                            contributorName = contributorName.trim(),
                                             contributorContact = contributorContact.ifBlank { null }
                                         )
                                         communityRepo.addReview(req)
                                         successMessage = "Review submitted successfully!"
                                         comment = ""
+                                        rating = 0
                                         reviews = communityRepo.getReviewsByUniversity(selectedUniversity!!.id)
                                     } catch (e: Exception) {
                                         errorMessage = "Failed to submit review: ${e.message}"
@@ -268,7 +287,7 @@ fun AreaReviewsScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text(review.contributorName ?: "Anonymous", color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(review.contributorName ?: "Contributor", color = Color.White, fontWeight = FontWeight.Bold)
                                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                     (1..review.rating).forEach { _ ->
                                         Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))

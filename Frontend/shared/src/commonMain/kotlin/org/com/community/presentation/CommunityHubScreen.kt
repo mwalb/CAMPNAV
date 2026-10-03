@@ -26,7 +26,8 @@ fun CommunityHubScreen(
     onNavigateToAddLocation: () -> Unit,
     onNavigateToReviews: () -> Unit,
     onNavigateToFeedback: () -> Unit,
-    onNavigateToContact: () -> Unit
+    onNavigateToContact: () -> Unit,
+    onNavigateToAdmin: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -105,6 +106,16 @@ fun CommunityHubScreen(
                         icon = Icons.Default.Phone,
                         color = Color(0xFF4CAF50),
                         onClick = onNavigateToContact
+                    )
+                }
+
+                item {
+                    CommunityCard(
+                        title = "ADMIN",
+                        subtitle = "Authorized administrator access",
+                        icon = Icons.Default.AdminPanelSettings,
+                        color = Color(0xFFFFB74D),
+                        onClick = onNavigateToAdmin
                     )
                 }
             }

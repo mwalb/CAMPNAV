@@ -32,6 +32,10 @@ actual fun CampusMap(
 ) {
     Box(modifier = modifier)
 
+    LaunchedEffect(Unit) {
+        initGlobalJSBridge()
+    }
+
     LaunchedEffect(university, locations, allLocations, navigationState.destination, navigationState.selectedStartPoint) {
         val mapDiv = document.getElementById("campus-map") as? HTMLElement
         if (mapDiv != null) {
@@ -72,15 +76,16 @@ actual fun CampusMap(
         when (navigationState.status) {
             NavigationStatus.SHOWING_NAV_CHOICE -> {
                 navigationState.destination?.let { dest ->
-                    println("[CAMPNAV][NAV] navigate clicked: ${dest.name}")
-                    println("[CAMPNAV][NAV] destination id: ${dest.id}")
-                    println("[CAMPNAV][NAV] destination latitude: ${dest.latitude}")
-                    println("[CAMPNAV][NAV] destination longitude: ${dest.longitude}")
+                    println("[CAMPNAV] [DIAGNOSTIC] NAVIGATE BUTTON CLICKED")
+                    println("[CAMPNAV] [DIAGNOSTIC] Destination name: ${dest.name}")
+                    println("[CAMPNAV] [DIAGNOSTIC] Destination ID: ${dest.id}")
+                    println("[CAMPNAV] [DIAGNOSTIC] Destination latitude: ${dest.latitude}")
+                    println("[CAMPNAV] [DIAGNOSTIC] Destination longitude: ${dest.longitude}")
                     triggerNavChoiceJS(dest.id.toString(), dest.name)
                 }
             }
             NavigationStatus.SELECTING_START_POINT -> {
-                println("[CAMPNAV][NAV] starting-point dialog opened")
+                println("[CAMPNAV] [DIAGNOSTIC] STARTING-POINT UI OPENED")
                 triggerStartPointSelectionJS()
             }
             NavigationStatus.SELECTING_ORIGIN -> {
@@ -106,7 +111,7 @@ actual fun CampusMap(
                 document.getElementById("select-point-overlay")?.remove()
                 stopTrackingUserLocation()
             }
-            println("[CAMPNAV][NAV] navigation state reset")
+            println("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET")
             resetWebMapState()
         }
     }
@@ -143,6 +148,419 @@ private fun syncWebMarkers(locations: List<CampusLocation>, selectedId: Long?, s
         )
     }
 }
+
+@JsFun("""() => {
+    window.openGoogleMapsNavigation = (oLat, oLng, dLat, dLng) => {
+        console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION URL CREATED: https://www.google.com/maps/dir/?api=1&origin=" + oLat + "," + oLng + "&destination=" + dLat + "," + dLng + "&travelmode=driving");
+        console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCH REQUESTED");
+        const url = 'https://www.google.com/maps/dir/?api=1&origin=' + oLat + ',' + oLng + '&destination=' + dLat + ',' + dLng + '&travelmode=driving';
+        window.open(url, '_blank');
+        console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
+    };
+
+    window.getPositionWithFallback = (onSuccess, onError) => {
+        if (!navigator.geolocation) {
+            console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION FAILURE: Geolocation not supported");
+            onError("Geolocation not supported");
+            return;
+        }
+        console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION REQUEST STARTED");
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS");
+                onSuccess(pos);
+            },
+            (err1) => {
+                console.warn("[CAMPNAV] High accuracy location timeout/fail, trying standard accuracy...", err1.message);
+                navigator.geolocation.getCurrentPosition(
+                    (pos2) => {
+                        console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS");
+                        onSuccess(pos2);
+                    },
+                    (err2) => {
+                        console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION FAILURE: " + err2.message);
+                        onError(err2.message || "Location access failed");
+                    },
+                    { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+                );
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+        );
+    };
+
+    window.hideNavOverlays = () => {
+        const overlay = document.getElementById("native-map-overlay");
+        if (overlay) overlay.style.display = "none";
+        const navPanel = document.getElementById("native-nav-panel");
+        if (navPanel) navPanel.style.display = "none";
+        const selOverlay = document.getElementById("select-point-overlay");
+        if (selOverlay) selOverlay.style.display = "none";
+    };
+
+    window.handleNavigateClick = (id, title, lat, lng) => {
+        console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATE BUTTON CLICKED");
+        console.log("[CAMPNAV] [DIAGNOSTIC] Destination name: " + title);
+        console.log("[CAMPNAV] [DIAGNOSTIC] Destination ID: " + id);
+        console.log("[CAMPNAV] [DIAGNOSTIC] Destination latitude: " + lat);
+        console.log("[CAMPNAV] [DIAGNOSTIC] Destination longitude: " + lng);
+
+        const locations = window.campusLocationsData || [];
+        let dest = locations.find(l => String(l.id) === String(id));
+        if (!dest) {
+            dest = { id: Number(id), name: title, latitude: Number(lat), longitude: Number(lng) };
+        }
+        window.lastSelectedDest = dest;
+
+        if (window.onStatusChange) {
+            window.onStatusChange("SHOWING_NAV_CHOICE");
+        }
+        if (window.showNavChoicePopup) {
+            window.showNavChoicePopup(String(id), title);
+        }
+    };
+
+    window.showNavChoicePopup = (destId, destName) => {
+        const sessionId = Math.random().toString(36).substring(2, 9);
+        window.currentNavSessionId = sessionId;
+        console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION SESSION CREATED");
+        console.log("[CAMPNAV] [DIAGNOSTIC] STARTING-POINT UI OPENED");
+        console.log("[CAMPNAV] [DIAGNOSTIC] Destination ID: " + destId);
+
+        const locations = window.campusLocationsData || [];
+        let dest = locations.find(l => String(l.id) === String(destId));
+        if (!dest && window.lastSelectedDest && String(window.lastSelectedDest.id) === String(destId)) {
+            dest = window.lastSelectedDest;
+        }
+        if (!dest && window.lastSelectedDest) {
+            dest = window.lastSelectedDest;
+        }
+        if (!dest) {
+            dest = { id: Number(destId), name: destName, latitude: 0.0, longitude: 0.0 };
+        }
+        window.lastSelectedDest = dest;
+
+        const mapDiv = document.getElementById("campus-map");
+        if (!mapDiv) return;
+
+        let overlay = document.getElementById("native-map-overlay");
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "native-map-overlay";
+            mapDiv.appendChild(overlay);
+        }
+        overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:999; background:rgba(0,0,0,0.7); display:block; pointer-events:auto; backdrop-filter: blur(2px);";
+
+        let navPanel = document.getElementById("native-nav-panel");
+        if (!navPanel) {
+            navPanel = document.createElement("div");
+            navPanel.id = "native-nav-panel";
+            mapDiv.appendChild(navPanel);
+        }
+
+        navPanel.style.display = "flex";
+        navPanel.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1200; background:#0F0F23; color:white; padding:32px; border-radius:24px; border:2px solid #6C63FF; display:flex; flex-direction:column; gap:16px; font-family: sans-serif; width: 85%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);";
+
+        navPanel.innerHTML = 
+            '<div style="text-align: center;">' +
+            '<div style="font-size: 14px; color: #AAA;">Navigate to</div>' +
+            '<div style="font-weight:bold; font-size: 24px; color: white; margin-top: 4px;">' + destName + '</div>' +
+            '<div style="font-size: 16px; color: white; margin-top: 16px; margin-bottom: 24px;">How would you like to start?</div>' +
+            '</div>';
+
+        const btnStyle = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left; display: flex; align-items: center; gap: 12px;";
+        
+        const currentLocBtn = document.createElement("button");
+        currentLocBtn.innerHTML = "Use my current location";
+        currentLocBtn.style.cssText = btnStyle;
+        currentLocBtn.onclick = () => {
+            console.log("[CAMPNAV] [DIAGNOSTIC] CURRENT LOCATION SELECTED");
+            const navWindow = window.open('about:blank', '_blank');
+            window.getPositionWithFallback((pos) => {
+                const oLat = pos.coords.latitude;
+                const oLng = pos.coords.longitude;
+                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LATITUDE: " + oLat);
+                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LONGITUDE: " + oLng);
+                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN CONFIRMED");
+                console.log("[CAMPNAV] [DIAGNOSTIC] DESTINATION CONSUMED: " + dest.name + " (" + dest.latitude + ", " + dest.longitude + ")");
+                const url = 'https://www.google.com/maps/dir/?api=1&origin=' + oLat + ',' + oLng + '&destination=' + dest.latitude + ',' + dest.longitude + '&travelmode=driving';
+                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION URL CREATED: " + url);
+                console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCH REQUESTED");
+                if (navWindow) {
+                    navWindow.location.href = url;
+                } else {
+                    window.open(url, '_blank');
+                }
+                console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
+                window.hideNavOverlays();
+                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
+                window.onEndNav();
+            }, (err) => {
+                if (navWindow) navWindow.close();
+                console.warn("[CAMPNAV] Geolocation failed:", err);
+                alert("We couldn't access your current location. Please allow location permissions in your browser or select a starting point manually.");
+                window.hideNavOverlays();
+                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
+                window.onEndNav();
+            });
+        };
+        navPanel.appendChild(currentLocBtn);
+
+        const selectOnMapBtn = document.createElement("button");
+        selectOnMapBtn.innerHTML = "Select starting point";
+        selectOnMapBtn.style.cssText = btnStyle;
+        selectOnMapBtn.onclick = () => {
+            console.log("[CAMPNAV] [DIAGNOSTIC] MANUAL LOCATION SELECTED");
+            window.hideNavOverlays();
+            window.onStatusChange("SELECTING_START_POINT");
+        };
+        navPanel.appendChild(selectOnMapBtn);
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.innerText = "Cancel";
+        cancelBtn.style.cssText = "padding:12px; background:transparent; color:#FF4B4B; border:none; cursor:pointer; font-weight: bold; font-size: 16px; margin-top: 8px;";
+        cancelBtn.onclick = () => { 
+            console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
+            window.hideNavOverlays(); 
+            window.onEndNav(); 
+        };
+        navPanel.appendChild(cancelBtn);
+    };
+
+    window.showStartPointSelectionOverlay = () => {
+        console.log("[CAMPNAV] [DIAGNOSTIC] STARTING-POINT UI OPENED");
+        const mapDiv = document.getElementById("campus-map");
+        if (!mapDiv) return;
+
+        let selOverlay = document.getElementById("select-point-overlay");
+        if (!selOverlay) {
+            selOverlay = document.createElement("div");
+            selOverlay.id = "select-point-overlay";
+            mapDiv.appendChild(selOverlay);
+        }
+        selOverlay.style.display = "flex";
+        selOverlay.style.flexDirection = "column";
+        selOverlay.style.gap = "12px";
+        selOverlay.style.position = "absolute";
+        selOverlay.style.top = "20px";
+        selOverlay.style.left = "50%";
+        selOverlay.style.transform = "translateX(-50%)";
+        selOverlay.style.zIndex = "1000";
+        selOverlay.style.background = "white";
+        selOverlay.style.color = "#3C4043";
+        selOverlay.style.padding = "24px";
+        selOverlay.style.borderRadius = "28px";
+        selOverlay.style.boxShadow = "0 12px 48px rgba(0,0,0,0.25)";
+        selOverlay.style.fontWeight = "bold";
+        selOverlay.style.fontFamily = "sans-serif";
+        selOverlay.style.width = "90%";
+        selOverlay.style.maxWidth = "380px";
+
+        selOverlay.innerHTML = 
+            '<div style="margin-bottom: 12px; text-align: center; color: #0F0F23; font-size: 20px; font-weight: 800;">Select a starting point</div>' +
+            '<div style="position: relative; width: 100%; margin-bottom: 8px;">' +
+            '<input id="start-point-search" type="text" placeholder="Search location..." style="padding: 16px 44px 16px 16px; border-radius: 16px; border: 2px solid #F0F0F0; width: 100%; box-sizing: border-box; font-size: 16px; outline: none; transition: all 0.2s; background: #F8F9FA;">' +
+            '<span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #AAA; font-size: 18px;">🔍</span>' +
+            '</div>' +
+            '<div id="start-point-results" style="display: none; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; background: white; border-radius: 16px; padding: 8px; border: 1px solid #EEE; font-weight: normal; margin-bottom: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></div>' +
+            '<button id="start-point-action-btn" style="width: 100%; padding: 16px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);">Start</button>' +
+            '<div style="display: flex; gap: 10px; width: 100%; margin-top: 4px;">' +
+            '<button id="start-point-tap-map" style="flex: 1; padding: 14px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px;">Tap on the Map</button>' +
+            '<button id="start-point-cancel" style="padding: 14px; border-radius: 16px; border: 2px solid #F0F0F0; background: white; color: #666; cursor: pointer; font-weight: 700; font-size: 14px;">Cancel</button>' +
+            '</div>';
+
+        const searchInput = document.getElementById("start-point-search");
+        const resultsDiv = document.getElementById("start-point-results");
+        const actionBtn = document.getElementById("start-point-action-btn");
+        const tapMapBtn = document.getElementById("start-point-tap-map");
+        const cancelBtn = document.getElementById("start-point-cancel");
+        
+        let selectedStartLoc = null;
+
+        searchInput.focus();
+        searchInput.oninput = (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const locations = window.campusLocationsData || [];
+
+            if (query.length < 1) {
+                resultsDiv.style.display = "none";
+                return;
+            }
+            const filtered = locations.filter(l => 
+                l.name.toLowerCase().includes(query) || 
+                (l.officialName && l.officialName.toLowerCase().includes(query)) ||
+                (l.buildingCode && l.buildingCode.toLowerCase().includes(query))
+            ).slice(0, 8);
+            
+            if (filtered.length > 0) {
+                resultsDiv.style.display = "flex";
+                resultsDiv.innerHTML = "";
+                filtered.forEach(loc => {
+                    const btn = document.createElement("div");
+                    btn.innerText = loc.name;
+                    btn.style.padding = "12px 14px";
+                    btn.style.cursor = "pointer";
+                    btn.style.fontSize = "14px";
+                    btn.style.borderBottom = "1px solid #F5F5F5";
+                    btn.onmouseover = () => { btn.style.background = "#F8F9FA"; };
+                    btn.onmouseout = () => { btn.style.background = "transparent"; };
+                    btn.onclick = () => {
+                        selectedStartLoc = loc;
+                        searchInput.value = loc.name;
+                        resultsDiv.style.display = "none";
+                    };
+                    resultsDiv.appendChild(btn);
+                });
+            } else {
+                resultsDiv.style.display = "none";
+            }
+        };
+
+        actionBtn.onclick = () => {
+            const query = searchInput.value.toLowerCase().trim();
+            const locations = window.campusLocationsData || [];
+            const finalDest = window.lastSelectedDest;
+
+            let startLoc = selectedStartLoc;
+            if (!startLoc && query.length > 0) {
+                const matched = locations.find(l => l.name.toLowerCase() === query || l.name.toLowerCase().includes(query));
+                if (matched) startLoc = matched;
+            }
+
+            if (startLoc && finalDest) {
+                console.log("[CAMPNAV] [DIAGNOSTIC] MANUAL LOCATION SELECTED: " + startLoc.name);
+                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LATITUDE: " + startLoc.latitude);
+                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LONGITUDE: " + startLoc.longitude);
+                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN CONFIRMED");
+                console.log("[CAMPNAV] [DIAGNOSTIC] DESTINATION CONSUMED: " + finalDest.name + " (" + finalDest.latitude + ", " + finalDest.longitude + ")");
+                const url = 'https://www.google.com/maps/dir/?api=1&origin=' + startLoc.latitude + ',' + startLoc.longitude + '&destination=' + finalDest.latitude + ',' + finalDest.longitude + '&travelmode=driving';
+                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION URL CREATED: " + url);
+                console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCH REQUESTED");
+                window.open(url, '_blank');
+                console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
+                window.hideNavOverlays();
+                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
+                window.onEndNav();
+            } else if (!finalDest) {
+                alert("Destination missing.");
+            } else {
+                const navWindow = window.open('about:blank', '_blank');
+                window.getPositionWithFallback((pos) => {
+                    console.log("[CAMPNAV] [DIAGNOSTIC] CURRENT LOCATION SELECTED");
+                    console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LATITUDE: " + pos.coords.latitude);
+                    console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LONGITUDE: " + pos.coords.longitude);
+                    console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN CONFIRMED");
+                    console.log("[CAMPNAV] [DIAGNOSTIC] DESTINATION CONSUMED: " + finalDest.name);
+                    const url = 'https://www.google.com/maps/dir/?api=1&origin=' + pos.coords.latitude + ',' + pos.coords.longitude + '&destination=' + finalDest.latitude + ',' + finalDest.longitude + '&travelmode=driving';
+                    console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION URL CREATED: " + url);
+                    console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCH REQUESTED");
+                    if (navWindow) {
+                        navWindow.location.href = url;
+                    } else {
+                        window.open(url, '_blank');
+                    }
+                    console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
+                    window.hideNavOverlays();
+                    console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
+                    window.onEndNav();
+                }, (err) => {
+                    if (navWindow) navWindow.close();
+                    alert("Please select or search for a starting point.");
+                });
+            }
+        };
+        
+        tapMapBtn.onclick = () => {
+            window.hideNavOverlays();
+        };
+        
+        cancelBtn.onclick = () => {
+            console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
+            window.hideNavOverlays();
+            window.onEndNav();
+        };
+    };
+
+    window.showOriginSelectionPopup = (destId) => {
+        const locations = window.campusLocationsData || [];
+        let dest = locations.find(l => String(l.id) === String(destId));
+        if (!dest && window.lastSelectedDest) dest = window.lastSelectedDest;
+        if (!dest) return;
+
+        const mapDiv = document.getElementById("campus-map");
+        if (!mapDiv) return;
+
+        let overlay = document.getElementById("native-map-overlay");
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "native-map-overlay";
+            mapDiv.appendChild(overlay);
+        }
+        overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:1000; background:rgba(0,0,0,0.7); display:block; pointer-events:auto; backdrop-filter: blur(2px);";
+
+        let navPanel = document.getElementById("native-nav-panel");
+        if (!navPanel) {
+            navPanel = document.createElement("div");
+            navPanel.id = "native-nav-panel";
+            mapDiv.appendChild(navPanel);
+        }
+
+        navPanel.style.display = "flex";
+        navPanel.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; background:#0F0F23; color:white; padding:24px; border-radius:24px; border:2px solid #6C63FF; display:flex; flex-direction:column; gap:16px; font-family: sans-serif; width: 85%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);";
+        
+        navPanel.innerHTML = "";
+        const title = document.createElement("div");
+        title.innerText = "Set Starting Point";
+        title.style.cssText = "font-weight:bold; font-size: 20px; color: white; text-align: center;";
+        navPanel.appendChild(title);
+        
+        const subtitle = document.createElement("div");
+        subtitle.innerText = "To navigate to " + dest.name;
+        subtitle.style.cssText = "font-size: 14px; color: #AAA; text-align: center; margin-top: -8px;";
+        navPanel.appendChild(subtitle);
+
+        const selectionContainer = document.createElement("div");
+        selectionContainer.style.cssText = "display: flex; flex-direction: column; gap: 12px;";
+        navPanel.appendChild(selectionContainer);
+
+        const currentLocBtn = document.createElement("button");
+        currentLocBtn.innerText = "Use My Current Location";
+        currentLocBtn.style.cssText = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left;";
+        
+        currentLocBtn.onclick = () => {
+            console.log("[CAMPNAV] [DIAGNOSTIC] CURRENT LOCATION SELECTED");
+            const navWindow = window.open('about:blank', '_blank');
+            window.getPositionWithFallback((pos) => {
+                window.hideNavOverlays();
+                const url = 'https://www.google.com/maps/dir/?api=1&origin=' + pos.coords.latitude + ',' + pos.coords.longitude + '&destination=' + dest.latitude + ',' + dest.longitude + '&travelmode=driving';
+                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION URL CREATED: " + url);
+                console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCH REQUESTED");
+                if (navWindow) {
+                    navWindow.location.href = url;
+                } else {
+                    window.open(url, '_blank');
+                }
+                console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
+                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
+                window.onEndNav();
+            }, (err) => {
+                if (navWindow) navWindow.close();
+                alert("Location tracking failed.");
+            });
+        };
+        selectionContainer.appendChild(currentLocBtn);
+        
+        const cancelBtn = document.createElement("button");
+        cancelBtn.innerText = "Cancel";
+        cancelBtn.style.cssText = "padding:12px; background:transparent; color:#FF4B4B; border:none; cursor:pointer; font-weight: bold;";
+        cancelBtn.onclick = () => { 
+            console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
+            window.hideNavOverlays(); 
+            window.onEndNav(); 
+        };
+        navPanel.appendChild(cancelBtn);
+    };
+}""")
+private external fun initGlobalJSBridge()
 
 @JsFun("(destId, destName) => { if (window.showNavChoicePopup) window.showNavChoicePopup(destId, destName); }")
 private external fun triggerNavChoiceJS(destId: String, destName: String)
@@ -211,7 +629,7 @@ private external fun stopTrackingUserLocation()
             google.maps.importLibrary("maps"),
             google.maps.importLibrary("marker")
         ]).then(([mapsLib, markerLib]) => {
-            const { Map, LatLngBounds, Polyline } = mapsLib;
+            const { Map } = mapsLib;
             const { AdvancedMarkerElement } = markerLib;
             
             const mapOptions = {
@@ -238,367 +656,6 @@ private external fun stopTrackingUserLocation()
             window.onEndNav = onEndNav;
             window.onStatusChange = onStatusChange;
             window.onMapClick = onMapClick;
-
-            window.openGoogleMapsNavigation = (oLat, oLng, dLat, dLng) => {
-                console.log("[CAMPNAV][NAV] maps URL generated");
-                console.log("[CAMPNAV][NAV] maps launch: origin=" + oLat + "," + oLng + " dest=" + dLat + "," + dLng);
-                const url = 'https://www.google.com/maps/dir/?api=1&origin=' + oLat + ',' + oLng + '&destination=' + dLat + ',' + dLng + '&travelmode=driving';
-                window.open(url, '_blank');
-            };
-
-            window.getPositionWithFallback = (onSuccess, onError) => {
-                if (!navigator.geolocation) {
-                    onError("Geolocation not supported");
-                    return;
-                }
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => onSuccess(pos),
-                    (err1) => {
-                        console.warn("[CAMPNAV] High accuracy location timeout/fail, trying standard accuracy...", err1.message);
-                        navigator.geolocation.getCurrentPosition(
-                            (pos2) => onSuccess(pos2),
-                            (err2) => {
-                                console.warn("[CAMPNAV] Standard location fail:", err2.message);
-                                onError(err2.message || "Location access failed");
-                            },
-                            { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
-                        );
-                    },
-                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
-                );
-            };
-
-            window.hideNavOverlays = () => {
-                const overlay = document.getElementById("native-map-overlay");
-                if (overlay) overlay.style.display = "none";
-                const navPanel = document.getElementById("native-nav-panel");
-                if (navPanel) navPanel.style.display = "none";
-                const selOverlay = document.getElementById("select-point-overlay");
-                if (selOverlay) selOverlay.style.display = "none";
-            };
-
-            window.showNavChoicePopup = (destId, destName) => {
-                const sessionId = Math.random().toString(36).substring(2, 9);
-                window.currentNavSessionId = sessionId;
-                console.log("[CAMPNAV][NAV] starting-point dialog opened");
-                console.log("[CAMPNAV][NAV] destination id: " + destId);
-
-                const locations = window.campusLocationsData || [];
-                let dest = locations.find(l => String(l.id) === String(destId));
-                if (!dest && window.lastSelectedDest && String(window.lastSelectedDest.id) === String(destId)) {
-                    dest = window.lastSelectedDest;
-                }
-                if (!dest && window.lastSelectedDest) {
-                    dest = window.lastSelectedDest;
-                }
-                if (!dest) {
-                    console.warn("[CAMPNAV] Destination missing for ID:", destId);
-                    return;
-                }
-                window.lastSelectedDest = dest;
-
-                const mapDiv = document.getElementById("campus-map");
-                if (!mapDiv) return;
-
-                let overlay = document.getElementById("native-map-overlay");
-                if (!overlay) {
-                    overlay = document.createElement("div");
-                    overlay.id = "native-map-overlay";
-                    mapDiv.appendChild(overlay);
-                }
-                overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:999; background:rgba(0,0,0,0.7); display:block; pointer-events:auto; backdrop-filter: blur(2px);";
-
-                let navPanel = document.getElementById("native-nav-panel");
-                if (!navPanel) {
-                    navPanel = document.createElement("div");
-                    navPanel.id = "native-nav-panel";
-                    mapDiv.appendChild(navPanel);
-                }
-
-                navPanel.style.display = "flex";
-                navPanel.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1200; background:#0F0F23; color:white; padding:32px; border-radius:24px; border:2px solid #6C63FF; display:flex; flex-direction:column; gap:16px; font-family: sans-serif; width: 85%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);";
-
-                navPanel.innerHTML = 
-                    '<div style="text-align: center;">' +
-                    '<div style="font-size: 14px; color: #AAA;">Navigate to</div>' +
-                    '<div style="font-weight:bold; font-size: 24px; color: white; margin-top: 4px;">' + destName + '</div>' +
-                    '<div style="font-size: 16px; color: white; margin-top: 16px; margin-bottom: 24px;">How would you like to start?</div>' +
-                    '</div>';
-
-                const btnStyle = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left; display: flex; align-items: center; gap: 12px;";
-                
-                const currentLocBtn = document.createElement("button");
-                currentLocBtn.innerHTML = "Use my current location";
-                currentLocBtn.style.cssText = btnStyle;
-                currentLocBtn.onclick = () => {
-                    console.log("[CAMPNAV][NAV] origin selection: current location");
-                    const navWindow = window.open('about:blank', '_blank');
-                    window.getPositionWithFallback((pos) => {
-                        const oLat = pos.coords.latitude;
-                        const oLng = pos.coords.longitude;
-                        console.log("[CAMPNAV][NAV] origin latitude: " + oLat);
-                        console.log("[CAMPNAV][NAV] origin longitude: " + oLng);
-                        console.log("[CAMPNAV][NAV] destination consumed: " + dest.name + " (" + dest.latitude + ", " + dest.longitude + ")");
-                        const url = 'https://www.google.com/maps/dir/?api=1&origin=' + oLat + ',' + oLng + '&destination=' + dest.latitude + ',' + dest.longitude + '&travelmode=driving';
-                        if (navWindow) {
-                            navWindow.location.href = url;
-                        } else {
-                            window.open(url, '_blank');
-                        }
-                        window.hideNavOverlays();
-                        console.log("[CAMPNAV][NAV] navigation state reset");
-                        window.onEndNav();
-                    }, (err) => {
-                        if (navWindow) navWindow.close();
-                        console.warn("[CAMPNAV] Geolocation failed:", err);
-                        alert("We couldn't access your current location. Please allow location permissions in your browser or select a starting point manually.");
-                        window.hideNavOverlays();
-                        window.onEndNav();
-                    });
-                };
-                navPanel.appendChild(currentLocBtn);
-
-                const selectOnMapBtn = document.createElement("button");
-                selectOnMapBtn.innerHTML = "Select starting point";
-                selectOnMapBtn.style.cssText = btnStyle;
-                selectOnMapBtn.onclick = () => {
-                    console.log("[CAMPNAV][NAV] origin selection: select starting point");
-                    window.hideNavOverlays();
-                    window.onStatusChange("SELECTING_START_POINT");
-                };
-                navPanel.appendChild(selectOnMapBtn);
-
-                const cancelBtn = document.createElement("button");
-                cancelBtn.innerText = "Cancel";
-                cancelBtn.style.cssText = "padding:12px; background:transparent; color:#FF4B4B; border:none; cursor:pointer; font-weight: bold; font-size: 16px; margin-top: 8px;";
-                cancelBtn.onclick = () => { 
-                    console.log("[CAMPNAV][NAV] navigation state reset");
-                    window.hideNavOverlays(); 
-                    window.onEndNav(); 
-                };
-                navPanel.appendChild(cancelBtn);
-            };
-
-            window.showStartPointSelectionOverlay = () => {
-                console.log("[CAMPNAV][NAV] starting-point dialog opened (manual search)");
-                const mapDiv = document.getElementById("campus-map");
-                if (!mapDiv) return;
-
-                let selOverlay = document.getElementById("select-point-overlay");
-                if (!selOverlay) {
-                    selOverlay = document.createElement("div");
-                    selOverlay.id = "select-point-overlay";
-                    mapDiv.appendChild(selOverlay);
-                }
-                selOverlay.style.display = "flex";
-                selOverlay.style.flexDirection = "column";
-                selOverlay.style.gap = "12px";
-                selOverlay.style.position = "absolute";
-                selOverlay.style.top = "20px";
-                selOverlay.style.left = "50%";
-                selOverlay.style.transform = "translateX(-50%)";
-                selOverlay.style.zIndex = "1000";
-                selOverlay.style.background = "white";
-                selOverlay.style.color = "#3C4043";
-                selOverlay.style.padding = "24px";
-                selOverlay.style.borderRadius = "28px";
-                selOverlay.style.boxShadow = "0 12px 48px rgba(0,0,0,0.25)";
-                selOverlay.style.fontWeight = "bold";
-                selOverlay.style.fontFamily = "sans-serif";
-                selOverlay.style.width = "90%";
-                selOverlay.style.maxWidth = "380px";
-
-                selOverlay.innerHTML = 
-                    '<div style="margin-bottom: 12px; text-align: center; color: #0F0F23; font-size: 20px; font-weight: 800;">Select a starting point</div>' +
-                    '<div style="position: relative; width: 100%; margin-bottom: 8px;">' +
-                    '<input id="start-point-search" type="text" placeholder="Search location..." style="padding: 16px 44px 16px 16px; border-radius: 16px; border: 2px solid #F0F0F0; width: 100%; box-sizing: border-box; font-size: 16px; outline: none; transition: all 0.2s; background: #F8F9FA;">' +
-                    '<span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #AAA; font-size: 18px;">🔍</span>' +
-                    '</div>' +
-                    '<div id="start-point-results" style="display: none; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; background: white; border-radius: 16px; padding: 8px; border: 1px solid #EEE; font-weight: normal; margin-bottom: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></div>' +
-                    '<button id="start-point-action-btn" style="width: 100%; padding: 16px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);">Start</button>' +
-                    '<div style="display: flex; gap: 10px; width: 100%; margin-top: 4px;">' +
-                    '<button id="start-point-tap-map" style="flex: 1; padding: 14px; border-radius: 16px; border: none; background: #6C63FF; color: white; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px;">Tap on the Map</button>' +
-                    '<button id="start-point-cancel" style="padding: 14px; border-radius: 16px; border: 2px solid #F0F0F0; background: white; color: #666; cursor: pointer; font-weight: 700; font-size: 14px;">Cancel</button>' +
-                    '</div>';
-
-                const searchInput = document.getElementById("start-point-search");
-                const resultsDiv = document.getElementById("start-point-results");
-                const actionBtn = document.getElementById("start-point-action-btn");
-                const tapMapBtn = document.getElementById("start-point-tap-map");
-                const cancelBtn = document.getElementById("start-point-cancel");
-                
-                let selectedStartLoc = null;
-
-                searchInput.focus();
-                searchInput.oninput = (e) => {
-                    const query = e.target.value.toLowerCase().trim();
-                    const locations = window.campusLocationsData || [];
-
-                    if (query.length < 1) {
-                        resultsDiv.style.display = "none";
-                        return;
-                    }
-                    const filtered = locations.filter(l => 
-                        l.name.toLowerCase().includes(query) || 
-                        (l.officialName && l.officialName.toLowerCase().includes(query)) ||
-                        (l.buildingCode && l.buildingCode.toLowerCase().includes(query))
-                    ).slice(0, 8);
-                    
-                    if (filtered.length > 0) {
-                        resultsDiv.style.display = "flex";
-                        resultsDiv.innerHTML = "";
-                        filtered.forEach(loc => {
-                            const btn = document.createElement("div");
-                            btn.innerText = loc.name;
-                            btn.style.padding = "12px 14px";
-                            btn.style.cursor = "pointer";
-                            btn.style.fontSize = "14px";
-                            btn.style.borderBottom = "1px solid #F5F5F5";
-                            btn.onmouseover = () => { btn.style.background = "#F8F9FA"; };
-                            btn.onmouseout = () => { btn.style.background = "transparent"; };
-                            btn.onclick = () => {
-                                selectedStartLoc = loc;
-                                searchInput.value = loc.name;
-                                resultsDiv.style.display = "none";
-                            };
-                            resultsDiv.appendChild(btn);
-                        });
-                    } else {
-                        resultsDiv.style.display = "none";
-                    }
-                };
-
-                actionBtn.onclick = () => {
-                    const query = searchInput.value.toLowerCase().trim();
-                    const locations = window.campusLocationsData || [];
-                    const finalDest = window.lastSelectedDest;
-
-                    let startLoc = selectedStartLoc;
-                    if (!startLoc && query.length > 0) {
-                        const matched = locations.find(l => l.name.toLowerCase() === query || l.name.toLowerCase().includes(query));
-                        if (matched) startLoc = matched;
-                    }
-
-                    if (startLoc && finalDest) {
-                        console.log("[CAMPNAV][NAV] origin selection: manual search (" + startLoc.name + ")");
-                        console.log("[CAMPNAV][NAV] origin latitude: " + startLoc.latitude);
-                        console.log("[CAMPNAV][NAV] origin longitude: " + startLoc.longitude);
-                        console.log("[CAMPNAV][NAV] destination consumed: " + finalDest.name + " (" + finalDest.latitude + ", " + finalDest.longitude + ")");
-                        window.openGoogleMapsNavigation(startLoc.latitude, startLoc.longitude, finalDest.latitude, finalDest.longitude);
-                        window.hideNavOverlays();
-                        console.log("[CAMPNAV][NAV] navigation state reset");
-                        window.onEndNav();
-                    } else if (!finalDest) {
-                        alert("Destination missing.");
-                    } else {
-                        const navWindow = window.open('about:blank', '_blank');
-                        window.getPositionWithFallback((pos) => {
-                            console.log("[CAMPNAV][NAV] origin selection: fallback current location");
-                            console.log("[CAMPNAV][NAV] origin latitude: " + pos.coords.latitude);
-                            console.log("[CAMPNAV][NAV] origin longitude: " + pos.coords.longitude);
-                            console.log("[CAMPNAV][NAV] destination consumed: " + finalDest.name);
-                            const url = 'https://www.google.com/maps/dir/?api=1&origin=' + pos.coords.latitude + ',' + pos.coords.longitude + '&destination=' + finalDest.latitude + ',' + finalDest.longitude + '&travelmode=driving';
-                            if (navWindow) {
-                                navWindow.location.href = url;
-                            } else {
-                                window.open(url, '_blank');
-                            }
-                            window.hideNavOverlays();
-                            console.log("[CAMPNAV][NAV] navigation state reset");
-                            window.onEndNav();
-                        }, (err) => {
-                            if (navWindow) navWindow.close();
-                            alert("Please select or search for a starting point.");
-                        });
-                    }
-                };
-                
-                tapMapBtn.onclick = () => {
-                    window.hideNavOverlays();
-                };
-                
-                cancelBtn.onclick = () => {
-                    console.log("[CAMPNAV][NAV] navigation state reset");
-                    window.hideNavOverlays();
-                    window.onEndNav();
-                };
-            };
-
-            window.showOriginSelectionPopup = (destId) => {
-                const locations = window.campusLocationsData || [];
-                let dest = locations.find(l => String(l.id) === String(destId));
-                if (!dest && window.lastSelectedDest) dest = window.lastSelectedDest;
-                if (!dest) return;
-
-                const mapDiv = document.getElementById("campus-map");
-                if (!mapDiv) return;
-
-                let overlay = document.getElementById("native-map-overlay");
-                if (!overlay) {
-                    overlay = document.createElement("div");
-                    overlay.id = "native-map-overlay";
-                    mapDiv.appendChild(overlay);
-                }
-                overlay.style.cssText = "position:absolute; top:0; left:0; right:0; bottom:0; z-index:1000; background:rgba(0,0,0,0.7); display:block; pointer-events:auto; backdrop-filter: blur(2px);";
-
-                let navPanel = document.getElementById("native-nav-panel");
-                if (!navPanel) {
-                    navPanel = document.createElement("div");
-                    navPanel.id = "native-nav-panel";
-                    mapDiv.appendChild(navPanel);
-                }
-
-                navPanel.style.display = "flex";
-                navPanel.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; background:#0F0F23; color:white; padding:24px; border-radius:24px; border:2px solid #6C63FF; display:flex; flex-direction:column; gap:16px; font-family: sans-serif; width: 85%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);";
-                
-                navPanel.innerHTML = "";
-                const title = document.createElement("div");
-                title.innerText = "Set Starting Point";
-                title.style.cssText = "font-weight:bold; font-size: 20px; color: white; text-align: center;";
-                navPanel.appendChild(title);
-                
-                const subtitle = document.createElement("div");
-                subtitle.innerText = "To navigate to " + dest.name;
-                subtitle.style.cssText = "font-size: 14px; color: #AAA; text-align: center; margin-top: -8px;";
-                navPanel.appendChild(subtitle);
-
-                const selectionContainer = document.createElement("div");
-                selectionContainer.style.cssText = "display: flex; flex-direction: column; gap: 12px;";
-                navPanel.appendChild(selectionContainer);
-
-                const currentLocBtn = document.createElement("button");
-                currentLocBtn.innerText = "Use My Current Location";
-                currentLocBtn.style.cssText = "padding: 16px; background:#1A1A35; color:white; border:1px solid #6C63FF; border-radius:12px; cursor:pointer; font-weight: bold; font-size: 16px; text-align: left;";
-                
-                currentLocBtn.onclick = () => {
-                    const navWindow = window.open('about:blank', '_blank');
-                    window.getPositionWithFallback((pos) => {
-                        window.hideNavOverlays();
-                        const url = 'https://www.google.com/maps/dir/?api=1&origin=' + pos.coords.latitude + ',' + pos.coords.longitude + '&destination=' + dest.latitude + ',' + dest.longitude + '&travelmode=driving';
-                        if (navWindow) {
-                            navWindow.location.href = url;
-                        } else {
-                            window.open(url, '_blank');
-                        }
-                        console.log("[CAMPNAV][NAV] navigation state reset");
-                        window.onEndNav();
-                    }, (err) => {
-                        if (navWindow) navWindow.close();
-                        alert("Location tracking failed.");
-                    });
-                };
-                selectionContainer.appendChild(currentLocBtn);
-                
-                const cancelBtn = document.createElement("button");
-                cancelBtn.innerText = "Cancel";
-                cancelBtn.style.cssText = "padding:12px; background:transparent; color:#FF4B4B; border:none; cursor:pointer; font-weight: bold;";
-                cancelBtn.onclick = () => { 
-                    console.log("[CAMPNAV][NAV] navigation state reset");
-                    window.hideNavOverlays(); 
-                    window.onEndNav(); 
-                };
-                navPanel.appendChild(cancelBtn);
-            };
 
             let backBtn = document.getElementById("native-back-btn");
             if (!backBtn) {
@@ -666,46 +723,18 @@ private external fun clearWebMarkers()
             title: title
         });
         
+        const escapeTitle = title.replace(/'/g, "\\'");
         const infoWindow = new google.maps.InfoWindow({
-            content: '<div style="color:black; padding:12px; font-family: sans-serif; min-width: 180px;"><div style="font-weight:bold; margin-bottom:12px; font-size:16px; color:#0F0F23;">' + title + '</div><button id="nav-btn-js-' + id + '" style="width:100%; padding:12px; background:#6C63FF; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">NAVIGATE</button></div>'
+            content: '<div style="color:black; padding:12px; font-family: sans-serif; min-width: 180px;"><div style="font-weight:bold; margin-bottom:12px; font-size:16px; color:#0F0F23;">' + title + '</div><button onclick="window.handleNavigateClick(\'' + id + '\', \'' + escapeTitle + '\', ' + lat + ', ' + lng + ')" style="width:100%; padding:12px; background:#6C63FF; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">NAVIGATE</button></div>'
         });
-
-        const setupNavBtn = () => {
-            const btn = document.getElementById('nav-btn-js-' + id);
-            if (btn) {
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    console.log("[CAMPNAV][NAV] navigate clicked: " + title);
-                    console.log("[CAMPNAV][NAV] destination id: " + id);
-                    console.log("[CAMPNAV][NAV] destination latitude: " + lat);
-                    console.log("[CAMPNAV][NAV] destination longitude: " + lng);
-
-                    const locations = window.campusLocationsData || [];
-                    const dest = locations.find(l => String(l.id) === String(id)) || { id: id, name: title, latitude: Number(lat), longitude: Number(lng) };
-                    window.lastSelectedDest = dest;
-
-                    if (window.onStatusChange) {
-                        window.onStatusChange("SHOWING_NAV_CHOICE");
-                    }
-                    if (window.showNavChoicePopup) {
-                        window.showNavChoicePopup(String(id), title);
-                    } else if (window.showOriginSelectionPopup) {
-                        window.showOriginSelectionPopup(String(id));
-                    }
-                    infoWindow.close();
-                };
-            }
-        };
 
         marker.addEventListener("gmp-click", () => {
             infoWindow.open(window.campusMap, marker);
-            google.maps.event.addListenerOnce(infoWindow, 'domready', setupNavBtn);
             onLocationSelected(String(id));
         });
         
         if (isSelected) {
             infoWindow.open(window.campusMap, marker);
-            google.maps.event.addListenerOnce(infoWindow, 'domready', setupNavBtn);
         }
 
         if (!window.mapMarkers) window.mapMarkers = [];
