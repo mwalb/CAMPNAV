@@ -20,11 +20,44 @@ import org.com.campus.utils.openUri
 import org.com.community.model.CommunityContribution
 import org.com.core.ui.theme.AppColorScheme
 
+private fun extractEmail(contact: String): String? {
+    val emailRegex = Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
+    return emailRegex.find(contact)?.value
+}
+
+private fun extractPhone(contact: String): String? {
+    val email = extractEmail(contact)
+    val textWithoutEmail = if (email != null) contact.replace(email, "") else contact
+    val phoneRegex = Regex("\\+?[0-9][0-9\\s\\-]{6,}[0-9]")
+    val match = phoneRegex.find(textWithoutEmail)?.value?.trim()
+    return if (!match.isNullOrBlank()) match else null
+}
+
+private fun normalizeWhatsAppPhone(phone: String): String {
+    val digitsOnly = phone.filter { it.isDigit() }
+    return when {
+        digitsOnly.startsWith("0") && digitsOnly.length == 10 -> "255" + digitsOnly.substring(1)
+        digitsOnly.startsWith("255") -> digitsOnly
+        else -> digitsOnly
+    }
+}
+
 @Composable
 fun CommercialVerificationScreen(
     contribution: CommunityContribution,
     onBackToHub: () -> Unit
 ) {
+    val rawContact = contribution.contributorContact.trim()
+    val extractedEmail = extractEmail(rawContact)
+    val extractedPhone = extractPhone(rawContact) ?: if (extractedEmail == null && rawContact.any { it.isDigit() }) rawContact else null
+
+    val displayPhone = extractedPhone ?: if (rawContact.any { it.isDigit() }) rawContact else if (rawContact.isNotBlank() && !rawContact.contains("@")) rawContact else "Not provided"
+    val displayEmail = extractedEmail ?: if (rawContact.contains("@")) rawContact else "Not provided"
+
+    val cleanPhone = displayPhone.filter { it.isDigit() || it == '+' }.ifBlank { rawContact.filter { it.isDigit() || it == '+' } }
+    val waPhone = normalizeWhatsAppPhone(cleanPhone.ifBlank { rawContact })
+    val mailTarget = if (displayEmail != "Not provided") displayEmail else rawContact
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -126,30 +159,39 @@ fun CommercialVerificationScreen(
                         HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
 
                         Text(
-                            "OWNER / CONTACT DATA",
+                            "OWNER DETAILS",
                             style = MaterialTheme.typography.labelMedium,
                             color = AppColorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Owner / Contact Name", color = Color.Gray)
-                            Text(contribution.contributorName, color = Color.White)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Owner Name", color = Color.Gray, fontSize = 12.sp)
+                            Text(contribution.contributorName, color = Color.White, fontWeight = FontWeight.SemiBold)
                         }
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Contact Info", color = Color.Gray)
-                            Text(contribution.contributorContact, color = Color.White)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Phone", color = Color.Gray, fontSize = 12.sp)
+                            Text(
+                                displayPhone,
+                                color = if (displayPhone != "Not provided") Color.White else Color.Gray,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Email", color = Color.Gray, fontSize = 12.sp)
+                            Text(
+                                displayEmail,
+                                color = if (displayEmail != "Not provided") Color.White else Color.Gray,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }
             }
 
             item {
-                val contact = contribution.contributorContact.trim()
-                val isPhone = contact.any { it.isDigit() } && contact.length >= 7
-                val isEmail = contact.contains("@")
-
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -161,45 +203,49 @@ fun CommercialVerificationScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    if (isPhone) {
-                        val cleanPhone = contact.filter { it.isDigit() || it == '+' }
-                        Button(
-                            onClick = { openUri("tel:$cleanPhone") },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Phone, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Call Owner ($cleanPhone)", fontWeight = FontWeight.Bold)
-                        }
-
-                        Button(
-                            onClick = {
-                                val waPhone = cleanPhone.replace("+", "")
-                                openUri("https://wa.me/$waPhone?text=Hello,%20regarding%20commercial%20location%20verification%20for%20${contribution.locationName}%20(Ref:%20${contribution.reference})")
-                            },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Phone, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("WhatsApp Owner", fontWeight = FontWeight.Bold)
-                        }
+                    // 1. Call Owner
+                    Button(
+                        onClick = {
+                            val phone = cleanPhone.ifBlank { "0745596995" }
+                            openUri("tel:$phone")
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Phone, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Call Owner", fontWeight = FontWeight.Bold)
                     }
 
-                    if (isEmail) {
-                        Button(
-                            onClick = { openUri("mailto:$contact?subject=Commercial%20Location%20Verification%20-${contribution.reference}") },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Email, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Email Owner ($contact)", fontWeight = FontWeight.Bold)
-                        }
+                    // 2. WhatsApp
+                    Button(
+                        onClick = {
+                            val wa = waPhone.ifBlank { "255745596995" }
+                            openUri("https://wa.me/$wa?text=Hello,%20regarding%20commercial%20location%20verification%20for%20${contribution.locationName}%20(Ref:%20${contribution.reference})")
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Phone, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("WhatsApp", fontWeight = FontWeight.Bold)
+                    }
+
+                    // 3. Email Us
+                    Button(
+                        onClick = {
+                            val mail = if (mailTarget.isNotBlank() && mailTarget != "Not provided") mailTarget else "info@campnav.com"
+                            openUri("mailto:$mail?subject=Commercial%20Location%20Verification%20-${contribution.reference}")
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Email, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Email Us", fontWeight = FontWeight.Bold, color = Color.Black)
                     }
 
                     // Administrator Support Call

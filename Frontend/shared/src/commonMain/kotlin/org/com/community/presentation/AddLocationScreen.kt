@@ -364,7 +364,8 @@ fun AddLocationScreen(
                     OutlinedTextField(
                         value = contributorContact,
                         onValueChange = { contributorContact = it },
-                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Owner Phone / Email Contact *" else "Contact Email or Phone (Optional)") },
+                        label = { Text(if (areaType == "COMMERCIAL_AREA") "Owner Phone & Email Contact *" else "Contact Email or Phone (Optional)") },
+                        placeholder = { if (areaType == "COMMERCIAL_AREA") Text("e.g. 0745123456 / owner@example.com", color = Color.Gray) else null },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)

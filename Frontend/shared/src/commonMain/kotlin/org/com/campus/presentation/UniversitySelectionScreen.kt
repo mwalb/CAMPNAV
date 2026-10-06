@@ -2,6 +2,7 @@ package org.com.campus.presentation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +27,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import frontend.shared.generated.resources.Res
+import frontend.shared.generated.resources.logo_udsm
+import frontend.shared.generated.resources.logo_udom
+import frontend.shared.generated.resources.logo_must
+import frontend.shared.generated.resources.logo_sua
+import org.jetbrains.compose.resources.painterResource
 import org.com.campus.data.CampusRepository
 import org.com.campus.data.University
 import org.com.core.ui.theme.AppColorScheme
@@ -222,15 +230,11 @@ fun UniversityCard(
                 modifier = Modifier
                     .size(140.dp)
                     .clip(RoundedCornerShape(24.dp)),
-                color = Color.White
+                color = Color.Transparent
             ) {
-                // If a local high-quality logo is available, we could use it here.
-                // For now, using the seeded URL.
-                AsyncImage(
-                    model = university.logoUrl,
-                    contentDescription = "${university.name} Logo",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
+                UniversityLogoImage(
+                    university = university,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             
@@ -295,6 +299,51 @@ fun UniversityCard(
                 Spacer(Modifier.width(8.dp))
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun UniversityLogoImage(
+    university: University,
+    modifier: Modifier = Modifier
+) {
+    val shortName = (university.shortName ?: university.externalId ?: "").uppercase()
+    val logoUrl = university.logoUrl
+
+    val logoPainter = when {
+        shortName.contains("UDSM") -> painterResource(Res.drawable.logo_udsm)
+        shortName.contains("UDOM") -> painterResource(Res.drawable.logo_udom)
+        shortName.contains("MUST") -> painterResource(Res.drawable.logo_must)
+        shortName.contains("SUA") -> painterResource(Res.drawable.logo_sua)
+        else -> null
+    }
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        if (logoPainter != null) {
+            Image(
+                painter = logoPainter,
+                contentDescription = "${university.name} Logo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        } else if (!logoUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = logoUrl,
+                contentDescription = "${university.name} Logo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            Icon(
+                Icons.Default.School,
+                contentDescription = "${university.name} Logo",
+                tint = AppColorScheme.primary,
+                modifier = Modifier.size(64.dp)
+            )
         }
     }
 }
