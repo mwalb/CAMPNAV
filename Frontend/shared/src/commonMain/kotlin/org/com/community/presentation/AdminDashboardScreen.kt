@@ -24,14 +24,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.com.community.data.CommunityRepository
-import org.com.community.model.AdminActivityLog
-import org.com.community.model.CommunityContribution
-import org.com.community.model.CommunityReview
-import org.com.community.model.UserFeedback
+import org.com.community.model.*
 import org.com.core.ui.theme.AppColorScheme
 
 enum class AdminSection(val title: String, val icon: ImageVector) {
     OVERVIEW("Overview", Icons.Default.Dashboard),
+    COMMUNITY_ISSUES("Community Issues", Icons.Default.ReportProblem),
     COMMUNITY_REVIEWS("Community Reviews", Icons.Default.RateReview),
     USER_FEEDBACK("User Feedback", Icons.Default.Feedback),
     LOCATION_CONTRIBUTIONS("Location Contributions", Icons.Default.AddLocation),
@@ -51,6 +49,8 @@ fun AdminDashboardScreen(
     var reviews by remember { mutableStateOf(emptyList<CommunityReview>()) }
     var feedbacks by remember { mutableStateOf(emptyList<UserFeedback>()) }
     var logs by remember { mutableStateOf(emptyList<AdminActivityLog>()) }
+    var issues by remember { mutableStateOf(emptyList<IssueReport>()) }
+    var issueStats by remember { mutableStateOf<Map<String, Any>>(emptyMap()) }
 
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -61,6 +61,9 @@ fun AdminDashboardScreen(
     var deleteReviewTargetId by remember { mutableStateOf<Long?>(null) }
     var deleteFeedbackTargetId by remember { mutableStateOf<Long?>(null) }
     var detailContributionTarget by remember { mutableStateOf<CommunityContribution?>(null) }
+    var detailIssueTarget by remember { mutableStateOf<IssueReport?>(null) }
+    var resolveIssueTarget by remember { mutableStateOf<IssueReport?>(null) }
+    var resolutionDescription by remember { mutableStateOf("") }
     var rejectionReason by remember { mutableStateOf("") }
 
     val communityRepo = remember { CommunityRepository() }
@@ -75,6 +78,8 @@ fun AdminDashboardScreen(
                 reviews = communityRepo.getAdminReviews(token)
                 feedbacks = communityRepo.getAllFeedback(token)
                 logs = communityRepo.getAdminLogs(token)
+                issues = communityRepo.getAdminIssues(token)
+                issueStats = communityRepo.getAdminIssueStats(token)
             } catch (e: Exception) {
                 val msg = e.message ?: ""
                 if (msg.contains("401") || msg.contains("403") || msg.contains("Unauthorized") || msg.contains("Forbidden")) {
@@ -126,7 +131,7 @@ fun AdminDashboardScreen(
                     Spacer(Modifier.width(8.dp))
 
                     Text(
-                        text = "ADMIN",
+                        text = "ADMIN DASHBOARD",
                         style = MaterialTheme.typography.titleLarge,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
@@ -172,6 +177,7 @@ fun AdminDashboardScreen(
                                 AdminSection.entries.forEach { section ->
                                     val isSelected = selectedSection == section
                                     val badgeCount = when (section) {
+                                        AdminSection.COMMUNITY_ISSUES -> issues.count { it.status == IssueStatus.SUBMITTED }
                                         AdminSection.LOCATION_CONTRIBUTIONS -> contributions.count { it.status == "PENDING" }
                                         AdminSection.COMMUNITY_REVIEWS -> reviews.count { it.status == "PENDING" }
                                         AdminSection.USER_FEEDBACK -> feedbacks.count { it.status == "PENDING" }
@@ -214,7 +220,18 @@ fun AdminDashboardScreen(
                             }
                         } else {
                             when (selectedSection) {
-                                AdminSection.OVERVIEW -> OverviewContent(contributions, reviews, feedbacks, logs) { section -> selectedSection = section }
+                                AdminSection.OVERVIEW -> OverviewContent(issues, contributions, reviews, feedbacks, logs) { section -> selectedSection = section }
+                                AdminSection.COMMUNITY_ISSUES -> IssuesContent(
+                                    issues = issues,
+                                    onUpdateStatus = { id, status, msg ->
+                                        scope.launch {
+                                            communityRepo.adminUpdateStatus(token, id, status, msg, null, null)
+                                            loadData()
+                                        }
+                                    },
+                                    onResolve = { issue -> resolveIssueTarget = issue },
+                                    onViewDetails = { issue -> detailIssueTarget = issue }
+                                )
                                 AdminSection.COMMUNITY_REVIEWS -> ReviewsContent(
                                     reviews = reviews,
                                     onApprove = { id -> scope.launch { communityRepo.approveReview(token, id); loadData() } },
@@ -276,6 +293,7 @@ fun AdminDashboardScreen(
                                 AdminSection.entries.forEach { section ->
                                     val isSelected = selectedSection == section
                                     val badgeCount = when (section) {
+                                        AdminSection.COMMUNITY_ISSUES -> issues.count { it.status == IssueStatus.SUBMITTED }
                                         AdminSection.LOCATION_CONTRIBUTIONS -> contributions.count { it.status == "PENDING" }
                                         AdminSection.COMMUNITY_REVIEWS -> reviews.count { it.status == "PENDING" }
                                         AdminSection.USER_FEEDBACK -> feedbacks.count { it.status == "PENDING" }
@@ -312,6 +330,96 @@ fun AdminDashboardScreen(
                     }
                 }
             }
+        }
+
+        // Issue Details Dialog
+        if (detailIssueTarget != null) {
+            val item = detailIssueTarget!!
+            AlertDialog(
+                onDismissRequest = { detailIssueTarget = null },
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Issue Report Details", fontWeight = FontWeight.Bold, color = Color.White)
+                        IconButton(onClick = { detailIssueTarget = null }) {
+                            Icon(Icons.Default.Close, "Close", tint = Color.White)
+                        }
+                    }
+                },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        DetailRow("Report ID", item.id)
+                        DetailRow("Category", item.category.displayName)
+                        DetailRow("Description", item.description)
+                        DetailRow("Status", item.status.name)
+                        DetailRow("Priority", item.calculatedPriority.name)
+                        DetailRow("Urgency", item.userPriority.name)
+                        DetailRow("Latitude", item.issueLocation.latitude.toString())
+                        DetailRow("Longitude", item.issueLocation.longitude.toString())
+                        DetailRow("Confirmations", item.supportsCount.toString())
+                        DetailRow("Emergency", item.isEmergency.toString())
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { detailIssueTarget = null },
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
+                    ) {
+                        Text("Close")
+                    }
+                },
+                containerColor = AppColorScheme.surfaceVariant
+            )
+        }
+
+        // Resolve Issue Dialog
+        if (resolveIssueTarget != null) {
+            val item = resolveIssueTarget!!
+            AlertDialog(
+                onDismissRequest = { resolveIssueTarget = null },
+                title = { Text("Resolve Issue", color = Color.White, fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text("Provide resolution description / public response:", color = Color.Gray)
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = resolutionDescription,
+                            onValueChange = { resolutionDescription = it },
+                            label = { Text("Resolution Details") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                communityRepo.adminResolveIssue(token, item.id, resolutionDescription.ifBlank { "Resolved by municipal admin" })
+                                resolveIssueTarget = null
+                                resolutionDescription = ""
+                                loadData()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                    ) {
+                        Text("Mark Resolved")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { resolveIssueTarget = null }) {
+                        Text("Cancel", color = Color.Gray)
+                    }
+                },
+                containerColor = AppColorScheme.surfaceVariant
+            )
         }
 
         // Location Contribution Details Dialog
@@ -500,7 +608,7 @@ fun AdminDashboardScreen(
             AlertDialog(
                 onDismissRequest = { deleteReviewTargetId = null },
                 title = { Text("Delete Community Review") },
-                text = { Text("Are you sure you want to delete this review? This action cannot be undone and will permanently delete the review from PostgreSQL.") },
+                text = { Text("Are you sure you want to delete this review?") },
                 confirmButton = {
                     Button(
                         onClick = {
@@ -529,7 +637,7 @@ fun AdminDashboardScreen(
             AlertDialog(
                 onDismissRequest = { deleteFeedbackTargetId = null },
                 title = { Text("Delete User Feedback") },
-                text = { Text("Are you sure you want to delete this user feedback? This action cannot be undone and will permanently delete the feedback from PostgreSQL.") },
+                text = { Text("Are you sure you want to delete this user feedback?") },
                 confirmButton = {
                     Button(
                         onClick = {
@@ -617,6 +725,7 @@ fun SidebarNavItem(
 
 @Composable
 fun OverviewContent(
+    issues: List<IssueReport>,
     contributions: List<CommunityContribution>,
     reviews: List<CommunityReview>,
     feedbacks: List<UserFeedback>,
@@ -629,34 +738,20 @@ fun OverviewContent(
     ) {
         item {
             Text("Dashboard Overview", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
-            Text("Summary of community submissions & moderation status", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text("Summary of community issues, submissions & moderation status", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
 
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MetricCard(
-                    title = "Reviews",
-                    count = reviews.size.toString(),
-                    pendingCount = reviews.count { it.status == "PENDING" },
-                    icon = Icons.Default.RateReview,
+                    title = "Community Issues",
+                    count = issues.size.toString(),
+                    pendingCount = issues.count { it.status == IssueStatus.SUBMITTED },
+                    icon = Icons.Default.ReportProblem,
                     color = Color(0xFF00E5FF),
                     modifier = Modifier.weight(1f),
-                    onClick = { onNavigateSection(AdminSection.COMMUNITY_REVIEWS) }
+                    onClick = { onNavigateSection(AdminSection.COMMUNITY_ISSUES) }
                 )
-                MetricCard(
-                    title = "Feedback",
-                    count = feedbacks.size.toString(),
-                    pendingCount = feedbacks.count { it.status == "PENDING" },
-                    icon = Icons.Default.Feedback,
-                    color = Color(0xFF9C27B0),
-                    modifier = Modifier.weight(1f),
-                    onClick = { onNavigateSection(AdminSection.USER_FEEDBACK) }
-                )
-            }
-        }
-
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MetricCard(
                     title = "Contributions",
                     count = contributions.size.toString(),
@@ -666,14 +761,28 @@ fun OverviewContent(
                     modifier = Modifier.weight(1f),
                     onClick = { onNavigateSection(AdminSection.LOCATION_CONTRIBUTIONS) }
                 )
+            }
+        }
+
+        item {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MetricCard(
-                    title = "Activity Logs",
-                    count = logs.size.toString(),
-                    pendingCount = 0,
-                    icon = Icons.Default.History,
+                    title = "Reviews",
+                    count = reviews.size.toString(),
+                    pendingCount = reviews.count { it.status == "PENDING" },
+                    icon = Icons.Default.RateReview,
+                    color = Color(0xFF9C27B0),
+                    modifier = Modifier.weight(1f),
+                    onClick = { onNavigateSection(AdminSection.COMMUNITY_REVIEWS) }
+                )
+                MetricCard(
+                    title = "Feedback",
+                    count = feedbacks.size.toString(),
+                    pendingCount = feedbacks.count { it.status == "PENDING" },
+                    icon = Icons.Default.Feedback,
                     color = Color(0xFFFFB74D),
                     modifier = Modifier.weight(1f),
-                    onClick = { onNavigateSection(AdminSection.ACTIVITY_LOGS) }
+                    onClick = { onNavigateSection(AdminSection.USER_FEEDBACK) }
                 )
             }
         }
@@ -698,6 +807,90 @@ fun OverviewContent(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(log.description, color = Color.White, style = MaterialTheme.typography.bodyMedium)
                         Text("${log.action} • ${log.actorUsername}", color = Color.Gray, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun IssuesContent(
+    issues: List<IssueReport>,
+    onUpdateStatus: (String, String, String) -> Unit,
+    onResolve: (IssueReport) -> Unit,
+    onViewDetails: (IssueReport) -> Unit
+) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Text("Community Issues (${issues.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+        }
+
+        if (issues.isEmpty()) {
+            item { Text("No community issues found.", color = Color.Gray) }
+        } else {
+            items(issues) { issue ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(issue.id, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, fontSize = 14.sp)
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = when (issue.status) {
+                                    IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                                    IssueStatus.IN_PROGRESS, IssueStatus.ASSIGNED -> Color(0xFFFF9800).copy(alpha = 0.2f)
+                                    else -> Color(0xFF2196F3).copy(alpha = 0.2f)
+                                }
+                            ) {
+                                Text(
+                                    issue.status.name.replace("_", " "),
+                                    color = when (issue.status) {
+                                        IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF4CAF50)
+                                        IssueStatus.IN_PROGRESS, IssueStatus.ASSIGNED -> Color(0xFFFF9800)
+                                        else -> Color(0xFF2196F3)
+                                    },
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Text(issue.description, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Category: ${issue.category.displayName} | Urgency: ${issue.userPriority}", color = Color.Gray, fontSize = 12.sp)
+
+                        Spacer(Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { onViewDetails(issue) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColorScheme.primary)
+                            ) {
+                                Text("Details", fontSize = 11.sp)
+                            }
+                            if (issue.status == IssueStatus.SUBMITTED) {
+                                Button(
+                                    onClick = { onUpdateStatus(issue.id, "UNDER_REVIEW", "Issue is under administrative review.") },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                ) {
+                                    Text("Review", fontSize = 11.sp)
+                                }
+                            }
+                            if (issue.status != IssueStatus.RESOLVED && issue.status != IssueStatus.COMMUNITY_VERIFIED) {
+                                Button(
+                                    onClick = { onResolve(issue) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                ) {
+                                    Text("Resolve", fontSize = 11.sp)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -930,7 +1123,6 @@ fun ContributionsContent(
                         Text("University: ${item.university?.name ?: "N/A"}", color = AppColorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         Text("Ref: ${item.reference} | Area Type: ${item.areaType}", color = Color.Gray, fontSize = 12.sp)
 
-                        // Mandatory Latitude and Longitude Display
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = Color.Black.copy(alpha = 0.3f),

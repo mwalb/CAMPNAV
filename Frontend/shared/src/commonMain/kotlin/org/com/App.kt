@@ -22,6 +22,8 @@ enum class AppMode {
     CommunityReport,
     CommunityDashboard,
     CommunityMap,
+    MyReports,
+    TrackReport,
     IssueDetail,
     Entertainment,
     CommunityHub,
@@ -140,8 +142,24 @@ fun MainApp() {
             }
             AppMode.ReportingLanding -> ReportingLandingScreen(
                 onReportNew = { mode = AppMode.CommunityReport },
-                onViewDashboard = { mode = AppMode.CommunityDashboard },
+                onViewMap = { mode = AppMode.CommunityMap },
+                onViewMyReports = { mode = AppMode.MyReports },
+                onTrackReport = { mode = AppMode.TrackReport },
                 onBack = { mode = AppMode.Landing }
+            )
+            AppMode.MyReports -> MyReportsScreen(
+                onBack = { mode = AppMode.ReportingLanding },
+                onReportSelected = { id ->
+                    selectedIssueId = id
+                    mode = AppMode.IssueDetail
+                }
+            )
+            AppMode.TrackReport -> TrackReportScreen(
+                onBack = { mode = AppMode.ReportingLanding },
+                onReportFound = { id ->
+                    selectedIssueId = id
+                    mode = AppMode.IssueDetail
+                }
             )
             AppMode.CommunityReport -> CommunityReportScreen(
                 onBack = { mode = AppMode.ReportingLanding }
@@ -156,12 +174,20 @@ fun MainApp() {
                 }
             )
             AppMode.CommunityMap -> CommunityMapScreen(
-                onBack = { mode = AppMode.CommunityDashboard }
+                onBack = { mode = AppMode.ReportingLanding }
             )
             AppMode.IssueDetail -> selectedIssueId?.let { id ->
                 IssueDetailScreen(
                     issueId = id,
-                    onBack = { mode = AppMode.CommunityDashboard }
+                    onBack = { mode = AppMode.ReportingLanding }
+                )
+            } ?: run {
+                ReportingLandingScreen(
+                    onReportNew = { mode = AppMode.CommunityReport },
+                    onViewMap = { mode = AppMode.CommunityMap },
+                    onViewMyReports = { mode = AppMode.MyReports },
+                    onTrackReport = { mode = AppMode.TrackReport },
+                    onBack = { mode = AppMode.Landing }
                 )
             }
             AppMode.UniversitySelection -> UniversitySelectionScreen(

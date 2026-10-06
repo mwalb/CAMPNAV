@@ -60,6 +60,13 @@ public class IssueReport {
     private String voiceUrl;
     private String beforeImageUrl;
     private String afterImageUrl;
+    private String locationSource; // CURRENT_LOCATION, MAP_PICKER, MANUAL
+
+    @Column(columnDefinition = "TEXT")
+    private String internalNotes;
+
+    @Column(columnDefinition = "TEXT")
+    private String publicResponse;
 
     // Status & Priority
     @Enumerated(EnumType.STRING)

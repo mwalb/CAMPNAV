@@ -172,28 +172,123 @@ class CommunityRepository {
         }
     }
 
-    // --- Issue reports (existing) ---
+    // --- Issue reports ---
     suspend fun createReport(report: IssueReport): IssueReport {
         return apiClient.post("/api/community/reports") {
             setBody(report)
         }.body()
     }
 
+    suspend fun getAllReports(): List<IssueReport> {
+        return try {
+            apiClient.get("/api/community/reports").body()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     suspend fun getNearbyIssues(lat: Double, lng: Double, radius: Double = 2.0): List<IssueReport> {
-        return apiClient.get("/api/community/reports/nearby") {
-            parameter("lat", lat)
-            parameter("lng", lng)
-            parameter("radius", radius)
-        }.body()
+        return try {
+            apiClient.get("/api/community/reports/nearby") {
+                parameter("lat", lat)
+                parameter("lng", lng)
+                parameter("radius", radius)
+            }.body()
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
-    suspend fun verifyIssue(issueId: String, resolved: Boolean): IssueReport {
-        return apiClient.post("/api/community/reports/$issueId/verify") {
-            parameter("resolved", resolved)
-        }.body()
+    suspend fun trackReport(externalId: String): IssueReport? {
+        return try {
+            apiClient.get("/api/community/reports/track/$externalId").body()
+        } catch (e: Exception) {
+            null
+        }
     }
 
-    suspend fun getIssueDetails(issueId: String): IssueReport {
-        return apiClient.get("/api/community/reports/$issueId").body()
+    suspend fun getIssueDetails(issueId: String): IssueReport? {
+        return try {
+            apiClient.get("/api/community/reports/$issueId").body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun confirmIssue(externalId: String): IssueReport? {
+        return try {
+            apiClient.post("/api/community/reports/$externalId/confirm").body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun verifyIssue(externalId: String, resolved: Boolean): IssueReport? {
+        return try {
+            apiClient.post("/api/community/reports/$externalId/verify") {
+                parameter("resolved", resolved)
+            }.body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // --- Admin Issue Management ---
+    suspend fun getAdminIssues(token: String): List<IssueReport> {
+        return try {
+            apiClient.get("/api/admin/issues") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }.body()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getAdminIssueStats(token: String): Map<String, Any> {
+        return try {
+            apiClient.get("/api/admin/issues/stats") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }.body()
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    suspend fun adminUpdateStatus(token: String, externalId: String, status: String, message: String, internalNotes: String?, publicResponse: String?): IssueReport? {
+        return try {
+            apiClient.post("/api/admin/issues/$externalId/status") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(mapOf(
+                    "status" to status,
+                    "message" to message,
+                    "internalNotes" to (internalNotes ?: ""),
+                    "publicResponse" to (publicResponse ?: "")
+                ))
+            }.body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun adminAssignIssue(token: String, externalId: String, departmentId: Long): IssueReport? {
+        return try {
+            apiClient.post("/api/admin/issues/$externalId/assign") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(mapOf("departmentId" to departmentId))
+            }.body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun adminResolveIssue(token: String, externalId: String, resolutionDescription: String): IssueReport? {
+        return try {
+            apiClient.post("/api/admin/issues/$externalId/resolve") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(mapOf("resolutionDescription" to resolutionDescription))
+            }.body()
+        } catch (e: Exception) {
+            null
+        }
     }
 }

@@ -82,7 +82,9 @@ data class IssueReport(
     val isEmergency: Boolean = false,
     val timeline: List<IssueTimelineEvent> = emptyList(),
     val beforeImageUri: String? = null,
-    val afterImageUri: String? = null
+    val afterImageUri: String? = null,
+    val publicResponse: String? = null,
+    val internalNotes: String? = null
 )
 
 @Serializable
