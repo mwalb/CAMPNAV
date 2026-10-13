@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
@@ -28,17 +29,10 @@ import kotlinx.coroutines.*
 import org.com.entertainment.data.M3UParser
 import org.com.entertainment.model.Channel
 import org.com.entertainment.model.PlayerState
-import kotlin.random.Random
-
-enum class Screen {
-    Home,
-    Channels
-}
 
 @Composable
 fun IPTVPlayerApp(onBackToSelection: () -> Unit) {
-    var selectedScreen by remember { mutableStateOf(Screen.Home) }
-    var channels by remember { mutableStateOf<List<Channel>>(emptyList()) }
+    var channels by remember { mutableStateOf(M3UParser.defaultHighStrengthChannels) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf<String?>(null) }
     var selectedChannel by remember { mutableStateOf<Channel?>(null) }
@@ -59,15 +53,12 @@ fun IPTVPlayerApp(onBackToSelection: () -> Unit) {
             try {
                 val loadedChannels = M3UParser().parseWithFallbacks(defaultPlaylists)
                 withContext(Dispatchers.Main) {
-                    channels = loadedChannels
-                    selectedScreen = Screen.Channels
+                    if (loadedChannels.isNotEmpty()) {
+                        channels = loadedChannels
+                    }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    // Fallback to high strength default channels if network fails completely
-                    channels = M3UParser.defaultHighStrengthChannels
-                    selectedScreen = Screen.Channels
-                }
+                // Default high-strength channels remain available
             } finally {
                 withContext(Dispatchers.Main) {
                     isLoading = false
@@ -76,36 +67,24 @@ fun IPTVPlayerApp(onBackToSelection: () -> Unit) {
         }
     }
 
-    // Auto-load channels on start for instant zero-friction playback
     LaunchedEffect(Unit) {
-        if (channels.isEmpty()) {
-            loadGlobalStreams()
-        }
+        loadGlobalStreams()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        when (selectedScreen) {
-            Screen.Home -> HomeScreen(
-                onLoadPlaylist = { loadGlobalStreams() },
-                isLoading = isLoading,
-                error = error,
-                onBack = onBackToSelection
-            )
-
-            Screen.Channels -> ChannelsScreen(
-                channels = channels,
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                selectedCategory = selectedCategoryFilter,
-                onCategorySelect = { selectedCategoryFilter = it },
-                onChannelClick = {
-                    selectedChannel = it
-                    isPlaying = true
-                },
-                onBack = { selectedScreen = Screen.Home },
-                onReload = { loadGlobalStreams() }
-            )
-        }
+        ChannelsScreen(
+            channels = channels,
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
+            selectedCategory = selectedCategoryFilter,
+            onCategorySelect = { selectedCategoryFilter = it },
+            onChannelClick = { channel ->
+                selectedChannel = channel
+                isPlaying = true
+            },
+            onBack = onBackToSelection,
+            onReload = { loadGlobalStreams() }
+        )
 
         // Fullscreen Video Player Overlay
         if (selectedChannel != null) {
@@ -122,253 +101,7 @@ fun IPTVPlayerApp(onBackToSelection: () -> Unit) {
     }
 }
 
-// Home Screen with Animated Particles & No Raw Links Exposed
-@Composable
-fun HomeScreen(
-    onLoadPlaylist: () -> Unit,
-    isLoading: Boolean,
-    error: String?,
-    onBack: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F0F23),
-                        Color(0xFF1A1A3E),
-                        Color(0xFF0F0F23)
-                    )
-                )
-            )
-    ) {
-        // Animated floating particles
-        AnimatedParticles()
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Header with Back button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-            
-            // Animated Logo
-            AnimatedLogo()
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = "Campus Live TV & IPTV",
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Stream news, sports, education, and entertainment worldwide",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Load / Enter Button with animation
-            Button(
-                onClick = onLoadPlaylist,
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(60.dp)
-                    .clip(RoundedCornerShape(20.dp)),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(20.dp),
-                elevation = ButtonDefaults.buttonElevation(12.dp)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("CONNECTING HIGH-STRENGTH STREAMS...")
-                } else {
-                    Icon(
-                        Icons.Default.PlayArrow,
-                        contentDescription = "Watch Streams",
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "WATCH LIVE STREAMS",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
-                    )
-                }
-            }
-
-            // Error Message
-            AnimatedVisibility(
-                visible = error != null,
-                enter = fadeIn() + slideInVertically(),
-                exit = fadeOut() + slideOutVertically()
-            ) {
-                if (error != null) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = error!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Animated Logo with Gradient
-@Composable
-fun AnimatedLogo() {
-    val infiniteTransition = rememberInfiniteTransition()
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(5000),
-            repeatMode = RepeatMode.Restart
-        )
-    )
-
-    Box(
-        modifier = Modifier
-            .size(120.dp)
-            .scale(scale)
-            .rotate(rotation)
-            .clip(RoundedCornerShape(30.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF6C63FF),
-                        Color(0xFF00E5FF)
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            Icons.Default.LiveTv,
-            contentDescription = "IPTV Logo",
-            modifier = Modifier.size(60.dp),
-            tint = Color.White
-        )
-    }
-}
-
-// Animated Floating Particles
-@Composable
-fun AnimatedParticles() {
-    val particles = remember {
-        List(15) {
-            Particle(
-                x = Random.nextFloat() * 1000,
-                size = Random.nextFloat() * 20 + 5,
-                duration = Random.nextInt(4000, 8000),
-                delay = Random.nextInt(0, 3000),
-                xOffset = Random.nextFloat() * 200 - 100,
-                color = Color(
-                    red = Random.nextFloat(),
-                    green = Random.nextFloat(),
-                    blue = Random.nextFloat()
-                )
-            )
-        }
-    }
-
-    particles.forEach { particle ->
-        val infiniteTransition = rememberInfiniteTransition()
-        val offsetY by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1000f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = particle.duration,
-                    delayMillis = particle.delay,
-                    easing = LinearEasing
-                ),
-                repeatMode = RepeatMode.Restart
-            )
-        )
-
-        val offsetX by infiniteTransition.animateFloat(
-            initialValue = particle.x,
-            targetValue = particle.x + particle.xOffset,
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = particle.duration,
-                    delayMillis = particle.delay,
-                    easing = LinearEasing
-                ),
-                repeatMode = RepeatMode.Restart
-            )
-        )
-
-        Box(
-            modifier = Modifier
-                .offset(x = offsetX.dp, y = offsetY.dp)
-                .size(particle.size.dp)
-                .clip(CircleShape)
-                .background(
-                    particle.color.copy(alpha = 0.3f)
-                )
-        )
-    }
-}
-
-data class Particle(
-    val x: Float,
-    val size: Float,
-    val duration: Int,
-    val delay: Int,
-    val xOffset: Float,
-    val color: Color
-)
-
-// Channels Screen with Search & Categories
+// Channels Selection Screen with Search & Categories
 @Composable
 fun ChannelsScreen(
     channels: List<Channel>,
@@ -380,6 +113,9 @@ fun ChannelsScreen(
     onBack: () -> Unit,
     onReload: () -> Unit
 ) {
+    val categoryListState = rememberLazyListState()
+    val channelsGridState = rememberLazyGridState()
+
     val categories = remember(channels) {
         channels.mapNotNull { it.category }.distinct().filter { it.isNotBlank() }
     }
@@ -400,8 +136,8 @@ fun ChannelsScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF0F0F23),
-                        Color(0xFF1A1A3E)
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface
                     )
                 )
             )
@@ -418,20 +154,24 @@ fun ChannelsScreen(
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
 
             Text(
-                text = "Live Channels",
+                text = "Campus Entertainment",
                 style = MaterialTheme.typography.titleLarge,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onReload) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Reload", tint = Color.White)
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Reload",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
                 }
 
                 Surface(
@@ -456,12 +196,12 @@ fun ChannelsScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .height(56.dp),
-            placeholder = { Text("Search channels...") },
+            placeholder = { Text("Search videos & channels...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
             leadingIcon = {
                 Icon(
                     Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = Color.Gray
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             trailingIcon = {
@@ -470,27 +210,31 @@ fun ChannelsScreen(
                         Icon(
                             Icons.Default.Clear,
                             contentDescription = "Clear search",
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.3F),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.05f)
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
             ),
             shape = RoundedCornerShape(16.dp),
             singleLine = true
         )
 
-        // Categories Row
+        // Categories Layout (Horizontally Scrollable Row)
         if (categories.isNotEmpty()) {
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                state = categoryListState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
@@ -504,7 +248,7 @@ fun ChannelsScreen(
                     FilterChip(
                         selected = selectedCategory == cat,
                         onClick = { onCategorySelect(if (selectedCategory == cat) null else cat) },
-                        label = { Text(cat) }
+                        label = { Text(cat, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     )
                 }
             }
@@ -514,6 +258,7 @@ fun ChannelsScreen(
 
         // Channels Grid
         LazyVerticalGrid(
+            state = channelsGridState,
             columns = GridCells.Adaptive(minSize = 160.dp),
             modifier = Modifier
                 .fillMaxSize()
@@ -522,7 +267,7 @@ fun ChannelsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(filteredChannels, key = { it.url }) { channel ->
+            items(filteredChannels, key = { channel -> "${channel.name}-${channel.url}" }) { channel ->
                 ChannelCard(
                     channel = channel,
                     onClick = { onChannelClick(channel) }
@@ -550,12 +295,12 @@ fun ChannelsScreen(
                             Text(
                                 text = "No channels found",
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = "Try a different search term or reload",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -565,7 +310,7 @@ fun ChannelsScreen(
     }
 }
 
-// Channel Card with Hover Animation
+// Channel Card
 @Composable
 fun ChannelCard(
     channel: Channel,
@@ -579,21 +324,15 @@ fun ChannelCard(
             .clickable(onClick = onClick)
             .animateContentSize(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1A1A3E).copy(alpha = 0.8f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
+            defaultElevation = 2.dp
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(Color(0xFF2A2A5E), Color(0xFF1A1A3E))
-                    )
-                )
+            modifier = Modifier.fillMaxSize()
         ) {
             Column(
                 modifier = Modifier
@@ -615,13 +354,13 @@ fun ChannelCard(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = channel.name.take(1).uppercase(),
                             style = MaterialTheme.typography.titleLarge,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -632,7 +371,7 @@ fun ChannelCard(
                 Text(
                     text = channel.name,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -643,7 +382,7 @@ fun ChannelCard(
                 if (channel.category != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Surface(
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
@@ -667,6 +406,8 @@ fun FullscreenVideoPlayer(
     onIsPlayingChange: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
+    PlatformBackHandler(enabled = true, onBack = onDismiss)
+
     var showControls by remember { mutableStateOf(true) }
     var playerState by remember { mutableStateOf(PlayerState()) }
     val controlsAlpha = remember { mutableStateOf(1f) }
@@ -727,8 +468,9 @@ fun FullscreenVideoPlayer(
                     color = Color.White,
                     style = MaterialTheme.typography.bodyLarge
                 )
+                Spacer(modifier = Modifier.height(12.dp))
                 Button(onClick = onDismiss) {
-                    Text("Close")
+                    Text("Return to Selection")
                 }
             }
         }
@@ -745,8 +487,8 @@ fun FullscreenVideoPlayer(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
+                                Color.Black.copy(alpha = 0.7f),
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.5f),
                                 Color.Black.copy(alpha = 0.7f)
                             )
                         )
@@ -764,28 +506,48 @@ fun FullscreenVideoPlayer(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onDismiss) {
+                        // Prominent Back Control
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .clickable(onClick = onDismiss)
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
                             Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Close",
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back to selection",
                                 tint = Color.White,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Back",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
                             )
                         }
 
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
                         ) {
                             Text(
                                 text = channel.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 color = Color.White,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = channel.category ?: "Live Stream",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
+                                color = Color.Gray,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -870,15 +632,6 @@ fun FullscreenVideoPlayer(
                                     Icon(
                                         Icons.Default.Fullscreen,
                                         contentDescription = "Fullscreen",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(28.dp)
-                                    )
-                                }
-
-                                IconButton(onClick = {}) {
-                                    Icon(
-                                        Icons.Default.MoreVert,
-                                        contentDescription = "More",
                                         tint = Color.White,
                                         modifier = Modifier.size(28.dp)
                                     )

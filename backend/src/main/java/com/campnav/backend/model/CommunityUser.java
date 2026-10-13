@@ -53,6 +53,6 @@ public class CommunityUser {
     private LocalDateTime lastLogin;
 
     public enum UserRole {
-        CITIZEN, FIELD_OFFICER, DEPT_OFFICER, ADMIN
+        CITIZEN, FIELD_OFFICER, DEPT_OFFICER, STUDENT_LEADER, ADMIN
     }
 }

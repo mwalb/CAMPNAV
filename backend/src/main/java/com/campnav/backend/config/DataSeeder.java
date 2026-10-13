@@ -4,6 +4,7 @@ import com.campnav.backend.model.Campus;
 import com.campnav.backend.model.CommunityUser;
 import com.campnav.backend.model.University;
 import com.campnav.backend.repository.CommunityUserRepository;
+import com.campnav.backend.service.StudentLeaderService;
 import com.campnav.backend.service.UniversityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -22,6 +23,9 @@ public class DataSeeder implements CommandLineRunner {
     private CommunityUserRepository userRepository;
 
     @Autowired
+    private StudentLeaderService studentLeaderService;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Override
@@ -30,10 +34,8 @@ public class DataSeeder implements CommandLineRunner {
         University udsm = seedUniversity("UDSM", "University of Dar es Salaam", "University of Dar es Salaam", "UDSM", "Dar es Salaam", -6.7801, 39.2041, 15f, 
                 "Hekima ni Uhuru", "https://upload.wikimedia.org/wikipedia/en/2/2a/University_of_Dar_es_Salaam_Logo.png", 1, 657.0);
 
-        // 2. Seed Campus
         seedCampus("UDSM-MLIMANI", "Mwalimu Julius K. Nyerere Mlimani Campus", udsm);
 
-        // Universities with dataset
         University udom = seedUniversity("UDOM", "University of Dodoma", "University of Dodoma", "UDOM", "Dodoma", -6.2033, 35.8000, 14f,
                 "Embracing Knowledge", "https://upload.wikimedia.org/wikipedia/en/1/1b/UDOM_Logo.png", 2, 6000.0);
         seedCampus("UDOM-MAIN", "University of Dodoma Main Campus", udom);
@@ -41,12 +43,19 @@ public class DataSeeder implements CommandLineRunner {
         University must = seedUniversity("MUST", "Mbeya University of Science and Technology", "Mbeya University of Science and Technology", "MUST", "Mbeya", -8.94315, 33.41636, 15f,
                 "Science and Technology for Development", "https://upload.wikimedia.org/wikipedia/en/a/a2/Mbeya_University_of_Science_and_Technology_Logo.png", 3, null);
         seedCampus("MUST-MAIN", "Mbeya University Main Campus", must);
+
         University sua = seedUniversity("SUA", "Sokoine University of Agriculture", "Sokoine University of Agriculture", "SUA", "Morogoro", -6.8475, 37.6591, 15f, 
                 "Ardhi ni Hazina", "https://upload.wikimedia.org/wikipedia/en/3/3d/Sua_logo.png", 4, null);
         seedCampus("SUA-MAIN", "Sokoine University of Agriculture Main Campus", sua);
 
-        // 3. Seed Initial Admin Account
+        // 2. Seed Initial Admin Account
         seedInitialAdmin();
+
+        // 3. Seed Initial University Student Leaders
+        seedLeader("udsm_leader", "udsm_leader@campnav.org", "UDSM Student Government Leader", udsm);
+        seedLeader("udom_leader", "udom_leader@campnav.org", "UDOM Student Ministry Leader", udom);
+        seedLeader("must_leader", "must_leader@campnav.org", "MUST Student Guild Leader", must);
+        seedLeader("sua_leader", "sua_leader@campnav.org", "SUA Student Organization Leader", sua);
     }
 
     private void seedInitialAdmin() {
@@ -67,6 +76,28 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
             userRepository.save(adminUser);
             System.out.println("Initialized Admin account for " + adminEmail);
+        }
+    }
+
+    private void seedLeader(String username, String email, String fullName, University university) {
+        if (university == null) return;
+        CommunityUser user = userRepository.findByUsername(username).orElseGet(() -> {
+            CommunityUser newLeader = CommunityUser.builder()
+                    .externalId("LEADER-" + username.toUpperCase())
+                    .username(username)
+                    .email(email)
+                    .fullName(fullName)
+                    .passwordHash(passwordEncoder.encode("password123"))
+                    .role(CommunityUser.UserRole.STUDENT_LEADER)
+                    .isActive(true)
+                    .reputationScore(50)
+                    .build();
+            return userRepository.save(newLeader);
+        });
+
+        if (studentLeaderService.getActiveLeaderForUniversity(university.getId()).isEmpty()) {
+            studentLeaderService.appointStudentLeader(university.getId(), user.getUsername(), "admin");
+            System.out.println("Assigned Student Leader " + username + " to " + university.getName());
         }
     }
 

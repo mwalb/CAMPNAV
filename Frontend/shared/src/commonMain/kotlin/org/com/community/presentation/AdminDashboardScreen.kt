@@ -30,6 +30,9 @@ import org.com.core.ui.theme.AppColorScheme
 enum class AdminSection(val title: String, val icon: ImageVector) {
     OVERVIEW("Overview", Icons.Default.Dashboard),
     COMMUNITY_ISSUES("Community Issues", Icons.Default.ReportProblem),
+    STUDENT_LEADERS("University Student Leaders", Icons.Default.Groups),
+    ISSUE_NOTIFICATIONS("Issue Notifications", Icons.Default.Mail),
+    ROUTING_ESCALATIONS("Routing & Escalations", Icons.Default.AltRoute),
     COMMUNITY_REVIEWS("Community Reviews", Icons.Default.RateReview),
     USER_FEEDBACK("User Feedback", Icons.Default.Feedback),
     LOCATION_CONTRIBUTIONS("Location Contributions", Icons.Default.AddLocation),
@@ -50,21 +53,18 @@ fun AdminDashboardScreen(
     var feedbacks by remember { mutableStateOf(emptyList<UserFeedback>()) }
     var logs by remember { mutableStateOf(emptyList<AdminActivityLog>()) }
     var issues by remember { mutableStateOf(emptyList<IssueReport>()) }
-    var issueStats by remember { mutableStateOf<Map<String, Any>>(emptyMap()) }
+    var leaders by remember { mutableStateOf(emptyList<StudentLeaderDTO>()) }
+    var notifications by remember { mutableStateOf(emptyList<EmailNotificationDTO>()) }
 
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var rejectTargetId by remember { mutableStateOf<Long?>(null) }
-    var rejectFeedbackTargetId by remember { mutableStateOf<Long?>(null) }
-    var rejectReviewTargetId by remember { mutableStateOf<Long?>(null) }
-    var deleteReviewTargetId by remember { mutableStateOf<Long?>(null) }
-    var deleteFeedbackTargetId by remember { mutableStateOf<Long?>(null) }
-    var detailContributionTarget by remember { mutableStateOf<CommunityContribution?>(null) }
-    var detailIssueTarget by remember { mutableStateOf<IssueReport?>(null) }
-    var resolveIssueTarget by remember { mutableStateOf<IssueReport?>(null) }
-    var resolutionDescription by remember { mutableStateOf("") }
-    var rejectionReason by remember { mutableStateOf("") }
+    var showAppointLeaderDialog by remember { mutableStateOf(false) }
+    var appointUnivId by remember { mutableStateOf(1L) }
+    var appointLeaderName by remember { mutableStateOf("") }
+    var appointLeaderEmail by remember { mutableStateOf("") }
+    var appointLeaderUsername by remember { mutableStateOf("") }
+    var appointValidationError by remember { mutableStateOf<String?>(null) }
 
     val communityRepo = remember { CommunityRepository() }
     val scope = rememberCoroutineScope()
@@ -79,7 +79,8 @@ fun AdminDashboardScreen(
                 feedbacks = communityRepo.getAllFeedback(token)
                 logs = communityRepo.getAdminLogs(token)
                 issues = communityRepo.getAdminIssues(token)
-                issueStats = communityRepo.getAdminIssueStats(token)
+                leaders = communityRepo.getAdminLeaders(token)
+                notifications = communityRepo.getAdminNotifications(token)
             } catch (e: Exception) {
                 val msg = e.message ?: ""
                 if (msg.contains("401") || msg.contains("403") || msg.contains("Unauthorized") || msg.contains("Forbidden")) {
@@ -98,89 +99,56 @@ fun AdminDashboardScreen(
     }
 
     BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppColorScheme.background)
+        modifier = Modifier.fillMaxSize().background(AppColorScheme.background)
     ) {
         val isDesktop = maxWidth >= 768.dp
 
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top Bar
+            // Header Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = AppColorScheme.surfaceVariant.copy(alpha = 0.9f),
+                color = AppColorScheme.surfaceVariant.copy(alpha = 0.95f),
                 shadowElevation = 4.dp
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (!isDesktop) {
                         IconButton(onClick = { isMobileMenuOpen = !isMobileMenuOpen }) {
-                            Icon(Icons.Default.Menu, "Toggle Navigation", tint = Color.White)
+                            Icon(Icons.Default.Menu, "Toggle Menu", tint = Color.White)
                         }
-                        Spacer(Modifier.width(8.dp))
                     }
 
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                     }
 
-                    Spacer(Modifier.width(8.dp))
-
-                    Text(
-                        text = "ADMIN DASHBOARD",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("CAMPNAV ADMIN DASHBOARD", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Black)
 
                     Spacer(Modifier.weight(1f))
 
-                    Text(
-                        text = selectedSection.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = AppColorScheme.primary,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Text(selectedSection.title, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
 
-            // Main View Container
+            // Body Layout
             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 Row(modifier = Modifier.fillMaxSize()) {
-                    // Desktop Sidebar
                     if (isDesktop) {
                         Surface(
-                            modifier = Modifier
-                                .width(260.dp)
-                                .fillMaxHeight(),
-                            color = AppColorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            tonalElevation = 2.dp
+                            modifier = Modifier.width(260.dp).fillMaxHeight(),
+                            color = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    "SECTIONS",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.Gray,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
-                                )
+                            Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("ADMIN SECTIONS", style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
 
                                 AdminSection.entries.forEach { section ->
                                     val isSelected = selectedSection == section
-                                    val badgeCount = when (section) {
+                                    val badge = when (section) {
                                         AdminSection.COMMUNITY_ISSUES -> issues.count { it.status == IssueStatus.SUBMITTED }
-                                        AdminSection.LOCATION_CONTRIBUTIONS -> contributions.count { it.status == "PENDING" }
-                                        AdminSection.COMMUNITY_REVIEWS -> reviews.count { it.status == "PENDING" }
-                                        AdminSection.USER_FEEDBACK -> feedbacks.count { it.status == "PENDING" }
+                                        AdminSection.ROUTING_ESCALATIONS -> issues.count { it.routingStatus == "UNASSIGNED" }
+                                        AdminSection.ISSUE_NOTIFICATIONS -> notifications.count { it.deliveryState == "FAILED" }
                                         else -> 0
                                     }
 
@@ -188,143 +156,50 @@ fun AdminDashboardScreen(
                                         title = section.title,
                                         icon = section.icon,
                                         isSelected = isSelected,
-                                        badgeCount = badgeCount,
+                                        badgeCount = badge,
                                         onClick = { selectedSection = section }
                                     )
                                 }
 
                                 Spacer(Modifier.weight(1f))
-
-                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 8.dp))
-
-                                SidebarNavItem(
-                                    title = "Logout",
-                                    icon = Icons.AutoMirrored.Filled.ExitToApp,
-                                    isSelected = false,
-                                    onClick = onLogout
-                                )
+                                SidebarNavItem("Logout", Icons.AutoMirrored.Filled.ExitToApp, false, onClick = onLogout)
                             }
                         }
                     }
 
-                    // Content Pane
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .padding(20.dp)
-                    ) {
+                    // Content Area
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(20.dp)) {
                         if (isLoading) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(color = AppColorScheme.primary)
                             }
                         } else {
                             when (selectedSection) {
-                                AdminSection.OVERVIEW -> OverviewContent(issues, contributions, reviews, feedbacks, logs) { section -> selectedSection = section }
-                                AdminSection.COMMUNITY_ISSUES -> IssuesContent(
-                                    issues = issues,
-                                    onUpdateStatus = { id, status, msg ->
-                                        scope.launch {
-                                            communityRepo.adminUpdateStatus(token, id, status, msg, null, null)
-                                            loadData()
-                                        }
-                                    },
-                                    onResolve = { issue -> resolveIssueTarget = issue },
-                                    onViewDetails = { issue -> detailIssueTarget = issue }
+                                AdminSection.OVERVIEW -> OverviewContent(issues, contributions, reviews, feedbacks, logs) { selectedSection = it }
+                                AdminSection.COMMUNITY_ISSUES -> IssuesContent(issues, { id, status, msg ->
+                                    scope.launch { communityRepo.adminUpdateStatus(token, id, status, msg, null, null); loadData() }
+                                }, {}, { externalId ->
+                                    scope.launch { communityRepo.resendLeaderNotification(token, externalId); loadData() }
+                                })
+                                AdminSection.STUDENT_LEADERS -> StudentLeadersAdminContent(
+                                    leaders = leaders,
+                                    onAppointNew = { showAppointLeaderDialog = true },
+                                    onUpdateStatus = { id, status ->
+                                        scope.launch { communityRepo.updateLeaderStatus(token, id, status, null); loadData() }
+                                    }
                                 )
-                                AdminSection.COMMUNITY_REVIEWS -> ReviewsContent(
-                                    reviews = reviews,
-                                    onApprove = { id -> scope.launch { communityRepo.approveReview(token, id); loadData() } },
-                                    onReject = { id -> rejectReviewTargetId = id },
-                                    onDelete = { id -> deleteReviewTargetId = id }
+                                AdminSection.ISSUE_NOTIFICATIONS -> NotificationsAdminContent(
+                                    notifications = notifications,
+                                    onRetry = { id -> scope.launch { communityRepo.retryNotification(token, id); loadData() } }
                                 )
-                                AdminSection.USER_FEEDBACK -> FeedbackContent(
-                                    feedbacks = feedbacks,
-                                    onApprove = { id -> scope.launch { communityRepo.approveFeedback(token, id); loadData() } },
-                                    onReject = { id -> rejectFeedbackTargetId = id },
-                                    onDelete = { id -> deleteFeedbackTargetId = id }
+                                AdminSection.ROUTING_ESCALATIONS -> EscalationsAdminContent(
+                                    unassignedIssues = issues.filter { it.routingStatus == "UNASSIGNED" },
+                                    onAppointLeader = { showAppointLeaderDialog = true }
                                 )
-                                AdminSection.LOCATION_CONTRIBUTIONS -> ContributionsContent(
-                                    contributions = contributions,
-                                    onApprove = { id -> scope.launch { communityRepo.approveContribution(token, id); loadData() } },
-                                    onReject = { id -> rejectTargetId = id },
-                                    onViewDetails = { item -> detailContributionTarget = item }
-                                )
+                                AdminSection.COMMUNITY_REVIEWS -> ReviewsContent(reviews, { id -> scope.launch { communityRepo.approveReview(token, id); loadData() } }, {}, {})
+                                AdminSection.USER_FEEDBACK -> FeedbackContent(feedbacks, { id -> scope.launch { communityRepo.approveFeedback(token, id); loadData() } }, {}, {})
+                                AdminSection.LOCATION_CONTRIBUTIONS -> ContributionsContent(contributions, { id -> scope.launch { communityRepo.approveContribution(token, id); loadData() } }, { id, reason -> scope.launch { communityRepo.rejectContribution(token, id, reason); loadData() } })
                                 AdminSection.ACTIVITY_LOGS -> LogsContent(logs)
-                            }
-                        }
-                    }
-                }
-
-                // Mobile Drawer / Overlay Menu
-                if (!isDesktop && isMobileMenuOpen) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.7f))
-                            .clickable { isMobileMenuOpen = false }
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .width(280.dp)
-                                .fillMaxHeight(),
-                            color = AppColorScheme.surfaceVariant,
-                            shadowElevation = 16.dp
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("ADMIN MENU", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                                    IconButton(onClick = { isMobileMenuOpen = false }) {
-                                        Icon(Icons.Default.Close, null, tint = Color.White)
-                                    }
-                                }
-
-                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
-
-                                AdminSection.entries.forEach { section ->
-                                    val isSelected = selectedSection == section
-                                    val badgeCount = when (section) {
-                                        AdminSection.COMMUNITY_ISSUES -> issues.count { it.status == IssueStatus.SUBMITTED }
-                                        AdminSection.LOCATION_CONTRIBUTIONS -> contributions.count { it.status == "PENDING" }
-                                        AdminSection.COMMUNITY_REVIEWS -> reviews.count { it.status == "PENDING" }
-                                        AdminSection.USER_FEEDBACK -> feedbacks.count { it.status == "PENDING" }
-                                        else -> 0
-                                    }
-
-                                    SidebarNavItem(
-                                        title = section.title,
-                                        icon = section.icon,
-                                        isSelected = isSelected,
-                                        badgeCount = badgeCount,
-                                        onClick = {
-                                            selectedSection = section
-                                            isMobileMenuOpen = false
-                                        }
-                                    )
-                                }
-
-                                Spacer(Modifier.weight(1f))
-
-                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
-
-                                SidebarNavItem(
-                                    title = "Logout",
-                                    icon = Icons.AutoMirrored.Filled.ExitToApp,
-                                    isSelected = false,
-                                    onClick = {
-                                        isMobileMenuOpen = false
-                                        onLogout()
-                                    }
-                                )
                             }
                         }
                     }
@@ -332,333 +207,252 @@ fun AdminDashboardScreen(
             }
         }
 
-        // Issue Details Dialog
-        if (detailIssueTarget != null) {
-            val item = detailIssueTarget!!
+        // Appoint Leader Dialog
+        if (showAppointLeaderDialog) {
             AlertDialog(
-                onDismissRequest = { detailIssueTarget = null },
-                title = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Issue Report Details", fontWeight = FontWeight.Bold, color = Color.White)
-                        IconButton(onClick = { detailIssueTarget = null }) {
-                            Icon(Icons.Default.Close, "Close", tint = Color.White)
+                onDismissRequest = {
+                    showAppointLeaderDialog = false
+                    appointValidationError = null
+                },
+                title = { Text("Appoint University Student Leader", fontWeight = FontWeight.Bold, color = Color.White) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Select University *", color = Color.Gray, fontSize = 12.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(Pair(1L, "UDSM"), Pair(2L, "UDOM"), Pair(3L, "MUST"), Pair(4L, "SUA")).forEach { (id, code) ->
+                                FilterChip(
+                                    selected = appointUnivId == id,
+                                    onClick = { appointUnivId = id },
+                                    label = { Text(code) }
+                                )
+                            }
                         }
-                    }
-                },
-                text = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        DetailRow("Report ID", item.id)
-                        DetailRow("Category", item.category.displayName)
-                        DetailRow("Description", item.description)
-                        DetailRow("Status", item.status.name)
-                        DetailRow("Priority", item.calculatedPriority.name)
-                        DetailRow("Urgency", item.userPriority.name)
-                        DetailRow("Latitude", item.issueLocation.latitude.toString())
-                        DetailRow("Longitude", item.issueLocation.longitude.toString())
-                        DetailRow("Confirmations", item.supportsCount.toString())
-                        DetailRow("Emergency", item.isEmergency.toString())
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = { detailIssueTarget = null },
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
-                    ) {
-                        Text("Close")
-                    }
-                },
-                containerColor = AppColorScheme.surfaceVariant
-            )
-        }
 
-        // Resolve Issue Dialog
-        if (resolveIssueTarget != null) {
-            val item = resolveIssueTarget!!
-            AlertDialog(
-                onDismissRequest = { resolveIssueTarget = null },
-                title = { Text("Resolve Issue", color = Color.White, fontWeight = FontWeight.Bold) },
-                text = {
-                    Column {
-                        Text("Provide resolution description / public response:", color = Color.Gray)
-                        Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
-                            value = resolutionDescription,
-                            onValueChange = { resolutionDescription = it },
-                            label = { Text("Resolution Details") },
-                            modifier = Modifier.fillMaxWidth()
+                            value = appointLeaderName,
+                            onValueChange = {
+                                appointLeaderName = it
+                                appointValidationError = null
+                            },
+                            label = { Text("Full Name *", color = Color.Gray) },
+                            placeholder = { Text("e.g. John K. Doe", color = Color.DarkGray) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
                         )
+
+                        OutlinedTextField(
+                            value = appointLeaderEmail,
+                            onValueChange = {
+                                appointLeaderEmail = it
+                                appointValidationError = null
+                            },
+                            label = { Text("Official Email Address *", color = Color.Gray) },
+                            placeholder = { Text("e.g. leader@university.ac.tz", color = Color.DarkGray) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        )
+
+                        OutlinedTextField(
+                            value = appointLeaderUsername,
+                            onValueChange = { appointLeaderUsername = it },
+                            label = { Text("Username (Optional)", color = Color.Gray) },
+                            placeholder = { Text("e.g. udsm_leader", color = Color.DarkGray) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        )
+
+                        appointValidationError?.let { err ->
+                            Text(err, color = Color(0xFFFF8A80), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 },
                 confirmButton = {
                     Button(
                         onClick = {
-                            scope.launch {
-                                communityRepo.adminResolveIssue(token, item.id, resolutionDescription.ifBlank { "Resolved by municipal admin" })
-                                resolveIssueTarget = null
-                                resolutionDescription = ""
-                                loadData()
+                            val nameTrimmed = appointLeaderName.trim()
+                            val emailTrimmed = appointLeaderEmail.trim()
+                            if (nameTrimmed.isBlank()) {
+                                appointValidationError = "Full name is required."
+                                return@Button
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                            if (emailTrimmed.isBlank() || !emailTrimmed.contains("@") || !emailTrimmed.contains(".")) {
+                                appointValidationError = "A valid email address is required."
+                                return@Button
+                            }
+
+                            scope.launch {
+                                val res = communityRepo.appointLeader(
+                                    token = token,
+                                    universityId = appointUnivId,
+                                    fullName = nameTrimmed,
+                                    email = emailTrimmed.lowercase(),
+                                    leaderUsername = appointLeaderUsername.trim().ifBlank { null }
+                                )
+                                if (res != null) {
+                                    showAppointLeaderDialog = false
+                                    appointLeaderName = ""
+                                    appointLeaderEmail = ""
+                                    appointLeaderUsername = ""
+                                    appointValidationError = null
+                                    loadData()
+                                } else {
+                                    appointValidationError = "Failed to appoint leader. Please check parameters and try again."
+                                }
+                            }
+                        }
                     ) {
-                        Text("Mark Resolved")
+                        Text("Appoint Leader")
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { resolveIssueTarget = null }) {
+                    TextButton(onClick = {
+                        showAppointLeaderDialog = false
+                        appointValidationError = null
+                    }) {
                         Text("Cancel", color = Color.Gray)
                     }
                 },
-                containerColor = AppColorScheme.surfaceVariant
+                containerColor = AppColorScheme.surface
             )
         }
+    }
+}
 
-        // Location Contribution Details Dialog
-        if (detailContributionTarget != null) {
-            val item = detailContributionTarget!!
-            AlertDialog(
-                onDismissRequest = { detailContributionTarget = null },
-                title = {
-                    Row(
+@Composable
+fun StudentLeadersAdminContent(
+    leaders: List<StudentLeaderDTO>,
+    onAppointNew: () -> Unit,
+    onUpdateStatus: (Long, String) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("University Student Leaders (${leaders.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+            Button(onClick = onAppointNew, shape = RoundedCornerShape(12.dp)) {
+                Icon(Icons.Default.PersonAdd, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Appoint New Leader")
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        if (leaders.isEmpty()) {
+            Text("No student leaders appointed.", color = Color.Gray)
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(leaders) { leader ->
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Contribution Details", fontWeight = FontWeight.Bold, color = Color.White)
-                        IconButton(onClick = { detailContributionTarget = null }) {
-                            Icon(Icons.Default.Close, "Close", tint = Color.White)
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(leader.leaderFullName + " (@" + leader.leaderUsername + ")", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+                                Text("University: " + leader.universityName, color = AppColorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Email: " + leader.leaderEmail, color = Color.Gray, fontSize = 12.sp)
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (leader.status == "ACTIVE") Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFEF4444).copy(alpha = 0.2f)
+                            ) {
+                                Text(leader.status, color = if (leader.status == "ACTIVE") Color(0xFF10B981) else Color(0xFFEF4444), fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.padding(6.dp))
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            if (leader.status == "ACTIVE" && leader.id != null) {
+                                OutlinedButton(onClick = { onUpdateStatus(leader.id, "DEACTIVATED") }) {
+                                    Text("Deactivate", fontSize = 11.sp, color = Color(0xFFEF4444))
+                                }
+                            }
                         }
                     }
-                },
-                text = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationsAdminContent(
+    notifications: List<EmailNotificationDTO>,
+    onRetry: (Long) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text("Email Notification Queue & Outbox (${notifications.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(16.dp))
+
+        if (notifications.isEmpty()) {
+            Text("No email notification records in outbox.", color = Color.Gray)
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(notifications) { notif ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f))
                     ) {
-                        DetailRow("Reference", item.reference)
-                        DetailRow("Location Name", item.locationName)
-                        DetailRow("University", item.university?.name ?: "N/A")
-                        DetailRow("Area Type", item.areaType)
-                        DetailRow("Category", item.category?.name ?: "N/A")
-                        DetailRow("Description", item.description ?: "None provided")
-                        DetailRow("Latitude", item.latitude.toString())
-                        DetailRow("Longitude", item.longitude.toString())
-                        DetailRow("Contributor Name", item.contributorName)
-                        DetailRow("Contributor Contact", item.contributorContact)
-                        DetailRow("Contribution Status", item.status)
-                        DetailRow("Payment Status", item.paymentStatus)
-                        if (!item.rejectionReason.isNullOrBlank()) {
-                            DetailRow("Rejection Reason", item.rejectionReason)
+                        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(notif.subject, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                                Text("To: ${notif.recipientEmail} (${notif.recipientRole}) | Type: ${notif.notificationType}", color = Color.Gray, fontSize = 12.sp)
+                                if (!notif.lastError.isNullOrBlank()) {
+                                    Text("Error: ${notif.lastError}", color = Color(0xFFEF4444), fontSize = 11.sp)
+                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (notif.deliveryState == "DELIVERED" || notif.deliveryState == "SENT_TO_PROVIDER") Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFEF4444).copy(alpha = 0.2f)
+                            ) {
+                                Text(notif.deliveryState, color = if (notif.deliveryState == "DELIVERED" || notif.deliveryState == "SENT_TO_PROVIDER") Color(0xFF10B981) else Color(0xFFEF4444), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(6.dp))
+                            }
+                            if (notif.deliveryState == "FAILED") {
+                                Spacer(Modifier.width(8.dp))
+                                Button(onClick = { onRetry(notif.id) }) {
+                                    Text("Retry", fontSize = 10.sp)
+                                }
+                            }
                         }
-                        DetailRow("Submitted Date", item.createdAt ?: "N/A")
-                        if (!item.reviewedAt.isNullOrBlank()) {
-                            DetailRow("Reviewed Date", item.reviewedAt)
-                            DetailRow("Reviewed By", item.reviewedBy ?: "Admin")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EscalationsAdminContent(
+    unassignedIssues: List<IssueReport>,
+    onAppointLeader: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text("Unrouted & Unassigned Reports (${unassignedIssues.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(16.dp))
+
+        if (unassignedIssues.isEmpty()) {
+            Text("All reports have been successfully routed to active Student Leaders.", color = Color(0xFF10B981))
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(unassignedIssues) { issue ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(issue.id + " — " + issue.category.displayName, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("University: " + (issue.universityName ?: "Unassigned Campus"), color = AppColorScheme.primary, fontSize = 12.sp)
+                                Text(issue.description, color = Color.Gray, fontSize = 12.sp)
+                            }
+                            Button(onClick = onAppointLeader, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))) {
+                                Text("Appoint Leader", fontSize = 11.sp)
+                            }
                         }
                     }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = { detailContributionTarget = null },
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
-                    ) {
-                        Text("Close")
-                    }
-                },
-                containerColor = AppColorScheme.surfaceVariant
-            )
-        }
-
-        // Rejection Dialog for Contributions
-        if (rejectTargetId != null) {
-            AlertDialog(
-                onDismissRequest = { rejectTargetId = null },
-                title = { Text("Reject Contribution") },
-                text = {
-                    Column {
-                        Text("Please provide a reason for rejection:")
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = rejectionReason,
-                            onValueChange = { rejectionReason = it },
-                            label = { Text("Rejection Reason") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val id = rejectTargetId!!
-                            scope.launch {
-                                communityRepo.rejectContribution(token, id, rejectionReason.ifBlank { "Does not meet guidelines" })
-                                rejectTargetId = null
-                                rejectionReason = ""
-                                loadData()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                    ) {
-                        Text("Confirm Reject")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { rejectTargetId = null }) {
-                        Text("Cancel")
-                    }
                 }
-            )
-        }
-
-        // Rejection Dialog for Feedback
-        if (rejectFeedbackTargetId != null) {
-            AlertDialog(
-                onDismissRequest = { rejectFeedbackTargetId = null },
-                title = { Text("Reject User Feedback") },
-                text = {
-                    Column {
-                        Text("Please provide a reason for rejection:")
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = rejectionReason,
-                            onValueChange = { rejectionReason = it },
-                            label = { Text("Rejection Reason") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val id = rejectFeedbackTargetId!!
-                            scope.launch {
-                                communityRepo.rejectFeedback(token, id, rejectionReason.ifBlank { "Inappropriate or irrelevant feedback" })
-                                rejectFeedbackTargetId = null
-                                rejectionReason = ""
-                                loadData()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                    ) {
-                        Text("Confirm Reject")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { rejectFeedbackTargetId = null }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
-
-        // Rejection Dialog for Reviews
-        if (rejectReviewTargetId != null) {
-            AlertDialog(
-                onDismissRequest = { rejectReviewTargetId = null },
-                title = { Text("Reject Community Review") },
-                text = {
-                    Column {
-                        Text("Please provide a reason for rejection:")
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = rejectionReason,
-                            onValueChange = { rejectionReason = it },
-                            label = { Text("Rejection Reason") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val id = rejectReviewTargetId!!
-                            scope.launch {
-                                communityRepo.rejectReview(token, id, rejectionReason.ifBlank { "Inappropriate content" })
-                                rejectReviewTargetId = null
-                                rejectionReason = ""
-                                loadData()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                    ) {
-                        Text("Confirm Reject")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { rejectReviewTargetId = null }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
-
-        // Delete Review Confirmation Dialog
-        if (deleteReviewTargetId != null) {
-            AlertDialog(
-                onDismissRequest = { deleteReviewTargetId = null },
-                title = { Text("Delete Community Review") },
-                text = { Text("Are you sure you want to delete this review?") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val id = deleteReviewTargetId!!
-                            scope.launch {
-                                communityRepo.deleteReview(token, id)
-                                deleteReviewTargetId = null
-                                loadData()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                    ) {
-                        Text("Confirm Delete")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { deleteReviewTargetId = null }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
-
-        // Delete Feedback Confirmation Dialog
-        if (deleteFeedbackTargetId != null) {
-            AlertDialog(
-                onDismissRequest = { deleteFeedbackTargetId = null },
-                title = { Text("Delete User Feedback") },
-                text = { Text("Are you sure you want to delete this user feedback?") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val id = deleteFeedbackTargetId!!
-                            scope.launch {
-                                communityRepo.deleteFeedback(token, id)
-                                deleteFeedbackTargetId = null
-                                loadData()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                    ) {
-                        Text("Confirm Delete")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { deleteFeedbackTargetId = null }) {
-                        Text("Cancel")
-                    }
-                }
-            )
+            }
         }
     }
 }
@@ -681,42 +475,19 @@ fun SidebarNavItem(
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick),
         color = if (isSelected) AppColorScheme.primary else Color.Transparent
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = if (isSelected) Color.White else Color.Gray,
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(icon, null, tint = if (isSelected) Color.White else Color.Gray, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(12.dp))
-            Text(
-                title,
-                color = if (isSelected) Color.White else Color.LightGray,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
+            Text(title, color = if (isSelected) Color.White else Color.LightGray, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f))
             if (badgeCount > 0) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (isSelected) Color.White else Color(0xFFFFB74D)
-                ) {
-                    Text(
-                        badgeCount.toString(),
-                        color = if (isSelected) AppColorScheme.primary else Color.Black,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
+                Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFB74D)) {
+                    Text(badgeCount.toString(), color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                 }
             }
         }
@@ -732,83 +503,23 @@ fun OverviewContent(
     logs: List<AdminActivityLog>,
     onNavigateSection: (AdminSection) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Text("Dashboard Overview", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
-            Text("Summary of community issues, submissions & moderation status", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text("Summary of campus issues, student leaders, notifications & contributions", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
 
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricCard(
-                    title = "Community Issues",
-                    count = issues.size.toString(),
-                    pendingCount = issues.count { it.status == IssueStatus.SUBMITTED },
-                    icon = Icons.Default.ReportProblem,
-                    color = Color(0xFF00E5FF),
-                    modifier = Modifier.weight(1f),
-                    onClick = { onNavigateSection(AdminSection.COMMUNITY_ISSUES) }
-                )
-                MetricCard(
-                    title = "Contributions",
-                    count = contributions.size.toString(),
-                    pendingCount = contributions.count { it.status == "PENDING" },
-                    icon = Icons.Default.AddLocation,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
-                    onClick = { onNavigateSection(AdminSection.LOCATION_CONTRIBUTIONS) }
-                )
+                MetricCard("Community Issues", issues.size.toString(), issues.count { it.status == IssueStatus.SUBMITTED }, Icons.Default.ReportProblem, Color(0xFF00E5FF), Modifier.weight(1f)) { onNavigateSection(AdminSection.COMMUNITY_ISSUES) }
+                MetricCard("Contributions", contributions.size.toString(), contributions.count { it.status == "PENDING" }, Icons.Default.AddLocation, AppColorScheme.primary, Modifier.weight(1f)) { onNavigateSection(AdminSection.LOCATION_CONTRIBUTIONS) }
             }
         }
 
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricCard(
-                    title = "Reviews",
-                    count = reviews.size.toString(),
-                    pendingCount = reviews.count { it.status == "PENDING" },
-                    icon = Icons.Default.RateReview,
-                    color = Color(0xFF9C27B0),
-                    modifier = Modifier.weight(1f),
-                    onClick = { onNavigateSection(AdminSection.COMMUNITY_REVIEWS) }
-                )
-                MetricCard(
-                    title = "Feedback",
-                    count = feedbacks.size.toString(),
-                    pendingCount = feedbacks.count { it.status == "PENDING" },
-                    icon = Icons.Default.Feedback,
-                    color = Color(0xFFFFB74D),
-                    modifier = Modifier.weight(1f),
-                    onClick = { onNavigateSection(AdminSection.USER_FEEDBACK) }
-                )
-            }
-        }
-
-        item {
-            Spacer(Modifier.height(8.dp))
-            Text("Recent Activity", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-        }
-
-        items(logs.take(5)) { log ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.AdminPanelSettings, null, tint = AppColorScheme.primary, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(log.description, color = Color.White, style = MaterialTheme.typography.bodyMedium)
-                        Text("${log.action} • ${log.actorUsername}", color = Color.Gray, fontSize = 11.sp)
-                    }
-                }
+                MetricCard("Reviews", reviews.size.toString(), reviews.count { it.status == "PENDING" }, Icons.Default.RateReview, Color(0xFF9C27B0), Modifier.weight(1f)) { onNavigateSection(AdminSection.COMMUNITY_REVIEWS) }
+                MetricCard("Feedback", feedbacks.size.toString(), feedbacks.count { it.status == "PENDING" }, Icons.Default.Feedback, Color(0xFFFFB74D), Modifier.weight(1f)) { onNavigateSection(AdminSection.USER_FEEDBACK) }
             }
         }
     }
@@ -819,75 +530,121 @@ fun IssuesContent(
     issues: List<IssueReport>,
     onUpdateStatus: (String, String, String) -> Unit,
     onResolve: (IssueReport) -> Unit,
-    onViewDetails: (IssueReport) -> Unit
+    onResendNotification: (String) -> Unit
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
+    var selectedIssue by remember { mutableStateOf<IssueReport?>(null) }
+    var notificationMessage by remember { mutableStateOf<String?>(null) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text("Community Issues (${issues.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
         }
 
+        notificationMessage?.let { msg ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B5E20)),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            ) {
+                Text(msg, color = Color.White, modifier = Modifier.padding(12.dp), fontSize = 12.sp)
+            }
+        }
+
         if (issues.isEmpty()) {
-            item { Text("No community issues found.", color = Color.Gray) }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No issue reports registered.", color = Color.Gray)
+            }
         } else {
-            items(issues) { issue ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(issue.id, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, fontSize = 14.sp)
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = when (issue.status) {
-                                    IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                                    IssueStatus.IN_PROGRESS, IssueStatus.ASSIGNED -> Color(0xFFFF9800).copy(alpha = 0.2f)
-                                    else -> Color(0xFF2196F3).copy(alpha = 0.2f)
-                                }
+            LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(issues) { issue ->
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    issue.status.name.replace("_", " "),
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(issue.id, fontWeight = FontWeight.Bold, color = AppColorScheme.primary, fontSize = 14.sp)
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = AppColorScheme.primary.copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            issue.category.displayName,
+                                            color = AppColorScheme.primary,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
                                     color = when (issue.status) {
-                                        IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF4CAF50)
-                                        IssueStatus.IN_PROGRESS, IssueStatus.ASSIGNED -> Color(0xFFFF9800)
-                                        else -> Color(0xFF2196F3)
-                                    },
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        Text(issue.description, color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("Category: ${issue.category.displayName} | Urgency: ${issue.userPriority}", color = Color.Gray, fontSize = 12.sp)
-
-                        Spacer(Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = { onViewDetails(issue) },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColorScheme.primary)
-                            ) {
-                                Text("Details", fontSize = 11.sp)
-                            }
-                            if (issue.status == IssueStatus.SUBMITTED) {
-                                Button(
-                                    onClick = { onUpdateStatus(issue.id, "UNDER_REVIEW", "Issue is under administrative review.") },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                        IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF10B981).copy(alpha = 0.2f)
+                                        IssueStatus.IN_PROGRESS, IssueStatus.UNDER_REVIEW -> Color(0xFF3B82F6).copy(alpha = 0.2f)
+                                        IssueStatus.REJECTED -> Color(0xFFEF4444).copy(alpha = 0.2f)
+                                        else -> Color(0xFFFFB74D).copy(alpha = 0.2f)
+                                    }
                                 ) {
-                                    Text("Review", fontSize = 11.sp)
+                                    Text(
+                                        issue.status.name,
+                                        color = when (issue.status) {
+                                            IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF10B981)
+                                            IssueStatus.IN_PROGRESS, IssueStatus.UNDER_REVIEW -> Color(0xFF3B82F6)
+                                            IssueStatus.REJECTED -> Color(0xFFEF4444)
+                                            else -> Color(0xFFFFB74D)
+                                        },
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
                                 }
                             }
-                            if (issue.status != IssueStatus.RESOLVED && issue.status != IssueStatus.COMMUNITY_VERIFIED) {
-                                Button(
-                                    onClick = { onResolve(issue) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                                ) {
-                                    Text("Resolve", fontSize = 11.sp)
+
+                            Text(issue.description, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("University: ${issue.universityName ?: "Campus"}", color = Color.LightGray, fontSize = 12.sp)
+                                    Text("Routing: ${issue.routingStatus}", color = Color.Gray, fontSize = 11.sp)
+                                }
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(
+                                        onClick = { selectedIssue = issue },
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Info, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Details", fontSize = 11.sp)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            onResendNotification(issue.id)
+                                            notificationMessage = "Resent email notification to University Student Leader for report ${issue.id}"
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Email, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Send Email to Leader", fontSize = 11.sp)
+                                    }
                                 }
                             }
                         }
@@ -895,6 +652,43 @@ fun IssuesContent(
                 }
             }
         }
+    }
+
+    // Issue Details Dialog
+    selectedIssue?.let { item ->
+        AlertDialog(
+            onDismissRequest = { selectedIssue = null },
+            title = { Text("Issue Details — ${item.id}", fontWeight = FontWeight.Bold, color = Color.White) },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    DetailRow("Report Reference", item.id)
+                    DetailRow("Category", item.category.displayName)
+                    DetailRow("Urgency", item.urgency)
+                    DetailRow("University", item.universityName ?: "Campus")
+                    DetailRow("Campus", item.campusName ?: "Main Campus")
+                    DetailRow("Description", item.description)
+                    DetailRow("Exact Latitude", item.issueLocation.latitude.toString())
+                    DetailRow("Exact Longitude", item.issueLocation.longitude.toString())
+                    DetailRow("Location Source", item.locationSource)
+                    DetailRow("Reporter Name", item.reporterName ?: "Campus Student")
+                    DetailRow("Reporter Email", item.reporterEmail ?: "student@campnav.org")
+                    DetailRow("Reporter Phone", item.reporterPhone ?: "n/a")
+                    DetailRow("Report Status", item.status.name)
+                    DetailRow("Routing Status", item.routingStatus)
+                    item.publicResponse?.let { DetailRow("Public Response", it) }
+                    item.internalNotes?.let { DetailRow("Internal Notes", it) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedIssue = null }) {
+                    Text("Close", color = AppColorScheme.primary)
+                }
+            },
+            containerColor = AppColorScheme.surface
+        )
     }
 }
 
@@ -909,24 +703,11 @@ fun MetricCard(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
+        modifier = modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
-                if (pendingCount > 0) {
-                    Surface(color = Color(0xFFFFB74D).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp)) {
-                        Text("$pendingCount pending", color = Color(0xFFFFB74D), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                    }
-                }
-            }
+            Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
             Spacer(Modifier.height(12.dp))
             Text(count, style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Bold)
             Text(title, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
@@ -935,239 +716,167 @@ fun MetricCard(
 }
 
 @Composable
-fun ReviewsContent(
-    reviews: List<CommunityReview>,
-    onApprove: (Long) -> Unit,
-    onReject: (Long) -> Unit,
-    onDelete: (Long) -> Unit
-) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            Text("Community Reviews (${reviews.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
-        }
-
-        if (reviews.isEmpty()) {
-            item { Text("No reviews found.", color = Color.Gray) }
-        } else {
-            items(reviews) { review ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(review.contributorName ?: "Contributor", color = Color.White, fontWeight = FontWeight.Bold)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("${review.rating} ⭐", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
-                                Text(review.status, color = when(review.status) {
-                                    "APPROVED" -> Color(0xFF4CAF50)
-                                    "REJECTED" -> Color(0xFFF44336)
-                                    else -> Color(0xFFFFB74D)
-                                }, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        Text(review.comment, color = Color.LightGray)
-
-                        Spacer(Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (review.status == "PENDING") {
-                                Button(
-                                    onClick = { onApprove(review.id) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                                ) {
-                                    Text("Approve")
-                                }
-                                Button(
-                                    onClick = { onReject(review.id) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
-                                ) {
-                                    Text("Reject")
-                                }
-                            }
-                            Button(
-                                onClick = { onDelete(review.id) },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Delete")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+fun ReviewsContent(reviews: List<CommunityReview>, onApprove: (Long) -> Unit, onReject: (Long) -> Unit, onDelete: (Long) -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) { items(reviews) { Text(it.comment, color = Color.White) } }
 }
 
 @Composable
-fun FeedbackContent(
-    feedbacks: List<UserFeedback>,
-    onApprove: (Long) -> Unit,
-    onReject: (Long) -> Unit,
-    onDelete: (Long) -> Unit
-) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            Text("User Feedback (${feedbacks.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
-        }
-
-        if (feedbacks.isEmpty()) {
-            item { Text("No user feedback found.", color = Color.Gray) }
-        } else {
-            items(feedbacks) { fb ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(fb.contributorName ?: "Contributor", color = Color.White, fontWeight = FontWeight.Bold)
-                            Text(fb.status, color = when(fb.status) {
-                                "APPROVED" -> Color(0xFF4CAF50)
-                                "REJECTED" -> Color(0xFFF44336)
-                                else -> Color(0xFFFFB74D)
-                            }, fontWeight = FontWeight.Bold)
-                        }
-                        if (!fb.contributorContact.isNullOrBlank()) {
-                            Text("Contact: ${fb.contributorContact}", color = Color.Gray, fontSize = 12.sp)
-                        }
-                        Text("Feedback: \"${fb.feedbackText}\"", color = Color.LightGray, fontSize = 14.sp)
-
-                        Spacer(Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (fb.status == "PENDING") {
-                                Button(
-                                    onClick = { onApprove(fb.id) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                                ) {
-                                    Text("Approve")
-                                }
-                                Button(
-                                    onClick = { onReject(fb.id) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
-                                ) {
-                                    Text("Reject")
-                                }
-                            }
-                            Button(
-                                onClick = { onDelete(fb.id) },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Delete")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+fun FeedbackContent(feedbacks: List<UserFeedback>, onApprove: (Long) -> Unit, onReject: (Long) -> Unit, onDelete: (Long) -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) { items(feedbacks) { Text(it.feedbackText, color = Color.White) } }
 }
 
 @Composable
 fun ContributionsContent(
     contributions: List<CommunityContribution>,
     onApprove: (Long) -> Unit,
-    onReject: (Long) -> Unit,
-    onViewDetails: (CommunityContribution) -> Unit
+    onReject: (Long, String) -> Unit
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            Text("Location Contributions (${contributions.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+    var selectedFilter by remember { mutableStateOf("ALL") }
+    var selectedContribution by remember { mutableStateOf<CommunityContribution?>(null) }
+    var rejectTargetContribution by remember { mutableStateOf<CommunityContribution?>(null) }
+    var rejectionReasonText by remember { mutableStateOf("") }
+
+    val filtered = when (selectedFilter) {
+        "PENDING" -> contributions.filter { it.status == "PENDING" }
+        "APPROVED" -> contributions.filter { it.status == "APPROVED" }
+        "REJECTED" -> contributions.filter { it.status == "REJECTED" }
+        else -> contributions
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Location Contributions (${contributions.size})",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("ALL", "PENDING", "APPROVED", "REJECTED").forEach { filter ->
+                    FilterChip(
+                        selected = selectedFilter == filter,
+                        onClick = { selectedFilter = filter },
+                        label = { Text(filter) }
+                    )
+                }
+            }
         }
 
-        if (contributions.isEmpty()) {
-            item { Text("No location contributions found.", color = Color.Gray) }
+        if (filtered.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No location contributions found.", color = Color.Gray)
+            }
         } else {
-            items(contributions) { item ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(item.locationName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = when(item.status) {
-                                    "APPROVED" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                                    "REJECTED" -> Color(0xFFF44336).copy(alpha = 0.2f)
-                                    else -> Color(0xFFFFB74D).copy(alpha = 0.2f)
-                                }
-                            ) {
-                                Text(
-                                    item.status,
-                                    color = when(item.status) {
-                                        "APPROVED" -> Color(0xFF4CAF50)
-                                        "REJECTED" -> Color(0xFFF44336)
-                                        else -> Color(0xFFFFB74D)
-                                    },
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        Text("University: ${item.university?.name ?: "N/A"}", color = AppColorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                        Text("Ref: ${item.reference} | Area Type: ${item.areaType}", color = Color.Gray, fontSize = 12.sp)
-
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color.Black.copy(alpha = 0.3f),
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filtered) { item ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
-                                modifier = Modifier.padding(8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Latitude: ${item.latitude}", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text("Longitude: ${item.longitude}", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            }
-                        }
-
-                        Text("Submitted by: ${item.contributorName} (${item.contributorContact})", color = Color.LightGray, fontSize = 12.sp)
-                        if (!item.description.isNullOrBlank()) {
-                            Text("Desc: ${item.description}", color = Color.LightGray, fontSize = 13.sp)
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = { onViewDetails(item) },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColorScheme.primary)
-                            ) {
-                                Icon(Icons.Default.Info, contentDescription = "View Details", modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("View Details", fontSize = 12.sp)
-                            }
-
-                            if (item.status == "PENDING") {
-                                Button(
-                                    onClick = { onApprove(item.id) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                                ) {
-                                    Text("Approve", fontSize = 12.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(item.reference, fontWeight = FontWeight.Bold, color = AppColorScheme.primary, fontSize = 14.sp)
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = if (item.areaType == "COMMERCIAL_AREA") Color(0xFFFF9800).copy(alpha = 0.2f) else Color(0xFF2196F3).copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            if (item.areaType == "COMMERCIAL_AREA") "Commercial Area" else "University Area",
+                                            color = if (item.areaType == "COMMERCIAL_AREA") Color(0xFFFFB74D) else Color(0xFF64B5F6),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
-                                Button(
-                                    onClick = { onReject(item.id) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = when (item.status) {
+                                        "APPROVED" -> Color(0xFF10B981).copy(alpha = 0.2f)
+                                        "REJECTED" -> Color(0xFFEF4444).copy(alpha = 0.2f)
+                                        else -> Color(0xFFFFB74D).copy(alpha = 0.2f)
+                                    }
                                 ) {
-                                    Text("Reject", fontSize = 12.sp)
+                                    Text(
+                                        item.status,
+                                        color = when (item.status) {
+                                            "APPROVED" -> Color(0xFF10B981)
+                                            "REJECTED" -> Color(0xFFEF4444)
+                                            else -> Color(0xFFFFB74D)
+                                        },
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            Text(item.locationName, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+
+                            item.university?.let { uni ->
+                                Text("University: ${uni.name}", color = Color.LightGray, fontSize = 13.sp)
+                            }
+
+                            if (item.areaType == "UNIVERSITY_AREA") {
+                                val catName = item.category?.name ?: item.customCategory
+                                catName?.let {
+                                    Text("Category: $it", color = Color.Gray, fontSize = 12.sp)
+                                }
+                            }
+
+                            Text("Contributor: ${item.contributorName} (${item.contributorContact})", color = Color.Gray, fontSize = 12.sp)
+                            Text("Exact Coordinates: ${item.latitude}, ${item.longitude}", color = Color.Gray, fontSize = 12.sp)
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(
+                                    onClick = { selectedContribution = item },
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Info, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("View Details", fontSize = 12.sp)
+                                }
+
+                                if (item.status == "PENDING") {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Button(
+                                            onClick = { onApprove(item.id) },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text("Approve", fontSize = 12.sp)
+                                        }
+
+                                        Button(
+                                            onClick = {
+                                                rejectTargetContribution = item
+                                                rejectionReasonText = ""
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text("Reject", fontSize = 12.sp)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1175,36 +884,88 @@ fun ContributionsContent(
                 }
             }
         }
+    }
+
+    // View Details Dialog
+    selectedContribution?.let { item ->
+        AlertDialog(
+            onDismissRequest = { selectedContribution = null },
+            title = { Text("Contribution Details — ${item.reference}", fontWeight = FontWeight.Bold, color = Color.White) },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    DetailRow("Reference ID", item.reference)
+                    DetailRow("Location Name", item.locationName)
+                    DetailRow("Area Type", if (item.areaType == "COMMERCIAL_AREA") "Commercial Area" else "University Area")
+                    item.university?.let { DetailRow("University", "${it.name} (${it.shortName ?: ""})") }
+                    if (item.areaType == "UNIVERSITY_AREA") {
+                        item.category?.let { DetailRow("Category", it.name) }
+                        item.customCategory?.let { DetailRow("Custom Category", it) }
+                    }
+                    DetailRow("Exact Latitude", item.latitude.toString())
+                    DetailRow("Exact Longitude", item.longitude.toString())
+                    DetailRow("Description / Details", item.description ?: "None provided")
+                    DetailRow("Contributor Name", item.contributorName)
+                    DetailRow("Contributor Contact", item.contributorContact)
+                    DetailRow("Contribution Status", item.status)
+                    DetailRow("Payment Status", item.paymentStatus)
+                    item.createdAt?.let { DetailRow("Submitted At", it) }
+                    item.reviewedAt?.let { DetailRow("Reviewed At", it) }
+                    item.reviewedBy?.let { DetailRow("Reviewed By", it) }
+                    item.rejectionReason?.let { DetailRow("Rejection Reason", it) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedContribution = null }) {
+                    Text("Close", color = AppColorScheme.primary)
+                }
+            },
+            containerColor = AppColorScheme.surface
+        )
+    }
+
+    // Reject Dialog
+    rejectTargetContribution?.let { item ->
+        AlertDialog(
+            onDismissRequest = { rejectTargetContribution = null },
+            title = { Text("Reject Contribution", fontWeight = FontWeight.Bold, color = Color.White) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Enter rejection reason for ${item.locationName}:", color = Color.Gray, fontSize = 13.sp)
+                    OutlinedTextField(
+                        value = rejectionReasonText,
+                        onValueChange = { rejectionReasonText = it },
+                        label = { Text("Reason") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onReject(item.id, rejectionReasonText.ifBlank { "Unspecified reason" })
+                        rejectTargetContribution = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                ) {
+                    Text("Confirm Reject")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { rejectTargetContribution = null }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            containerColor = AppColorScheme.surface
+        )
     }
 }
 
 @Composable
 fun LogsContent(logs: List<AdminActivityLog>) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            Text("Activity Logs (${logs.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
-        }
-
-        if (logs.isEmpty()) {
-            item { Text("No activity logs found.", color = Color.Gray) }
-        } else {
-            items(logs) { log ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(log.action, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
-                            Text(log.timestamp ?: "", color = Color.Gray, fontSize = 12.sp)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(log.description, color = Color.White)
-                        Text("Actor: ${log.actorUsername}", color = Color.Gray, fontSize = 12.sp)
-                    }
-                }
-            }
-        }
-    }
+    LazyColumn(modifier = Modifier.fillMaxSize()) { items(logs) { Text(it.description, color = Color.White) } }
 }

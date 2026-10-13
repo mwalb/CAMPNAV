@@ -2,6 +2,7 @@ package org.com.community.data
 
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import org.com.community.model.*
 import org.com.core.network.apiClient
@@ -172,11 +173,124 @@ class CommunityRepository {
         }
     }
 
+    // --- Student Leader API ---
+    suspend fun getLeaderOverview(token: String): Map<String, Any> {
+        return try {
+            apiClient.get("/api/leader/overview") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }.body()
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    suspend fun getLeaderAssignedIssues(token: String): List<IssueReport> {
+        return try {
+            apiClient.get("/api/leader/issues") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }.body()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun leaderAcknowledgeReport(token: String, externalId: String): IssueReport? {
+        return try {
+            apiClient.post("/api/leader/issues/$externalId/acknowledge") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }.body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun leaderReferToOffice(token: String, externalId: String, request: ReferralRequestDTO): Boolean {
+        return try {
+            apiClient.post("/api/leader/issues/$externalId/refer") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(request)
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun leaderResolveReport(token: String, externalId: String, resolution: String, afterImage: String?): IssueReport? {
+        return try {
+            apiClient.post("/api/leader/issues/$externalId/resolve") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(LeaderResolveRequestDTO(resolution, afterImage))
+            }.body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // --- Admin Leader & Notification API ---
+    suspend fun getAdminLeaders(token: String): List<StudentLeaderDTO> {
+        return try {
+            apiClient.get("/api/admin/leaders") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }.body()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun appointLeader(token: String, universityId: Long, fullName: String, email: String, leaderUsername: String?): StudentLeaderDTO? {
+        return try {
+            apiClient.post("/api/admin/leaders/appoint") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(AppointLeaderRequestDTO(universityId, fullName, email, leaderUsername))
+            }.body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun updateLeaderStatus(token: String, assignmentId: Long, status: String, reason: String?): StudentLeaderDTO? {
+        return try {
+            apiClient.post("/api/admin/leaders/$assignmentId/status") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(StatusChangeRequestDTO(status, reason))
+            }.body()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun getAdminNotifications(token: String): List<EmailNotificationDTO> {
+        return try {
+            apiClient.get("/api/admin/notifications") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }.body()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun retryNotification(token: String, id: Long): Boolean {
+        return try {
+            apiClient.post("/api/admin/notifications/$id/retry") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }.body()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     // --- Issue reports ---
     suspend fun createReport(report: IssueReport): IssueReport {
-        return apiClient.post("/api/community/reports") {
+        val response = apiClient.post("/api/community/reports") {
             setBody(report)
-        }.body()
+        }
+        if (response.status.isSuccess()) {
+            return response.body()
+        } else {
+            val errorText = try { response.bodyAsText() } catch (e: Exception) { "Unknown server error" }
+            throw Exception("Server returned ${response.status.value}: $errorText")
+        }
     }
 
     suspend fun getAllReports(): List<IssueReport> {
@@ -241,6 +355,17 @@ class CommunityRepository {
             }.body()
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    suspend fun resendLeaderNotification(token: String, externalId: String): Boolean {
+        return try {
+            apiClient.post("/api/admin/issues/$externalId/resend-notification") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 

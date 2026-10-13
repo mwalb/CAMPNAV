@@ -15,6 +15,17 @@ public interface IssueReportRepository extends JpaRepository<IssueReport, Long> 
 
     List<IssueReport> findByStatus(IssueReport.IssueStatus status);
 
+    @Query("SELECT r FROM IssueReport r WHERE r.university.id = :universityId")
+    List<IssueReport> findByUniversityId(@Param("universityId") Long universityId);
+
+    @Query("SELECT r FROM IssueReport r WHERE r.university.id = :universityId AND r.routingStatus = :routingStatus")
+    List<IssueReport> findByUniversityIdAndRoutingStatus(@Param("universityId") Long universityId, @Param("routingStatus") IssueReport.RoutingStatus routingStatus);
+
+    @Query("SELECT r FROM IssueReport r WHERE r.assignedLeader.id = :assignedLeaderId")
+    List<IssueReport> findByAssignedLeaderId(@Param("assignedLeaderId") Long assignedLeaderId);
+
+    List<IssueReport> findByRoutingStatus(IssueReport.RoutingStatus routingStatus);
+
     @Query(value = "SELECT *, (6371 * acos(cos(radians(:lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians(:lng)) + sin(radians(:lat)) * sin(radians(latitude)))) AS distance " +
             "FROM issue_report " +
             "HAVING distance < :radius " +

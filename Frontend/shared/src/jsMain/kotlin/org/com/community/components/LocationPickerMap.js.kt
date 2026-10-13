@@ -98,21 +98,26 @@ private fun startWebPickerLifecycle(element: HTMLElement, lat: Double, lng: Doub
         if (window.runWebPicker) {
             window.runWebPicker();
         } else {
-            window.runWebPicker = async () => {
-                while (!window.google || !window.google.maps || !window.google.maps.importLibrary) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
+            window.runWebPicker = function() {
+                var checkGoogle = function() {
+                    if (!window.google || !window.google.maps || !window.google.maps.importLibrary) {
+                        setTimeout(checkGoogle, 100);
+                        return;
+                    }
+                    Promise.all([
+                        google.maps.importLibrary("maps"),
+                        google.maps.importLibrary("marker")
+                    ]).then(function(libs) {
+                        var Map = libs[0].Map;
+                        var AdvancedMarkerElement = libs[1].AdvancedMarkerElement;
 
-                const { Map } = await google.maps.importLibrary("maps");
-                const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+                        const elem = window.currentPickerElement;
+                        const startLat = Number(window.currentPickerLat);
+                        const startLng = Number(window.currentPickerLng);
 
-                const elem = window.currentPickerElement;
-                const startLat = Number(window.currentPickerLat);
-                const startLng = Number(window.currentPickerLng);
-
-                const mapOptions = {
-                    center: { lat: startLat, lng: startLng },
-                    zoom: 16,
+                        const mapOptions = {
+                            center: { lat: startLat, lng: startLng },
+                            zoom: 16,
                     mapId: "DEMO_MAP_ID",
                     disableDefaultUI: true,
                     zoomControl: true
@@ -193,6 +198,9 @@ private fun startWebPickerLifecycle(element: HTMLElement, lat: Double, lng: Doub
                     marker.position = event.latLng;
                     handleNewPosition(event.latLng.lat(), event.latLng.lng());
                 });
+                    });
+                };
+                checkGoogle();
             };
             window.runWebPicker();
         }

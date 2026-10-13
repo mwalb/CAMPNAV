@@ -33,6 +33,8 @@ public class CommunityContribution {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    private String customCategory;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

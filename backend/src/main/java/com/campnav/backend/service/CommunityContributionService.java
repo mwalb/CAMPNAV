@@ -76,6 +76,7 @@ public class CommunityContributionService {
                 .locationName(locationName)
                 .areaType(areaType != null ? areaType.toUpperCase() : "UNIVERSITY_AREA")
                 .category(category)
+                .customCategory(customCategory)
                 .description(description)
                 .latitude(latitude)
                 .longitude(longitude)

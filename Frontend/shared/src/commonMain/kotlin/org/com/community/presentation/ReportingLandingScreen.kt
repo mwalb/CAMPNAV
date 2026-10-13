@@ -1,31 +1,33 @@
 package org.com.community.presentation
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import org.com.community.data.CommunityRepository
 import org.com.core.ui.theme.AppColorScheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,10 +39,29 @@ fun ReportingLandingScreen(
     onTrackReport: () -> Unit,
     onBack: () -> Unit
 ) {
-    var startAnimation by remember { mutableStateOf(false) }
+    val universities = listOf(
+        Pair(1L, "UDSM (Dar es Salaam)"),
+        Pair(2L, "UDOM (Dodoma)"),
+        Pair(3L, "MUST (Mbeya)"),
+        Pair(4L, "SUA (Morogoro)")
+    )
+    var selectedUniversityId by remember { mutableStateOf(1L) }
+    var activeReportCount by remember { mutableStateOf<Int?>(null) }
+    
+    val repository = remember { CommunityRepository() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        startAnimation = true
+        scope.launch {
+            try {
+                val reports = repository.getAllReports()
+                if (reports.isNotEmpty()) {
+                    activeReportCount = reports.count { it.status.name != "RESOLVED" && it.status.name != "CLOSED" }
+                }
+            } catch (_: Exception) {
+                // Ignore background stats fetch errors
+            }
+        }
     }
 
     Box(
@@ -50,7 +71,7 @@ fun ReportingLandingScreen(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         AppColorScheme.background,
-                        Color(0xFF1A1A3E)
+                        Color(0xFF13132B)
                     )
                 )
             )
@@ -73,104 +94,230 @@ fun ReportingLandingScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.Start
             ) {
+                // Header
                 Text(
-                    text = "REPORTING AN ISSUE",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
+                    text = "Report a Campus Issue",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Black
                 )
                 Text(
-                    text = "Complete Community Issue & Resolution System",
+                    text = "Spot a problem? Report it in a few taps.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
+                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                 )
 
-                // 4 Main Options Grid
-                val options = listOf(
-                    ReportingOption("Report an Issue", "Create new community issue report", Icons.AutoMirrored.Filled.Assignment, MaterialTheme.colorScheme.primary, onReportNew),
-                    ReportingOption("Community Map", "View active community issues on map", Icons.Default.Map, MaterialTheme.colorScheme.secondary, onViewMap),
-                    ReportingOption("My Reports", "View submitted reports & status", Icons.Default.List, Color(0xFF4CAF50), onViewMyReports),
-                    ReportingOption("Track Report", "Search or open report by ID", Icons.Default.Search, Color(0xFFFF9800), onTrackReport)
+                // Compact Campus Selector
+                Text(
+                    text = "CAMPUS / UNIVERSITY",
+                    fontSize = 11.sp,
+                    color = AppColorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxWidth().weight(1f)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp)
                 ) {
-                    items(options) { opt ->
-                        ReportingActionCard(
-                            title = opt.title,
-                            subtitle = opt.subtitle,
-                            icon = opt.icon,
-                            color = opt.color,
-                            visible = startAnimation,
-                            onClick = opt.onClick
+                    universities.forEach { (id, name) ->
+                        val isSelected = selectedUniversityId == id
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedUniversityId = id },
+                            label = {
+                                Text(
+                                    name,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) Color.White else Color.LightGray
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AppColorScheme.primary,
+                                containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         )
                     }
                 }
+
+                // Active Reports Banner (Shown only when real backend data is available)
+                activeReportCount?.let { count ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 20.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFF0D47A1).copy(alpha = 0.25f),
+                        border = BorderStroke(1.dp, Color(0xFF2196F3).copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = Color(0xFF64B5F6),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                text = "Your Campus Active Reports: $count",
+                                fontSize = 13.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                // Primary Action: Prominent "Report an Issue" Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .clickable(onClick = onReportNew),
+                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.primary),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.White.copy(alpha = 0.2f),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.AddAlert,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                text = "Report an Issue",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Submit water, power, infrastructure & security issues under 30s",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.85f),
+                                lineHeight = 16.sp
+                            )
+                        }
+
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Report Now",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(start = 8.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(28.dp))
+
+                // Secondary Actions Header
+                Text(
+                    text = "MORE ACTIONS",
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                // Secondary Action Items (Visually Quieter)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SecondaryActionRow(
+                        title = "My Reports",
+                        subtitle = "Track your submitted issues & status updates",
+                        icon = Icons.Default.List,
+                        onClick = onViewMyReports
+                    )
+
+                    SecondaryActionRow(
+                        title = "Track a Report",
+                        subtitle = "Search or open report by reference ID",
+                        icon = Icons.Default.Search,
+                        onClick = onTrackReport
+                    )
+
+                    SecondaryActionRow(
+                        title = "Issues Map",
+                        subtitle = "View active campus issues on map view",
+                        icon = Icons.Default.Map,
+                        onClick = onViewMap
+                    )
+                }
+
+                Spacer(Modifier.height(24.dp))
             }
         }
     }
 }
 
-data class ReportingOption(
-    val title: String,
-    val subtitle: String,
-    val icon: ImageVector,
-    val color: Color,
-    val onClick: () -> Unit
-)
-
 @Composable
-fun ReportingActionCard(
+fun SecondaryActionRow(
     title: String,
     subtitle: String,
     icon: ImageVector,
-    color: Color,
-    visible: Boolean,
     onClick: () -> Unit
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0.8f,
-        animationSpec = tween(600)
-    )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .scale(scale)
-            .clip(RoundedCornerShape(28.dp))
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.3f))
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = AppColorScheme.surfaceVariant.copy(alpha = 0.35f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = color.copy(alpha = 0.2f)
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = Color.White.copy(alpha = 0.08f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
+                    Icon(icon, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
                 }
             }
-            Column {
-                Text(title, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 15.sp)
-                Spacer(Modifier.height(4.dp))
-                Text(subtitle, color = Color.Gray, fontSize = 10.sp, lineHeight = 14.sp)
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                Text(subtitle, color = Color.Gray, fontSize = 11.sp)
             }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = Color.Gray,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

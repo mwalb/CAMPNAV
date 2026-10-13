@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -173,13 +174,17 @@ fun AddLocationScreen(
                 item {
                     Text("Select University *", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
-                    LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(universities) { uni ->
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        universities.forEach { uni ->
                             val isSelected = selectedUniversity?.id == uni.id
                             FilterChip(
                                 selected = isSelected,
                                 onClick = { selectedUniversity = uni },
-                                label = { Text(uni.shortName ?: uni.name) }
+                                label = { Text(uni.shortName ?: uni.name, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                             )
                         }
                     }
@@ -233,8 +238,12 @@ fun AddLocationScreen(
                         Column {
                             Text("Category (Optional)", color = Color.White, fontWeight = FontWeight.SemiBold)
                             Spacer(Modifier.height(8.dp))
-                            LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                items(categories) { cat ->
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                categories.forEach { cat ->
                                     val isSelected = !isCustomCategory && selectedCategory?.id == cat.id
                                     FilterChip(
                                         selected = isSelected,
@@ -246,21 +255,19 @@ fun AddLocationScreen(
                                                 isCustomCategory = false
                                             }
                                         },
-                                        label = { Text(cat.name) }
+                                        label = { Text(cat.name, maxLines = 2, overflow = TextOverflow.Ellipsis) }
                                     )
                                 }
-                                item {
-                                    FilterChip(
-                                        selected = isCustomCategory,
-                                        onClick = {
-                                            isCustomCategory = !isCustomCategory
-                                            if (isCustomCategory) {
-                                                selectedCategory = null
-                                            }
-                                        },
-                                        label = { Text("+ Custom Category") }
-                                    )
-                                }
+                                FilterChip(
+                                    selected = isCustomCategory,
+                                    onClick = {
+                                        isCustomCategory = !isCustomCategory
+                                        if (isCustomCategory) {
+                                            selectedCategory = null
+                                        }
+                                    },
+                                    label = { Text("+ Custom Category") }
+                                )
                             }
 
                             if (isCustomCategory) {

@@ -18,3 +18,27 @@ actual fun formatEpochMillis(millis: Long): String {
     val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
     return sdf.format(date)
 }
+
+actual fun getSavedThemeIsDark(): Boolean? {
+    return try {
+        val file = java.io.File(System.getProperty("java.io.tmpdir") ?: ".", "campnav_theme.txt")
+        if (file.exists()) {
+            when (file.readText().trim()) {
+                "true" -> true
+                "false" -> false
+                else -> null
+            }
+        } else null
+    } catch (e: Exception) {
+        null
+    }
+}
+
+actual fun saveThemeIsDark(isDark: Boolean) {
+    try {
+        val file = java.io.File(System.getProperty("java.io.tmpdir") ?: ".", "campnav_theme.txt")
+        file.writeText(if (isDark) "true" else "false")
+    } catch (e: Exception) {
+        // ignore
+    }
+}

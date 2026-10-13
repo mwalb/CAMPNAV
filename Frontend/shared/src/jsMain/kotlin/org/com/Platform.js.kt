@@ -22,3 +22,24 @@ actual fun formatEpochMillis(millis: Long): String {
     val minutes = date.getMinutes().toString().padStart(2, '0')
     return "$hours:$minutes"
 }
+
+actual fun getSavedThemeIsDark(): Boolean? {
+    return try {
+        val valStr = kotlinx.browser.window.localStorage.getItem("campnav_theme_is_dark")
+        when (valStr) {
+            "true" -> true
+            "false" -> false
+            else -> null
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+actual fun saveThemeIsDark(isDark: Boolean) {
+    try {
+        kotlinx.browser.window.localStorage.setItem("campnav_theme_is_dark", if (isDark) "true" else "false")
+    } catch (e: Exception) {
+        // ignore
+    }
+}

@@ -38,18 +38,22 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/leader/**").hasAnyRole("STUDENT_LEADER", "ADMIN")
                 .requestMatchers("/api/feedback/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/community/reports/**").permitAll()
-                .requestMatchers("/api/universities/**").permitAll()
-                .requestMatchers("/api/categories/**").permitAll()
-                .requestMatchers("/api/projects/**").permitAll()
-                .requestMatchers("/api/playlists/**").permitAll()
-                .requestMatchers("/api/contributions/**").permitAll()
-                .requestMatchers("/api/reviews/**").permitAll()
-                .requestMatchers("/api/reviews").permitAll()
-                .requestMatchers("/api/feedback").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/community/reports", "/api/community/reports/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/reports", "/api/community/reports/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/community/reports", "/api/community/reports/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/api/community/reports", "/api/community/reports/**").permitAll()
+                .requestMatchers("/api/universities", "/api/universities/**").permitAll()
+                .requestMatchers("/api/categories", "/api/categories/**").permitAll()
+                .requestMatchers("/api/projects", "/api/projects/**").permitAll()
+                .requestMatchers("/api/playlists", "/api/playlists/**").permitAll()
+                .requestMatchers("/api/contributions", "/api/contributions/**").permitAll()
+                .requestMatchers("/api/reviews", "/api/reviews/**").permitAll()
+                .requestMatchers("/api/feedback", "/api/feedback/**").permitAll()
                 .requestMatchers("/api/feedback/approved").permitAll()
                 .anyRequest().authenticated()
             )
@@ -63,10 +67,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("*"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("x-auth-token"));
+        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

@@ -23,6 +23,11 @@ public class IssueReportController {
         return ResponseEntity.ok(reportService.createReport(report));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    }
+
     @GetMapping("/community/reports")
     public ResponseEntity<List<IssueReport>> getAllReports() {
         return ResponseEntity.ok(reportService.getAllReports());
@@ -106,6 +111,15 @@ public class IssueReportController {
         String adminUsername = authentication != null && authentication.getName() != null ? authentication.getName() : "admin";
         IssueReport updated = reportService.resolveIssue(externalId, request.getResolutionDescription(), adminUsername);
         return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/admin/issues/{externalId}/resend-notification")
+    public ResponseEntity<com.campnav.backend.model.EmailNotification> resendLeaderNotification(
+            @PathVariable String externalId,
+            Authentication authentication) {
+        String adminUsername = authentication != null && authentication.getName() != null ? authentication.getName() : "admin";
+        com.campnav.backend.model.EmailNotification notification = reportService.resendLeaderNotificationByAdmin(externalId, adminUsername);
+        return ResponseEntity.ok(notification);
     }
 
     @Data

@@ -101,7 +101,11 @@ fun AreaReviewsScreen(
             item {
                 Text("Select University", color = Color.White, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     universities.forEach { uni ->
                         val isSelected = selectedUniversity?.id == uni.id
                         FilterChip(

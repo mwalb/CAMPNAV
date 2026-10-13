@@ -2,6 +2,7 @@ package org.com.community.presentation
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -15,14 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.com.community.model.*
-import org.com.community.data.CommunityRepository
-import org.com.core.ui.theme.AppColorScheme
 import kotlinx.coroutines.launch
+import org.com.campus.data.University
+import org.com.community.components.IssuesMap
+import org.com.community.data.CommunityRepository
+import org.com.community.model.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,199 +33,353 @@ fun CommunityMapScreen(
 ) {
     val repository = remember { CommunityRepository() }
     val scope = rememberCoroutineScope()
-    var nearbyIssues by remember { mutableStateOf<List<IssueReport>>(emptyList()) }
-    var selectedCategory by remember { mutableStateOf<IssueCategory?>(null) }
-    var showRadar by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
+    var allReports by remember { mutableStateOf<List<IssueReport>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var fetchError by remember { mutableStateOf<String?>(null) }
+
+    var selectedUniversityId by remember { mutableStateOf<Long?>(null) } // null = All Universities
+    var selectedCategory by remember { mutableStateOf<IssueCategory?>(null) }
+    var selectedReport by remember { mutableStateOf<IssueReport?>(null) }
+
+    val universities = remember {
+        listOf(
+            University(id = 1L, name = "UDSM", description = "University of Dar es Salaam", latitude = -6.780543, longitude = 39.204593, defaultZoom = 15f),
+            University(id = 2L, name = "UDOM", description = "University of Dodoma", latitude = -6.1700, longitude = 35.7981, defaultZoom = 15f),
+            University(id = 3L, name = "MUST", description = "Mbeya University of Science & Tech", latitude = -8.9328, longitude = 33.4390, defaultZoom = 15f),
+            University(id = 4L, name = "SUA", description = "Sokoine University of Agriculture", latitude = -6.8480, longitude = 37.6530, defaultZoom = 15f)
+        )
+    }
+
+    val selectedUniversityObj = remember(selectedUniversityId) {
+        universities.find { it.id == selectedUniversityId } ?: universities.first()
+    }
+
+    fun loadReports() {
+        isLoading = true
+        fetchError = null
         scope.launch {
             try {
-                // Mock user location for radar demonstration
-                nearbyIssues = repository.getNearbyIssues(-6.7924, 39.2083)
+                val reports = repository.getAllReports()
+                allReports = reports
+                fetchError = null
             } catch (e: Exception) {
-                // Fallback mock data if server not available
-                nearbyIssues = listOf(
-                    IssueReport(
-                        id = "JMF-123", category = IssueCategory.WATER, subCategory = "Leakage",
-                        description = "Water Leakage", issueLocation = GeoLocation(0.0, 0.0),
-                        reporterLocation = GeoLocation(0.0, 0.0), distanceToIssue = 120.0,
-                        distanceText = "120m away", evidenceUris = emptyList(),
-                        userPriority = IssuePriority.HIGH, calculatedPriority = IssuePriority.HIGH,
-                        impactScore = 70, reporterId = "", timestamp = 0, lastUpdated = 0
-                    )
-                )
+                println("[CAMPNAV] Error loading issues: ${e.message}")
+                fetchError = "Unable to connect to server. Check network connection."
+            } finally {
+                isLoading = false
             }
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Map Placeholder
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(120.dp), tint = Color.Gray.copy(alpha = 0.2f))
-            Text("Community Intelligence Map", color = Color.Gray, fontWeight = FontWeight.Bold)
-            Text("Real-time Issue Visualization", color = Color.Gray.copy(alpha = 0.5f), fontSize = 12.sp)
-        }
+    LaunchedEffect(Unit) {
+        loadReports()
+    }
 
-        // Top Controls
+    // Filtered reports by university and category
+    val filteredReports = remember(allReports, selectedUniversityId, selectedCategory) {
+        allReports.filter { report ->
+            val matchesUniv = selectedUniversityId == null || report.universityId == selectedUniversityId
+            val matchesCat = selectedCategory == null || report.category == selectedCategory
+            matchesUniv && matchesCat
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // 1. Existing Map Implementation Reused
+        IssuesMap(
+            modifier = Modifier.fillMaxSize(),
+            university = selectedUniversityObj,
+            issues = filteredReports,
+            selectedIssue = selectedReport,
+            onIssueSelected = { selectedReport = it },
+            onBack = onBack
+        )
+
+        // 2. Top Header & Back Button
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp).statusBarsPadding(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
                 onClick = onBack,
-                modifier = Modifier.clip(CircleShape).background(AppColorScheme.surface.copy(alpha = 0.8f))
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
             ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
             }
 
             Surface(
-                modifier = Modifier.height(48.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = AppColorScheme.surface.copy(alpha = 0.8f)
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                shadowElevation = 4.dp
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Search Area...", color = Color.Gray, fontSize = 14.sp)
+                    Icon(
+                        Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Campus Issues Map",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
 
             IconButton(
-                onClick = { /* Toggle Heatmap */ },
-                modifier = Modifier.clip(CircleShape).background(AppColorScheme.surface.copy(alpha = 0.8f))
+                onClick = { loadReports() },
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
             ) {
-                Icon(Icons.Default.Layers, contentDescription = null, tint = Color.White)
-            }
-        }
-
-        // Category Filter
-        LazyRow(
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 80.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            item {
-                FilterChip(
-                    selected = selectedCategory == null,
-                    onClick = { selectedCategory = null },
-                    label = { Text("All Issues") },
-                    colors = FilterChipDefaults.filterChipColors(labelColor = Color.White)
-                )
-            }
-            items(IssueCategory.entries) { category ->
-                FilterChip(
-                    selected = selectedCategory == category,
-                    onClick = { selectedCategory = category },
-                    label = { Text(category.displayName) },
-                    colors = FilterChipDefaults.filterChipColors(labelColor = Color.White)
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = "Refresh",
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
 
-        // Community Incident Radar
-        AnimatedVisibility(
-            visible = showRadar,
-            enter = slideInVertically(initialOffsetY = { it }),
-            exit = slideOutVertically(targetOffsetY = { it }),
-            modifier = Modifier.align(Alignment.BottomCenter)
+        // 3. University & Category Selectors (Horizontal LazyRows)
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(top = 64.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = AppColorScheme.surface.copy(alpha = 0.95f))
+            // University Filter Bar
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
+                item {
+                    FilterChip(
+                        selected = selectedUniversityId == null,
+                        onClick = { selectedUniversityId = null },
+                        label = { Text("All Universities", fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+                items(universities) { univ ->
+                    val isSelected = selectedUniversityId == univ.id
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { selectedUniversityId = if (isSelected) null else univ.id },
+                        label = { Text(univ.name, fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
+
+            // Category Filter Bar
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = selectedCategory == null,
+                        onClick = { selectedCategory = null },
+                        label = { Text("All Categories", fontSize = 11.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+                items(IssueCategory.entries.toTypedArray()) { cat ->
+                    val isSelected = selectedCategory == cat
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { selectedCategory = if (isSelected) null else cat },
+                        label = { Text(cat.displayName, fontSize = 11.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
+        }
+
+        // 4. Loading Indicator Overlay
+        if (isLoading) {
+            Surface(
+                modifier = Modifier.align(Alignment.Center),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Text("Loading campus issues...", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+
+        // 5. Network / Backend Error Banner
+        fetchError?.let { err ->
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 160.dp, start = 16.dp, end = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFDC2626).copy(alpha = 0.9f),
+                shadowElevation = 6.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Icon(Icons.Default.Error, contentDescription = null, tint = Color.White)
+                    Spacer(Modifier.width(8.dp))
+                    Text(err, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { loadReports() }) {
+                        Text("RETRY", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // 6. Subtle Empty-State Message Overlay (When zero reported issues exist)
+        if (!isLoading && fetchError == null && filteredReports.isEmpty()) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 32.dp, start = 20.dp, end = 20.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                shadowElevation = 6.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF10B981),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "No reported issues in this area yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+
+        // 7. Selected Issue Details Card (Floating Bottom Sheet)
+        selectedReport?.let { issue ->
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 12.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("INCIDENT RADAR", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary, letterSpacing = 2.sp)
-                        IconButton(onClick = { showRadar = false }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color.Gray)
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = issue.category.displayName,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { selectedReport = null },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Close details", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(8.dp))
 
-                    if (nearbyIssues.isEmpty()) {
-                        Text("No active issues detected within 2km.", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                    }
+                    Text(
+                        text = issue.description,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
-                    nearbyIssues.take(3).forEachIndexed { index, issue ->
-                        RadarItem(
-                            title = issue.description.take(25) + (if (issue.description.length > 25) "..." else ""),
-                            distance = issue.distanceText,
-                            color = when(issue.category) {
-                                IssueCategory.WATER -> Color(0xFF00E5FF)
-                                IssueCategory.WASTE -> Color(0xFFFFC107)
-                                IssueCategory.PUBLIC_SAFETY -> Color(0xFFF44336)
-                                else -> MaterialTheme.colorScheme.primary
-                            },
-                            icon = when(issue.category) {
-                                IssueCategory.WATER -> Icons.Default.WaterDrop
-                                IssueCategory.WASTE -> Icons.Default.Delete
-                                IssueCategory.PUBLIC_SAFETY -> Icons.Default.Security
-                                else -> Icons.Default.Report
-                            }
-                        )
-                        if (index < nearbyIssues.size - 1 && index < 2) {
-                            Divider(color = Color.Gray.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 12.dp))
-                        }
-                    }
+                    Spacer(Modifier.height(12.dp))
 
-                    Spacer(Modifier.height(24.dp))
-
-                    Button(
-                        onClick = { /* Open Report Screen */ },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(16.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("REPORT SOMETHING NEARBY")
+                        Column {
+                            Text("STATUS", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                            Text(issue.status.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
+
+                        Column {
+                            Text("REF ID", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                            Text(issue.id.ifBlank { "CAM-REF" }, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        }
+
+                        Column {
+                            Text("URGENCY", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                            Text(issue.urgency, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (issue.urgency == "EMERGENCY") Color.Red else MaterialTheme.colorScheme.onSurface)
+                        }
                     }
+
+                    // Private reporter information is strictly excluded from public map details card
                 }
             }
-        }
-
-        if (!showRadar) {
-            FloatingActionButton(
-                onClick = { showRadar = true },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Radar, contentDescription = "Open Radar")
-            }
-        }
-    }
-}
-
-@Composable
-fun RadarItem(title: String, distance: String, color: Color, icon: ImageVector) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier.size(40.dp).clip(CircleShape).background(color.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        }
-        Spacer(Modifier.width(16.dp))
-        Column {
-            Text(title, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(distance, fontSize = 12.sp, color = Color.Gray)
-        }
-        Spacer(Modifier.weight(1f))
-        TextButton(onClick = { /* Navigate */ }) {
-            Text("NAVIGATE", fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -18,6 +18,7 @@ public class IssueTimeline {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "issue_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private IssueReport issue;
 
     @Enumerated(EnumType.STRING)
@@ -28,6 +29,7 @@ public class IssueTimeline {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "actor_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private CommunityUser actor;
 
     @Builder.Default

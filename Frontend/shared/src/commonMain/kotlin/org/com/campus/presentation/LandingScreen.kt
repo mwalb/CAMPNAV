@@ -25,13 +25,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.com.core.ui.theme.AppColorScheme
 
+import androidx.compose.foundation.shape.CircleShape
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LandingScreen(
     onExploreCampuses: () -> Unit,
     onReportIssue: () -> Unit,
     onEntertainment: () -> Unit = {},
-    onCommunity: () -> Unit = {}
+    onCommunity: () -> Unit = {},
+    isDarkTheme: Boolean = true,
+    onToggleTheme: () -> Unit = {}
 ) {
     var startAnimation by remember { mutableStateOf(false) }
     
@@ -45,12 +49,29 @@ fun LandingScreen(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        AppColorScheme.background,
-                        AppColorScheme.surface
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface
                     )
                 )
             )
     ) {
+        // Compact Theme Toggle Button (Top-Right)
+        IconButton(
+            onClick = onToggleTheme,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(top = 16.dp, end = 16.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
+        ) {
+            Icon(
+                imageVector = if (isDarkTheme) Icons.Default.WbSunny else Icons.Default.NightsStay,
+                contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -69,7 +90,7 @@ fun LandingScreen(
                     Text(
                         text = "CAMPNAV",
                         style = MaterialTheme.typography.displayLarge,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 8.sp
                     )
@@ -84,7 +105,7 @@ fun LandingScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Action Cards in responsive FlowRow
+            // Action Cards in responsive FlowRow (4 cards preserved)
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -166,9 +187,9 @@ fun LandingActionCard(
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f * alpha)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f * alpha)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -195,7 +216,7 @@ fun LandingActionCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 22.sp
                 )
@@ -203,7 +224,7 @@ fun LandingActionCard(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 15.sp
                 )
             }

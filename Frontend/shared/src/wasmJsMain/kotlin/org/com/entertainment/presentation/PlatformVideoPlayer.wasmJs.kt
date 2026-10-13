@@ -1,17 +1,97 @@
 package org.com.entertainment.presentation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import kotlinx.browser.document
-import org.w3c.dom.HTMLVideoElement
-import androidx.compose.ui.layout.positionInWindow
+import org.com.entertainment.data.Hls
 import org.com.entertainment.model.Channel
 import org.com.entertainment.model.PlayerState
-import org.com.entertainment.data.Hls
+import org.w3c.dom.HTMLVideoElement
 import kotlin.js.ExperimentalWasmJsInterop
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("""(element) => {
+    if (!element) return;
+    try {
+        var promise = element.play();
+        if (promise && typeof promise.then === 'function') {
+            promise.catch(function(err) {
+                if (err && (err.name === 'AbortError' || (err.message && err.message.indexOf('interrupted') !== -1))) {
+                    // Ignore expected play interruption from pause() or source change
+                } else if (err && err.name === 'NotAllowedError') {
+                    console.warn('[CAMPNAV Player] Autoplay prevented by browser policy.');
+                } else {
+                    console.warn('[CAMPNAV Player] Play request rejected:', err);
+                }
+            });
+        }
+    } catch(e) {
+        // Ignore synchronous play error
+    }
+}""")
+private external fun jsSafePlay(element: HTMLVideoElement)
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("""(element) => {
+    if (!element) return;
+    try {
+        element.pause();
+    } catch(e) {
+        // Ignore synchronous pause error
+    }
+}""")
+private external fun jsSafePause(element: HTMLVideoElement)
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("""(element, onBuffering, onPlaying, onError) => {
+    if (!element) return;
+    
+    var onWaitingHandler = function() {
+        onBuffering();
+    };
+    var onPlayingHandler = function() {
+        onPlaying();
+    };
+    var onErrorHandler = function() {
+        onError('Failed to load video stream. Please check connection or select another channel.');
+    };
+
+    element._onWaitingHandler = onWaitingHandler;
+    element._onPlayingHandler = onPlayingHandler;
+    element._onErrorHandler = onErrorHandler;
+
+    element.addEventListener('waiting', onWaitingHandler);
+    element.addEventListener('play', onPlayingHandler);
+    element.addEventListener('playing', onPlayingHandler);
+    element.addEventListener('canplay', onPlayingHandler);
+    element.addEventListener('error', onErrorHandler);
+}""")
+private external fun jsAttachListeners(
+    element: HTMLVideoElement,
+    onBuffering: () -> Unit,
+    onPlaying: () -> Unit,
+    onError: (String) -> Unit
+)
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("""(element) => {
+    if (!element) return;
+    if (element._onWaitingHandler) element.removeEventListener('waiting', element._onWaitingHandler);
+    if (element._onPlayingHandler) {
+        element.removeEventListener('play', element._onPlayingHandler);
+        element.removeEventListener('playing', element._onPlayingHandler);
+        element.removeEventListener('canplay', element._onPlayingHandler);
+    }
+    if (element._onErrorHandler) element.removeEventListener('error', element._onErrorHandler);
+    element._onWaitingHandler = null;
+    element._onPlayingHandler = null;
+    element._onErrorHandler = null;
+}""")
+private external fun jsDetachListeners(element: HTMLVideoElement)
 
 @OptIn(ExperimentalWasmJsInterop::class)
 @Composable
@@ -26,10 +106,11 @@ actual fun PlatformVideoPlayer(
     val videoElement = remember {
         (document.createElement("video") as HTMLVideoElement).apply {
             style.position = "absolute"
-            style.zIndex = "10"
+            style.zIndex = "0"
             controls = true
-            autoplay = true
+            autoplay = false
             style.backgroundColor = "black"
+            style.objectFit = "contain"
         }
     }
 
@@ -37,26 +118,52 @@ actual fun PlatformVideoPlayer(
         if (Hls.isSupported()) Hls() else null
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(channel.url) {
+        onStateChanged(PlayerState(isBuffering = true, error = null))
+        jsAttachListeners(
+            videoElement,
+            onBuffering = { onStateChanged(PlayerState(isBuffering = true, error = null)) },
+            onPlaying = { onStateChanged(PlayerState(isBuffering = false, error = null)) },
+            onError = { msg -> onStateChanged(PlayerState(isBuffering = false, error = msg)) }
+        )
         document.body?.appendChild(videoElement)
+        
         onDispose {
-            hls?.destroy()
+            jsSafePause(videoElement)
+            jsDetachListeners(videoElement)
+            try {
+                hls?.destroy()
+            } catch (_: Throwable) {}
+            videoElement.removeAttribute("src")
+            videoElement.load()
             videoElement.remove()
         }
     }
 
     LaunchedEffect(channel.url) {
-        onStateChanged(PlayerState(isBuffering = true))
+        jsSafePause(videoElement)
         if (channel.url.contains(".m3u8") && hls != null) {
-            hls.attachMedia(videoElement)
-            hls.loadSource(channel.url)
+            try {
+                hls.attachMedia(videoElement)
+                hls.loadSource(channel.url)
+            } catch (_: Throwable) {
+                videoElement.src = channel.url
+            }
         } else {
             videoElement.src = channel.url
+        }
+
+        if (isPlaying) {
+            jsSafePlay(videoElement)
         }
     }
 
     LaunchedEffect(isPlaying) {
-        if (isPlaying) videoElement.play() else videoElement.pause()
+        if (isPlaying) {
+            jsSafePlay(videoElement)
+        } else {
+            jsSafePause(videoElement)
+        }
     }
 
     Box(
@@ -64,10 +171,6 @@ actual fun PlatformVideoPlayer(
             .onGloballyPositioned { coordinates ->
                 val position = coordinates.positionInWindow()
                 val size = coordinates.size
-                
-                // In KMP Web, Compose might be rendering at a different pixel density than CSS pixels.
-                // However, document.body appendChild places it outside Compose canvas.
-                // We typically need to match the actual viewport pixels.
                 
                 videoElement.style.left = "${position.x / density.density}px"
                 videoElement.style.top = "${position.y / density.density}px"

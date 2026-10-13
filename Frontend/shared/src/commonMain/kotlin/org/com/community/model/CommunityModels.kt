@@ -13,6 +13,7 @@ data class CommunityContribution(
     val locationName: String,
     val areaType: String, // 'UNIVERSITY_AREA' or 'COMMERCIAL_AREA'
     val category: Category? = null,
+    val customCategory: String? = null,
     val description: String? = null,
     val latitude: Double,
     val longitude: Double,

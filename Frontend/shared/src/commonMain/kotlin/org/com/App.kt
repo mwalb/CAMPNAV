@@ -34,7 +34,9 @@ enum class AppMode {
     ContributionStatus,
     CommercialVerification,
     AdminLogin,
-    AdminDashboard
+    AdminDashboard,
+    LeaderLogin,
+    LeaderDashboard
 }
 
 @Composable
@@ -42,6 +44,7 @@ fun MainApp() {
     LaunchedEffect(Unit) {
         println("[CAMPNAV] [DIAGNOSTIC] APP INITIALIZED")
     }
+    var isDarkTheme by remember { mutableStateOf(getSavedThemeIsDark() ?: true) }
     var mode by remember { mutableStateOf(AppMode.Landing) }
     var selectedUniversity by remember { mutableStateOf<University?>(null) }
     var selectedLocation by remember { mutableStateOf<CampusLocation?>(null) }
@@ -50,14 +53,23 @@ fun MainApp() {
     var contributionReference by remember { mutableStateOf<String?>(null) }
     var submittedCommercialContribution by remember { mutableStateOf<CommunityContribution?>(null) }
     var adminToken by remember { mutableStateOf<String?>(null) }
+    var leaderToken by remember { mutableStateOf<String?>(null) }
 
-    CampNavTheme {
+    fun toggleTheme() {
+        val nextValue = !isDarkTheme
+        isDarkTheme = nextValue
+        saveThemeIsDark(nextValue)
+    }
+
+    CampNavTheme(isDark = isDarkTheme) {
         when (mode) {
             AppMode.Landing -> LandingScreen(
                 onExploreCampuses = { mode = AppMode.UniversitySelection },
                 onReportIssue = { mode = AppMode.ReportingLanding },
                 onEntertainment = { mode = AppMode.Entertainment },
-                onCommunity = { mode = AppMode.CommunityHub }
+                onCommunity = { mode = AppMode.CommunityHub },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { toggleTheme() }
             )
             AppMode.Entertainment -> IPTVPlayerApp(
                 onBackToSelection = { mode = AppMode.Landing }
@@ -68,11 +80,40 @@ fun MainApp() {
                 onNavigateToReviews = { mode = AppMode.CommunityReviews },
                 onNavigateToFeedback = { mode = AppMode.CommunityFeedback },
                 onNavigateToContact = { mode = AppMode.ContactUs },
+                onNavigateToLeader = {
+                    if (leaderToken != null) mode = AppMode.LeaderDashboard
+                    else mode = AppMode.LeaderLogin
+                },
                 onNavigateToAdmin = {
                     if (adminToken != null) mode = AppMode.AdminDashboard
                     else mode = AppMode.AdminLogin
                 }
             )
+            AppMode.LeaderLogin -> AdminLoginScreen(
+                onBack = { mode = AppMode.CommunityHub },
+                onLoginSuccess = { token ->
+                    leaderToken = token
+                    mode = AppMode.LeaderDashboard
+                }
+            )
+            AppMode.LeaderDashboard -> leaderToken?.let { token ->
+                StudentLeaderDashboardScreen(
+                    token = token,
+                    onBack = { mode = AppMode.CommunityHub },
+                    onLogout = {
+                        leaderToken = null
+                        mode = AppMode.LeaderLogin
+                    }
+                )
+            } ?: run {
+                AdminLoginScreen(
+                    onBack = { mode = AppMode.CommunityHub },
+                    onLoginSuccess = { token ->
+                        leaderToken = token
+                        mode = AppMode.LeaderDashboard
+                    }
+                )
+            }
             AppMode.CommunityAddLocation -> AddLocationScreen(
                 onBack = { mode = AppMode.CommunityHub },
                 onSubmissionSuccess = { ref ->

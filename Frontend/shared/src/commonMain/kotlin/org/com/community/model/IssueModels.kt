@@ -4,16 +4,15 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class IssueCategory(val displayName: String, val iconName: String) {
-    WATER("Water", "water_drop"),
-    ROADS("Roads", "add_road"),
-    ELECTRICITY("Electricity", "electric_bolt"),
-    WASTE("Waste", "delete"),
-    DRAINAGE("Drainage", "waves"),
-    ENVIRONMENT("Environment", "eco"),
-    PUBLIC_SAFETY("Public Safety", "security"),
-    BUILDINGS("Buildings", "domain"),
-    TRANSPORT("Transport", "directions_bus"),
-    SANITATION("Sanitation", "clean_hands"),
+    WATER("Water and Sanitation", "water_drop"),
+    ELECTRICITY("Electricity and Power", "electric_bolt"),
+    ROADS("Roads and Transport", "add_road"),
+    SANITATION("Sanitation and Hygiene", "clean_hands"),
+    WASTE("Waste and Environment", "delete"),
+    FACILITIES("Public Facilities", "domain"),
+    SAFETY("Safety and Security", "security"),
+    INTERNET("Communication and Internet", "wifi"),
+    BUILDINGS("Buildings and Public Property", "domain"),
     OTHER("Other", "more_horiz")
 }
 
@@ -57,26 +56,36 @@ data class GeoLocation(
 
 @Serializable
 data class IssueReport(
-    val id: String,
-    val category: IssueCategory,
+    val id: String = "",
+    val universityId: Long? = null,
+    val universityName: String? = null,
+    val campusName: String? = null,
+    val category: IssueCategory = IssueCategory.OTHER,
     val subCategory: String? = null,
-    val description: String,
+    val description: String = "",
     val voiceTranscription: String? = null,
-    val issueLocation: GeoLocation,
-    val reporterLocation: GeoLocation,
-    val distanceToIssue: Double, // in meters
+    val issueLocation: GeoLocation = GeoLocation(0.0, 0.0),
+    val reporterLocation: GeoLocation = GeoLocation(0.0, 0.0),
+    val distanceToIssue: Double = 0.0,
     val distanceText: String = "",
-    val evidenceUris: List<String>,
+    val evidenceUris: List<String> = emptyList(),
     val videoUri: String? = null,
     val status: IssueStatus = IssueStatus.SUBMITTED,
-    val userPriority: IssuePriority,
-    val calculatedPriority: IssuePriority,
-    val impactScore: Int,
-    val reporterId: String,
-    val timestamp: Long,
-    val lastUpdated: Long,
+    val routingStatus: String = "UNASSIGNED",
+    val urgency: String = "NORMAL",
+    val locationSource: String = "CURRENT_LOCATION",
+    val userPriority: IssuePriority = IssuePriority.MEDIUM,
+    val calculatedPriority: IssuePriority = IssuePriority.MEDIUM,
+    val impactScore: Int = 0,
+    val reporterId: String = "",
+    val reporterName: String? = null,
+    val reporterEmail: String? = null,
+    val reporterPhone: String? = null,
+    val timestamp: Long = 0,
+    val lastUpdated: Long = 0,
     val assignedDepartment: String? = null,
     val assignedOfficerId: String? = null,
+    val assignedLeaderName: String? = null,
     val supportsCount: Int = 0,
     val verificationCount: Int = 0,
     val isEmergency: Boolean = false,
@@ -103,6 +112,7 @@ enum class UserRole {
     CITIZEN,
     FIELD_OFFICER,
     DEPT_OFFICER,
+    STUDENT_LEADER,
     ADMIN
 }
 
@@ -119,8 +129,8 @@ data class UserProfile(
 
 @Serializable
 data class IssueTimelineEvent(
-    val timestamp: Long,
-    val status: IssueStatus,
-    val message: String,
+    val timestamp: Long = 0,
+    val status: IssueStatus = IssueStatus.SUBMITTED,
+    val message: String = "",
     val actorId: String? = null
 )

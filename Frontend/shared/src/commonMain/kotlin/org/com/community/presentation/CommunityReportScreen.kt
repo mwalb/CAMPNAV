@@ -27,10 +27,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import org.com.campus.utils.getCurrentUserLocation
 import org.com.community.components.CommunityMediaPicker
 import org.com.community.components.LocationPickerMap
 import org.com.community.model.IssueCategory
-import org.com.community.model.IssuePriority
 import org.com.core.ui.theme.AppColorScheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,493 +40,689 @@ fun CommunityReportScreen(
 ) {
     val viewModel = remember { CommunityReportViewModel() }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("REPORT COMMUNITY ISSUE", fontWeight = FontWeight.Black, fontSize = 18.sp) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(AppColorScheme.background, Color(0xFF13132B))
                 )
             )
-        },
-        containerColor = AppColorScheme.background
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(AppColorScheme.background, Color(0xFF1A1A3E))
-                    )
-                )
-                .padding(padding)
-        ) {
-            Crossfade(targetState = viewModel.currentStep) { step ->
-                when (step) {
-                    1 -> CategoryStep(viewModel)
-                    2 -> DescriptionStep(viewModel)
-                    3 -> LocationStep(viewModel)
-                    4 -> PriorityStep(viewModel)
-                    5 -> SuccessStep(viewModel, onBack)
-                }
-            }
-
-            // Duplicate Detection Overlay
-            if (viewModel.currentStep == 3 && viewModel.showDuplicateDialog) {
-                DuplicateDetectionDialog(
-                    onSupport = { viewModel.nextStep(); viewModel.nextStep() }, // Skip to success or similar
-                    onContinue = { viewModel.showDuplicateDialog = false }
-                )
-            }
-
-            if (viewModel.currentStep in 2..4) {
-                StepProgressIndicator(
-                    currentStep = viewModel.currentStep,
-                    totalSteps = 4,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 24.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CategoryStep(viewModel: CommunityReportViewModel) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            "What problem are you reporting?",
-            style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Select a category to help us route your report.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray,
-            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
-        )
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            items(IssueCategory.entries) { category ->
-                CategoryCard(
-                    category = category,
-                    isSelected = viewModel.selectedCategory == category,
-                    onClick = {
-                        viewModel.selectedCategory = category
-                        viewModel.nextStep()
-                    }
-                )
-            }
-        }
-
-        // Emergency Button
-        Button(
-            onClick = {
-                viewModel.isEmergency = true
-                viewModel.selectedCategory = IssueCategory.OTHER
-                viewModel.nextStep()
-            },
-            modifier = Modifier.fillMaxWidth().height(64.dp).padding(top = 16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4444)),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Icon(Icons.Default.Warning, contentDescription = null)
-            Spacer(Modifier.width(12.dp))
-            Text("REPORT EMERGENCY", fontWeight = FontWeight.Black)
-        }
-    }
-}
-
-@Composable
-fun CategoryCard(
-    category: IssueCategory,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else AppColorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        shape = RoundedCornerShape(24.dp),
-        border = if (isSelected) BorderStroke(2.dp, Color.White) else null
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Surface(
-                modifier = Modifier.size(56.dp),
-                shape = CircleShape,
-                color = if (isSelected) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    // Mapping category to icons
-                    val icon = when(category) {
-                        IssueCategory.WATER -> Icons.Default.WaterDrop
-                        IssueCategory.ROADS -> Icons.Default.AddRoad
-                        IssueCategory.ELECTRICITY -> Icons.Default.ElectricBolt
-                        IssueCategory.WASTE -> Icons.Default.Delete
-                        IssueCategory.DRAINAGE -> Icons.Default.Waves
-                        IssueCategory.ENVIRONMENT -> Icons.Default.Eco
-                        IssueCategory.PUBLIC_SAFETY -> Icons.Default.Security
-                        IssueCategory.BUILDINGS -> Icons.Default.Domain
-                        IssueCategory.TRANSPORT -> Icons.Default.DirectionsBus
-                        IssueCategory.SANITATION -> Icons.Default.CleanHands
-                        IssueCategory.OTHER -> Icons.Default.MoreHoriz
-                    }
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = if (isSelected) Color.White else MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                category.displayName,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun DescriptionStep(viewModel: CommunityReportViewModel) {
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
-        Text("Describe the issue", style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
-        Text("Provide details to help us understand the problem.", color = Color.Gray, modifier = Modifier.padding(bottom = 24.dp))
-
-        OutlinedTextField(
-            value = viewModel.description,
-            onValueChange = { viewModel.description = it },
-            modifier = Modifier.fillMaxWidth().height(160.dp),
-            placeholder = { Text("What is happening? (e.g. The water pipe burst near the bus stop)") },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = MaterialTheme.colorScheme.primary
-            ),
-            shape = RoundedCornerShape(16.dp)
-        )
-
-        // AI classification hint
-        if (viewModel.description.contains("water") || viewModel.description.contains("leak")) {
-            Surface(
-                modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("AI suggests: Water Infrastructure (91% confidence)", fontSize = 12.sp, color = Color.White)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        Text("Evidence", style = MaterialTheme.typography.titleMedium, color = Color.White)
-        Text("Photos and videos help verify the report faster.", color = Color.Gray, fontSize = 12.sp)
-
-        Spacer(Modifier.height(12.dp))
-
-        CommunityMediaPicker(
-            onMediaCaptured = { viewModel.addEvidence(it) }
-        ) { captureImage, pickGallery ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                EvidenceButton(Icons.Default.CameraAlt, "Camera", onClick = captureImage)
-                EvidenceButton(Icons.Default.PhotoLibrary, "Gallery", onClick = pickGallery)
-                EvidenceButton(Icons.Default.Mic, "Voice") { 
-                    // Simulate voice recording
-                    viewModel.addEvidence("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")
-                }
-            }
-        }
-
-        if (viewModel.evidenceUris.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(viewModel.evidenceUris) { uri ->
-                    Box(modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp))) {
-                        AsyncImage(
-                            model = uri,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                        IconButton(
-                            onClick = { viewModel.removeEvidence(uri) },
-                            modifier = Modifier.align(Alignment.TopEnd).size(24.dp).background(Color.Black.copy(alpha = 0.5f))
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(48.dp))
-
-        Button(
-            onClick = { viewModel.nextStep() },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            enabled = viewModel.description.length > 5,
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text("Next: Location")
-        }
-
-        TextButton(onClick = { viewModel.prevStep() }, modifier = Modifier.fillMaxWidth()) {
-            Text("Back", color = Color.Gray)
-        }
-    }
-}
-
-@Composable
-fun EvidenceButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.width(80.dp).height(80.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = Color.White)
-            Text(label, fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
-        }
-    }
-}
-
-@Composable
-fun LocationStep(viewModel: CommunityReportViewModel) {
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-        Text("Confirm Location", style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
-        Text("Where exactly is the problem?", color = Color.Gray, modifier = Modifier.padding(bottom = 24.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surface),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
-        ) {
+        if (viewModel.showMapPicker) {
             Box(modifier = Modifier.fillMaxSize()) {
                 LocationPickerMap(
                     modifier = Modifier.fillMaxSize(),
                     initialLatitude = viewModel.issueLocation?.latitude,
                     initialLongitude = viewModel.issueLocation?.longitude,
-                    onBack = { viewModel.prevStep() },
+                    onBack = { viewModel.showMapPicker = false },
                     onConfirm = { lat, lng ->
-                        viewModel.onLocationSelected(lat, lng)
+                        viewModel.onLocationSelected(lat, lng, "PICK_FROM_MAP")
                     }
+                )
+            }
+        } else {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Report a Campus Issue", fontWeight = FontWeight.Black, fontSize = 18.sp) },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            titleContentColor = Color.White,
+                            navigationIconContentColor = Color.White
+                        )
+                    )
+                },
+                containerColor = Color.Transparent
+            ) { padding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    if (viewModel.isSubmitted) {
+                        QuickReportSuccessView(
+                            viewModel = viewModel,
+                            onDone = onBack
+                        )
+                    } else {
+                        QuickReportFormView(viewModel = viewModel)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QuickReportFormView(viewModel: CommunityReportViewModel) {
+    val universities = listOf(
+        Pair(1L, "UDSM (Dar es Salaam)"),
+        Pair(2L, "UDOM (Dodoma)"),
+        Pair(3L, "MUST (Mbeya)"),
+        Pair(4L, "SUA (Morogoro)")
+    )
+
+    val quickCategories = listOf(
+        QuickCategoryItem(IssueCategory.WATER, "Water", Icons.Default.WaterDrop),
+        QuickCategoryItem(IssueCategory.ELECTRICITY, "Electricity", Icons.Default.ElectricBolt),
+        QuickCategoryItem(IssueCategory.ROADS, "Roads", Icons.Default.AddRoad),
+        QuickCategoryItem(IssueCategory.SANITATION, "Sanitation", Icons.Default.CleaningServices),
+        QuickCategoryItem(IssueCategory.SAFETY, "Security", Icons.Default.Security),
+        QuickCategoryItem(IssueCategory.BUILDINGS, "Buildings", Icons.Default.Domain),
+        QuickCategoryItem(IssueCategory.INTERNET, "Internet", Icons.Default.Wifi),
+        QuickCategoryItem(IssueCategory.WASTE, "Waste", Icons.Default.Delete),
+        QuickCategoryItem(IssueCategory.OTHER, "Other", Icons.Default.MoreHoriz)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.Start
+    ) {
+        // Scope Header
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "CAMPUS SCOPE",
+                fontSize = 11.sp,
+                color = AppColorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+        ) {
+            universities.forEach { (id, name) ->
+                val isSelected = viewModel.selectedUniversityId == id
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        viewModel.selectedUniversityId = id
+                        viewModel.selectedUniversityName = name
+                    },
+                    label = {
+                        Text(
+                            name,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) Color.White else Color.LightGray
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = AppColorScheme.primary,
+                        containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        // 1. WHAT IS WRONG?
+        Text(
+            text = "1. WHAT IS WRONG?",
+            fontSize = 12.sp,
+            color = AppColorScheme.primary,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-        Button(
-            onClick = { viewModel.nextStep() },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            enabled = viewModel.issueLocation != null
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp)
         ) {
-            Text("Next: Review")
-        }
-
-        TextButton(onClick = { viewModel.prevStep() }, modifier = Modifier.fillMaxWidth()) {
-            Text("Back", color = Color.Gray)
-        }
-    }
-}
-
-@Composable
-fun PriorityStep(viewModel: CommunityReportViewModel) {
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-        Text("Report Severity", style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
-        Text("How urgent is this problem?", color = Color.Gray, modifier = Modifier.padding(bottom = 24.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PriorityChip(IssuePriority.LOW, viewModel.userPriority == IssuePriority.LOW, Modifier.weight(1f)) { viewModel.userPriority = it }
-            PriorityChip(IssuePriority.MEDIUM, viewModel.userPriority == IssuePriority.MEDIUM, Modifier.weight(1f)) { viewModel.userPriority = it }
-            PriorityChip(IssuePriority.HIGH, viewModel.userPriority == IssuePriority.HIGH, Modifier.weight(1f)) { viewModel.userPriority = it }
-            PriorityChip(IssuePriority.CRITICAL, viewModel.userPriority == IssuePriority.CRITICAL, Modifier.weight(1f)) { viewModel.userPriority = it }
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        Button(
-            onClick = { viewModel.submitReport(); viewModel.nextStep() },
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = RoundedCornerShape(16.dp),
-            enabled = !viewModel.isSubmitting
-        ) {
-            if (viewModel.isSubmitting) {
-                CircularProgressIndicator(color = Color.White)
-            } else {
-                Text("SUBMIT REPORT", fontWeight = FontWeight.Black, fontSize = 18.sp)
+            items(quickCategories) { item ->
+                val isSelected = viewModel.selectedCategory == item.category
+                QuickCategoryTile(
+                    label = item.label,
+                    icon = item.icon,
+                    isSelected = isSelected,
+                    onClick = { viewModel.selectedCategory = item.category }
+                )
             }
         }
 
-        TextButton(onClick = { viewModel.prevStep() }, modifier = Modifier.fillMaxWidth()) {
-            Text("Back", color = Color.Gray)
-        }
-    }
-}
+        Spacer(Modifier.height(20.dp))
 
-@Composable
-fun PriorityChip(priority: IssuePriority, isSelected: Boolean, modifier: Modifier = Modifier, onClick: (IssuePriority) -> Unit) {
-    val color = when(priority) {
-        IssuePriority.LOW -> Color(0xFF4CAF50)
-        IssuePriority.MEDIUM -> Color(0xFFFFC107)
-        IssuePriority.HIGH -> Color(0xFFFF9800)
-        IssuePriority.CRITICAL -> Color(0xFFF44336)
-    }
+        // 2. WHERE IS IT?
+        Text(
+            text = "2. WHERE IS IT?",
+            fontSize = 12.sp,
+            color = AppColorScheme.primary,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-    Surface(
-        onClick = { onClick(priority) },
-        modifier = modifier.height(48.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) color else color.copy(alpha = 0.1f),
-        border = if (isSelected) BorderStroke(2.dp, Color.White) else BorderStroke(1.dp, color.copy(alpha = 0.5f))
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(priority.name, color = if (isSelected) Color.White else color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun DuplicateDetectionDialog(onSupport: () -> Unit, onContinue: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onContinue,
-        title = { Text("SIMILAR ISSUE FOUND", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary) },
-        text = {
-            Column {
-                Text("A similar issue has already been reported 35 meters from this location.")
-                Spacer(Modifier.height(16.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                    shape = RoundedCornerShape(12.dp)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = AppColorScheme.surfaceVariant.copy(alpha = 0.4f),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.WaterDrop, contentDescription = null, tint = Color(0xFF00E5FF))
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text("Burst Water Pipe", fontWeight = FontWeight.Bold, color = Color.White)
-                            Text("Reported 2 hours ago", fontSize = 10.sp, color = Color.Gray)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Place,
+                            contentDescription = null,
+                            tint = AppColorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = if (viewModel.issueLocation != null)
+                                "Lat: ${((viewModel.issueLocation!!.latitude * 10000).toLong() / 10000.0)}, Lng: ${((viewModel.issueLocation!!.longitude * 10000).toLong() / 10000.0)}"
+                            else "No location selected",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    if (viewModel.issueLocation != null) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF4CAF50).copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                "Confirmed",
+                                color = Color(0xFF4CAF50),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
                         }
                     }
                 }
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            viewModel.isFetchingCurrentLocation = true
+                            getCurrentUserLocation { lat, lng ->
+                                viewModel.onLocationSelected(lat, lng, "CURRENT_LOCATION")
+                                viewModel.isFetchingCurrentLocation = false
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        if (viewModel.isFetchingCurrentLocation) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                        } else {
+                            Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Use Current Location", fontSize = 11.sp, color = Color.White)
+                        }
+                    }
+
+                    Button(
+                        onClick = { viewModel.showMapPicker = true },
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary.copy(alpha = 0.8f)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Map, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Pick on Map", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
-        },
-        confirmButton = {
-            Button(onClick = onSupport) {
-                Text("SUPPORT EXISTING REPORT")
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // 3. DESCRIBE THE PROBLEM
+        Text(
+            text = "3. DESCRIBE THE PROBLEM",
+            fontSize = 12.sp,
+            color = AppColorScheme.primary,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        OutlinedTextField(
+            value = viewModel.description,
+            onValueChange = { viewModel.description = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("e.g. Water is leaking outside the library", color = Color.Gray) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = AppColorScheme.primary,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+            ),
+            shape = RoundedCornerShape(16.dp),
+            minLines = 2,
+            maxLines = 4
+        )
+
+        if (viewModel.derivedTitle.isNotBlank()) {
+            Text(
+                text = "Suggested Title: ${viewModel.derivedTitle}",
+                fontSize = 11.sp,
+                color = Color.LightGray,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // 4. URGENCY
+        Text(
+            text = "4. URGENCY",
+            fontSize = 12.sp,
+            color = AppColorScheme.primary,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            listOf("LOW", "NORMAL", "HIGH", "EMERGENCY").forEach { level ->
+                val isSelected = viewModel.urgency == level
+                val activeColor = when (level) {
+                    "EMERGENCY" -> Color(0xFFDC2626)
+                    "HIGH" -> Color(0xFFEA580C)
+                    "NORMAL" -> AppColorScheme.primary
+                    else -> Color(0xFF4B5563)
+                }
+
+                Surface(
+                    onClick = { viewModel.urgency = level },
+                    modifier = Modifier.weight(1f).height(42.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isSelected) activeColor else activeColor.copy(alpha = 0.15f),
+                    border = if (isSelected) BorderStroke(2.dp, Color.White) else BorderStroke(1.dp, activeColor.copy(alpha = 0.3f))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(level, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onContinue) {
-                Text("CREATE NEW REPORT", color = Color.Gray)
+        }
+
+        if (viewModel.urgency == "EMERGENCY") {
+            Spacer(Modifier.height(8.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFDC2626).copy(alpha = 0.15f),
+                border = BorderStroke(1.dp, Color(0xFFDC2626).copy(alpha = 0.4f))
+            ) {
+                Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "CAMPNAV is an issue tracking tool. For active danger, fire, or crimes in progress, contact campus security directly.",
+                        fontSize = 10.sp,
+                        color = Color.White,
+                        lineHeight = 14.sp
+                    )
+                }
             }
-        },
-        containerColor = AppColorScheme.surface,
-        shape = RoundedCornerShape(24.dp)
-    )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // 5. ADD DETAILS (OPTIONAL) ACCORDION (PLACED ABOVE SUBMIT BUTTON)
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = AppColorScheme.surfaceVariant.copy(alpha = 0.3f),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.showOptionalDetails = !viewModel.showOptionalDetails },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Add details (optional)",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.LightGray,
+                        fontSize = 13.sp
+                    )
+                    Icon(
+                        if (viewModel.showOptionalDetails) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = "Toggle optional details",
+                        tint = Color.LightGray
+                    )
+                }
+
+                if (viewModel.showOptionalDetails) {
+                    Spacer(Modifier.height(16.dp))
+
+                    Text("ATTACH PHOTOS", fontSize = 11.sp, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+
+                    CommunityMediaPicker(
+                        onMediaCaptured = { viewModel.addEvidence(it) }
+                    ) { captureImage, pickGallery ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(
+                                onClick = captureImage,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f))
+                            ) {
+                                Icon(Icons.Default.CameraAlt, contentDescription = null, tint = Color.White)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Camera", color = Color.White, fontSize = 12.sp)
+                            }
+                            Button(
+                                onClick = pickGallery,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f))
+                            ) {
+                                Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = Color.White)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Gallery", color = Color.White, fontSize = 12.sp)
+                            }
+                        }
+                    }
+
+                    if (viewModel.evidenceUris.isNotEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(viewModel.evidenceUris) { uri ->
+                                Box(modifier = Modifier.size(70.dp).clip(RoundedCornerShape(10.dp))) {
+                                    AsyncImage(
+                                        model = uri,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    IconButton(
+                                        onClick = { viewModel.removeEvidence(uri) },
+                                        modifier = Modifier.align(Alignment.TopEnd).size(22.dp).background(Color.Black.copy(alpha = 0.6f))
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Text("PRECISE LOCATION / BUILDING NOTE", fontSize = 11.sp, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
+                    OutlinedTextField(
+                        value = viewModel.detailedLocationNote,
+                        onValueChange = { viewModel.detailedLocationNote = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        placeholder = { Text("e.g. 2nd floor near Room 204", color = Color.Gray) },
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                        singleLine = true
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Text("REPORTER INFORMATION", fontSize = 11.sp, color = AppColorScheme.primary, fontWeight = FontWeight.Bold)
+
+                    OutlinedTextField(
+                        value = viewModel.reporterName,
+                        onValueChange = { viewModel.reporterName = it },
+                        label = { Text("Your name *", color = Color.LightGray) },
+                        placeholder = { Text("Enter your full name", color = Color.Gray) },
+                        singleLine = true,
+                        isError = viewModel.reporterName.isNotEmpty() && viewModel.reporterName.trim().isEmpty(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = AppColorScheme.primary,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                            errorBorderColor = Color(0xFFEF4444)
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = viewModel.reporterEmail,
+                        onValueChange = { viewModel.reporterEmail = it },
+                        label = { Text("Email (optional)", color = Color.LightGray) },
+                        placeholder = { Text("Enter email for status updates (optional)", color = Color.Gray) },
+                        singleLine = true,
+                        isError = !viewModel.isEmailValid,
+                        supportingText = {
+                            if (!viewModel.isEmailValid) {
+                                Text("Invalid email format (or leave blank)", color = Color(0xFFEF4444), fontSize = 10.sp)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = AppColorScheme.primary,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                            errorBorderColor = Color(0xFFEF4444)
+                        )
+                    )
+                }
+            }
+        }
+
+        // Error message & Retry banner if submission failed
+        viewModel.submissionError?.let { err ->
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFD32F2F).copy(alpha = 0.2f),
+                border = BorderStroke(1.dp, Color(0xFFD32F2F))
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(err, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { viewModel.retrySubmit() }) {
+                        Text("RETRY", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+
+        // 6. SUBMIT REPORT BUTTON
+        Button(
+            onClick = { viewModel.submitReport() },
+            modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 24.dp),
+            shape = RoundedCornerShape(16.dp),
+            enabled = viewModel.isFormValid && !viewModel.isSubmitting,
+            colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
+        ) {
+            if (viewModel.isSubmitting) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+            } else {
+                Text("Submit Report", fontWeight = FontWeight.Black, fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+data class QuickCategoryItem(
+    val category: IssueCategory,
+    val label: String,
+    val icon: ImageVector
+)
+
+@Composable
+fun QuickCategoryTile(
+    label: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(78.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) AppColorScheme.primary else AppColorScheme.surfaceVariant.copy(alpha = 0.4f),
+        border = if (isSelected) BorderStroke(2.dp, Color.White) else BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(6.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (isSelected) Color.White else AppColorScheme.secondary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
 }
 
 @Composable
-fun SuccessStep(viewModel: CommunityReportViewModel, onBack: () -> Unit) {
+fun QuickReportSuccessView(
+    viewModel: CommunityReportViewModel,
+    onDone: () -> Unit
+) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Surface(
-            modifier = Modifier.size(120.dp),
+            modifier = Modifier.size(88.dp),
             shape = CircleShape,
-            color = Color(0xFF4CAF50).copy(alpha = 0.1f)
+            color = Color(0xFF10B981).copy(alpha = 0.15f)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text("✅", fontSize = 64.sp)
+                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(56.dp))
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            "Report Submitted",
+            style = MaterialTheme.typography.headlineMedium,
+            color = Color.White,
+            fontWeight = FontWeight.Black
+        )
+
+        Text(
+            "Your report is saved in CAMPNAV database.",
+            color = Color.Gray,
+            fontSize = 13.sp,
+            modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
+        )
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.6f)),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(1.dp, AppColorScheme.primary.copy(alpha = 0.3f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("TRACKING REFERENCE", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    viewModel.submissionResult ?: "CAM-20261012-00101",
+                    fontWeight = FontWeight.Black,
+                    color = AppColorScheme.primary,
+                    fontSize = 22.sp
+                )
+
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 12.dp))
+
+                Text(
+                    "Summary: ${viewModel.selectedCategory?.displayName ?: "Campus Issue"}",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+                Text(
+                    viewModel.derivedTitle.ifBlank { viewModel.description },
+                    color = Color.LightGray,
+                    fontSize = 12.sp,
+                    maxLines = 2,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Mail, contentDescription = null, tint = AppColorScheme.secondary, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (viewModel.routingResult == "ASSIGNED_TO_LEADER")
+                            "Notification queued for University Student Leader"
+                        else
+                            "Report saved in CAMPNAV; queued for Student Leader assignment",
+                        fontSize = 11.sp,
+                        color = Color.White
+                    )
+                }
             }
         }
 
         Spacer(Modifier.height(32.dp))
-        Text("Report Submitted!", style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Black)
-        Text(
-            "Your report has been received and is being processed.",
-            textAlign = TextAlign.Center,
-            color = Color.Gray,
-            modifier = Modifier.padding(top = 16.dp)
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surface),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Issue ID", fontSize = 12.sp, color = Color.Gray)
-                Text(viewModel.submissionResult ?: "", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary, fontSize = 20.sp)
-            }
-        }
-
-        Spacer(Modifier.height(48.dp))
 
         Button(
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp)
+            onClick = onDone,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
         ) {
-            Text("Done")
+            Text("View Report / Done", fontWeight = FontWeight.Bold)
         }
-    }
-}
 
-@Composable
-fun StepProgressIndicator(currentStep: Int, totalSteps: Int, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        repeat(totalSteps) { index ->
-            val step = index + 1
-            Box(
-                modifier = Modifier
-                    .width(40.dp)
-                    .height(6.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (step <= currentStep) MaterialTheme.colorScheme.primary
-                        else Color.Gray.copy(alpha = 0.3f)
-                    )
-            )
+        Spacer(Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = { viewModel.resetForm() },
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
+        ) {
+            Text("Report Another Issue", color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }

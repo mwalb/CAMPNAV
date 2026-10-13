@@ -27,12 +27,13 @@ fun CommunityHubScreen(
     onNavigateToReviews: () -> Unit,
     onNavigateToFeedback: () -> Unit,
     onNavigateToContact: () -> Unit,
+    onNavigateToLeader: () -> Unit = {},
     onNavigateToAdmin: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColorScheme.background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -45,25 +46,25 @@ fun CommunityHubScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 Spacer(Modifier.width(8.dp))
                 Column {
                     Text(
                         text = "Community Hub",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Explore reviews, share feedback & suggest locations",
+                        text = "Explore reviews, share feedback & leader portal",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = AppColorScheme.primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
 
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -101,6 +102,16 @@ fun CommunityHubScreen(
 
                 item {
                     CommunityCard(
+                        title = "University Student Leader Portal",
+                        subtitle = "Designated student leader login & resolution dashboard",
+                        icon = Icons.Default.Groups,
+                        color = Color(0xFF10B981),
+                        onClick = onNavigateToLeader
+                    )
+                }
+
+                item {
+                    CommunityCard(
                         title = "Contact Us",
                         subtitle = "Get in touch with CAMPNAV support (0745596995)",
                         icon = Icons.Default.Phone,
@@ -111,7 +122,7 @@ fun CommunityHubScreen(
 
                 item {
                     CommunityCard(
-                        title = "Admin",
+                        title = "Admin Portal",
                         subtitle = "Authorized administrator access",
                         icon = Icons.Default.AdminPanelSettings,
                         color = Color(0xFFFFB74D),
@@ -137,7 +148,7 @@ fun CommunityCard(
             .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.6f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -168,21 +179,21 @@ fun CommunityCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
-                tint = Color.Gray
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
