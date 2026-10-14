@@ -161,7 +161,7 @@ INSERT INTO campus_location (university_id, category_id, name, official_name, al
 (4, 42, 'Kididimo Magengeni', 'Kididimo Magengeni Landmark Area', 'Kididimo', 'SUA-KIDIDIMO', 'Geographical campus landmark near Kididimo', -6.860762, 37.654661, 'VERIFIED', true),
 (4, 42, 'SUA Bridge', 'SUA Main Access Stream Bridge', 'Campus Bridge', 'SUA-BRIDGE', 'Bridge across campus stream', -6.847997, 37.663672, 'VERIFIED', true);
 
--- SYNC SEQUENCES FOR H2 / POSTGRESQL
-ALTER TABLE university ALTER COLUMN id RESTART WITH 10;
-ALTER TABLE campus ALTER COLUMN id RESTART WITH 10;
-ALTER TABLE category ALTER COLUMN id RESTART WITH 60;
+-- SYNC SEQUENCES FOR POSTGRESQL
+ALTER SEQUENCE university_id_seq RESTART WITH 10;
+ALTER SEQUENCE campus_id_seq RESTART WITH 10;
+ALTER SEQUENCE category_id_seq RESTART WITH 60;

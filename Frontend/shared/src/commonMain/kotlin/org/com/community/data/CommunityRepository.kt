@@ -186,9 +186,10 @@ class CommunityRepository {
 
     suspend fun getLeaderAssignedIssues(token: String): List<IssueReport> {
         return try {
-            apiClient.get("/api/leader/issues") {
+            val dtos: List<IssueReportResponse> = apiClient.get("/api/leader/issues") {
                 header(HttpHeaders.Authorization, "Bearer $token")
             }.body()
+            dtos.map { it.toDomain() }
         } catch (e: Exception) {
             emptyList()
         }
@@ -196,9 +197,10 @@ class CommunityRepository {
 
     suspend fun leaderAcknowledgeReport(token: String, externalId: String): IssueReport? {
         return try {
-            apiClient.post("/api/leader/issues/$externalId/acknowledge") {
+            val dto: IssueReportResponse = apiClient.post("/api/leader/issues/$externalId/acknowledge") {
                 header(HttpHeaders.Authorization, "Bearer $token")
             }.body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }
@@ -218,10 +220,11 @@ class CommunityRepository {
 
     suspend fun leaderResolveReport(token: String, externalId: String, resolution: String, afterImage: String?): IssueReport? {
         return try {
-            apiClient.post("/api/leader/issues/$externalId/resolve") {
+            val dto: IssueReportResponse = apiClient.post("/api/leader/issues/$externalId/resolve") {
                 header(HttpHeaders.Authorization, "Bearer $token")
                 setBody(LeaderResolveRequestDTO(resolution, afterImage))
             }.body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }
@@ -281,12 +284,13 @@ class CommunityRepository {
     }
 
     // --- Issue reports ---
-    suspend fun createReport(report: IssueReport): IssueReport {
+    suspend fun createReport(request: CreateIssueReportRequest): IssueReport {
         val response = apiClient.post("/api/community/reports") {
-            setBody(report)
+            setBody(request)
         }
         if (response.status.isSuccess()) {
-            return response.body()
+            val dto: IssueReportResponse = response.body()
+            return dto.toDomain()
         } else {
             val errorText = try { response.bodyAsText() } catch (e: Exception) { "Unknown server error" }
             throw Exception("Server returned ${response.status.value}: $errorText")
@@ -295,7 +299,17 @@ class CommunityRepository {
 
     suspend fun getAllReports(): List<IssueReport> {
         return try {
-            apiClient.get("/api/community/reports").body()
+            val dtos: List<IssueReportResponse> = apiClient.get("/api/community/reports").body()
+            dtos.map { it.toDomain() }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getReportsByUniversity(universityId: Long): List<IssueReport> {
+        return try {
+            val dtos: List<IssueReportResponse> = apiClient.get("/api/universities/$universityId/reports").body()
+            dtos.map { it.toDomain() }
         } catch (e: Exception) {
             emptyList()
         }
@@ -303,11 +317,12 @@ class CommunityRepository {
 
     suspend fun getNearbyIssues(lat: Double, lng: Double, radius: Double = 2.0): List<IssueReport> {
         return try {
-            apiClient.get("/api/community/reports/nearby") {
+            val dtos: List<IssueReportResponse> = apiClient.get("/api/community/reports/nearby") {
                 parameter("lat", lat)
                 parameter("lng", lng)
                 parameter("radius", radius)
             }.body()
+            dtos.map { it.toDomain() }
         } catch (e: Exception) {
             emptyList()
         }
@@ -315,7 +330,8 @@ class CommunityRepository {
 
     suspend fun trackReport(externalId: String): IssueReport? {
         return try {
-            apiClient.get("/api/community/reports/track/$externalId").body()
+            val dto: IssueReportResponse = apiClient.get("/api/community/reports/track/$externalId").body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }
@@ -323,7 +339,8 @@ class CommunityRepository {
 
     suspend fun getIssueDetails(issueId: String): IssueReport? {
         return try {
-            apiClient.get("/api/community/reports/$issueId").body()
+            val dto: IssueReportResponse = apiClient.get("/api/community/reports/$issueId").body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }
@@ -331,7 +348,8 @@ class CommunityRepository {
 
     suspend fun confirmIssue(externalId: String): IssueReport? {
         return try {
-            apiClient.post("/api/community/reports/$externalId/confirm").body()
+            val dto: IssueReportResponse = apiClient.post("/api/community/reports/$externalId/confirm").body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }
@@ -339,9 +357,10 @@ class CommunityRepository {
 
     suspend fun verifyIssue(externalId: String, resolved: Boolean): IssueReport? {
         return try {
-            apiClient.post("/api/community/reports/$externalId/verify") {
+            val dto: IssueReportResponse = apiClient.post("/api/community/reports/$externalId/verify") {
                 parameter("resolved", resolved)
             }.body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }
@@ -350,9 +369,10 @@ class CommunityRepository {
     // --- Admin Issue Management ---
     suspend fun getAdminIssues(token: String): List<IssueReport> {
         return try {
-            apiClient.get("/api/admin/issues") {
+            val dtos: List<IssueReportResponse> = apiClient.get("/api/admin/issues") {
                 header(HttpHeaders.Authorization, "Bearer $token")
             }.body()
+            dtos.map { it.toDomain() }
         } catch (e: Exception) {
             emptyList()
         }
@@ -381,7 +401,7 @@ class CommunityRepository {
 
     suspend fun adminUpdateStatus(token: String, externalId: String, status: String, message: String, internalNotes: String?, publicResponse: String?): IssueReport? {
         return try {
-            apiClient.post("/api/admin/issues/$externalId/status") {
+            val dto: IssueReportResponse = apiClient.post("/api/admin/issues/$externalId/status") {
                 header(HttpHeaders.Authorization, "Bearer $token")
                 setBody(mapOf(
                     "status" to status,
@@ -390,6 +410,7 @@ class CommunityRepository {
                     "publicResponse" to (publicResponse ?: "")
                 ))
             }.body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }
@@ -397,10 +418,11 @@ class CommunityRepository {
 
     suspend fun adminAssignIssue(token: String, externalId: String, departmentId: Long): IssueReport? {
         return try {
-            apiClient.post("/api/admin/issues/$externalId/assign") {
+            val dto: IssueReportResponse = apiClient.post("/api/admin/issues/$externalId/assign") {
                 header(HttpHeaders.Authorization, "Bearer $token")
                 setBody(mapOf("departmentId" to departmentId))
             }.body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }
@@ -408,10 +430,11 @@ class CommunityRepository {
 
     suspend fun adminResolveIssue(token: String, externalId: String, resolutionDescription: String): IssueReport? {
         return try {
-            apiClient.post("/api/admin/issues/$externalId/resolve") {
+            val dto: IssueReportResponse = apiClient.post("/api/admin/issues/$externalId/resolve") {
                 header(HttpHeaders.Authorization, "Bearer $token")
                 setBody(mapOf("resolutionDescription" to resolutionDescription))
             }.body()
+            dto.toDomain()
         } catch (e: Exception) {
             null
         }

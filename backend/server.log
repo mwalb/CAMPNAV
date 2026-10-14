@@ -1,0 +1,181 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+2026-10-13T16:26:38.881-04:00  INFO 51938 --- [campnav-backend] [           main] c.c.backend.CampNavBackendApplication    : Starting CampNavBackendApplication v0.0.1-SNAPSHOT using Java 21.0.11-ea with PID 51938 (/home/mwalb/StudioProjects/CAMPNAV/backend/build/libs/campnav-backend-0.0.1-SNAPSHOT.jar started by mwalb in /home/mwalb/StudioProjects/CAMPNAV/backend)
+2026-10-13T16:26:38.889-04:00  INFO 51938 --- [campnav-backend] [           main] c.c.backend.CampNavBackendApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-10-13T16:27:10.131-04:00  INFO 51938 --- [campnav-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-13T16:27:10.282-04:00  INFO 51938 --- [campnav-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 140 ms. Found 15 JPA repository interfaces.
+2026-10-13T16:27:12.666-04:00  INFO 51938 --- [campnav-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-10-13T16:27:12.687-04:00  INFO 51938 --- [campnav-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-13T16:27:12.687-04:00  INFO 51938 --- [campnav-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.28]
+2026-10-13T16:27:12.728-04:00  INFO 51938 --- [campnav-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-13T16:27:12.729-04:00  INFO 51938 --- [campnav-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 33696 ms
+2026-10-13T16:27:13.242-04:00  INFO 51938 --- [campnav-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-13T16:27:14.445-04:00  INFO 51938 --- [campnav-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@42c54bad
+2026-10-13T16:27:14.446-04:00  INFO 51938 --- [campnav-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-13T16:27:14.482-04:00  INFO 51938 --- [campnav-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/campnav (PostgreSQL 17.5)
+2026-10-13T16:27:14.493-04:00  WARN 51938 --- [campnav-backend] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 17.5 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 16.
+2026-10-13T16:27:14.564-04:00  INFO 51938 --- [campnav-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 22 migrations (execution time 00:00.057s)
+2026-10-13T16:27:14.627-04:00  INFO 51938 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 24
+2026-10-13T16:27:14.630-04:00  INFO 51938 --- [campnav-backend] [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-10-13T16:27:14.791-04:00  INFO 51938 --- [campnav-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-13T16:27:14.889-04:00  INFO 51938 --- [campnav-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+2026-10-13T16:27:14.938-04:00  INFO 51938 --- [campnav-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-13T16:27:15.420-04:00  INFO 51938 --- [campnav-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-13T16:27:21.761-04:00  INFO 51938 --- [campnav-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-13T16:27:21.815-04:00  INFO 51938 --- [campnav-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-13T16:27:22.300-04:00  INFO 51938 --- [campnav-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-13T16:27:23.390-04:00  INFO 51938 --- [campnav-backend] [           main] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2026-10-13T16:27:23.424-04:00  WARN 51938 --- [campnav-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used for username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider.
+2026-10-13T16:27:23.576-04:00  WARN 51938 --- [campnav-backend] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-13T16:27:26.236-04:00  INFO 51938 --- [campnav-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-10-13T16:27:26.252-04:00  INFO 51938 --- [campnav-backend] [           main] c.c.backend.CampNavBackendApplication    : Started CampNavBackendApplication in 49.937 seconds (process running for 61.517)
+Initialized Admin account for raphaelfrank01@gmail.com
+Assigned Student Leader udsm_leader to University of Dar es Salaam
+Assigned Student Leader udom_leader to University of Dodoma
+Assigned Student Leader must_leader to Mbeya University of Science and Technology
+Assigned Student Leader sua_leader to Sokoine University of Agriculture
+2026-10-13T16:29:43.669-04:00  INFO 51938 --- [campnav-backend] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-13T16:29:43.717-04:00  INFO 51938 --- [campnav-backend] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-13T16:29:43.720-04:00  INFO 51938 --- [campnav-backend] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 3 ms
+2026-10-13T16:30:26.448-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udsm_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-50978 (University of Dar es Salaam)
+2026-10-13T16:30:26.449-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udsm_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#5] - no Session
+2026-10-13T16:30:26.593-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-50978 (University of Dar es Salaam) - Leader: UDSM Student Government Leader
+2026-10-13T16:30:26.594-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#5] - no Session
+2026-10-13T16:35:26.827-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udsm_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-50978 (University of Dar es Salaam)
+2026-10-13T16:35:26.884-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udsm_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#5] - no Session
+2026-10-13T16:35:27.106-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-50978 (University of Dar es Salaam) - Leader: UDSM Student Government Leader
+2026-10-13T16:35:27.106-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#5] - no Session
+2026-10-13T16:43:27.294-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udom_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-30107 (University of Dodoma)
+2026-10-13T16:43:27.295-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udom_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#6] - no Session
+2026-10-13T16:43:27.401-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-30107 (University of Dodoma) - Leader: UDOM Student Ministry Leader
+2026-10-13T16:43:27.402-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#6] - no Session
+2026-10-13T16:45:27.497-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udsm_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-50978 (University of Dar es Salaam)
+2026-10-13T16:45:27.498-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udsm_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#5] - no Session
+2026-10-13T16:45:27.635-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-50978 (University of Dar es Salaam) - Leader: UDSM Student Government Leader
+2026-10-13T16:45:27.635-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#5] - no Session
+2026-10-13T16:48:28.867-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udom_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-30107 (University of Dodoma)
+2026-10-13T16:48:28.867-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udom_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#6] - no Session
+2026-10-13T16:48:29.363-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-30107 (University of Dodoma) - Leader: UDOM Student Ministry Leader
+2026-10-13T16:48:29.363-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#6] - no Session
+2026-10-13T16:58:13.876-04:00  WARN 51938 --- [campnav-backend] [   scheduling-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: null
+2026-10-13T16:58:14.066-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : HikariPool-1 - Connection is not available, request timed out after 32721ms (total=0, active=0, idle=0, waiting=0)
+2026-10-13T16:59:07.483-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] o.s.s.s.TaskUtils$LoggingErrorHandler    : Unexpected error occurred in scheduled task
+
+org.springframework.dao.DataAccessResourceFailureException: Unable to acquire JDBC Connection [HikariPool-1 - Connection is not available, request timed out after 32721ms (total=0, active=0, idle=0, waiting=0)] [n/a]
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.convertHibernateAccessException(HibernateJpaDialect.java:274) ~[spring-orm-6.1.12.jar!/:6.1.12]
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.translateExceptionIfPossible(HibernateJpaDialect.java:241) ~[spring-orm-6.1.12.jar!/:6.1.12]
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.translateExceptionIfPossible(AbstractEntityManagerFactoryBean.java:550) ~[spring-orm-6.1.12.jar!/:6.1.12]
+	at org.springframework.dao.support.ChainedPersistenceExceptionTranslator.translateExceptionIfPossible(ChainedPersistenceExceptionTranslator.java:61) ~[spring-tx-6.1.12.jar!/:6.1.12]
+	at org.springframework.dao.support.DataAccessUtils.translateIfNecessary(DataAccessUtils.java:335) ~[spring-tx-6.1.12.jar!/:6.1.12]
+	at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:160) ~[spring-tx-6.1.12.jar!/:6.1.12]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke(CrudMethodMetadataPostProcessor.java:136) ~[spring-data-jpa-3.3.3.jar!/:3.3.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:97) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:223) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at jdk.proxy2/jdk.proxy2.$Proxy160.findByDeliveryStateInAndNextRetryAtBefore(Unknown Source) ~[na:na]
+	at com.campnav.backend.service.EmailNotificationService.processOutboxQueue(EmailNotificationService.java:268) ~[!/:0.0.1-SNAPSHOT]
+	at com.campnav.backend.service.EmailNotificationService.scheduledOutboxProcessor(EmailNotificationService.java:263) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:716) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at com.campnav.backend.service.EmailNotificationService$$SpringCGLIB$$0.scheduledOutboxProcessor(<generated>) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.12.jar!/:6.1.12]
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.12.jar!/:6.1.12]
+	at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.13.3.jar!/:1.13.3]
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.12.jar!/:6.1.12]
+	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.12.jar!/:6.1.12]
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+Caused by: org.hibernate.exception.JDBCConnectionException: Unable to acquire JDBC Connection [HikariPool-1 - Connection is not available, request timed out after 32721ms (total=0, active=0, idle=0, waiting=0)] [n/a]
+	at org.hibernate.exception.internal.SQLExceptionTypeDelegate.convert(SQLExceptionTypeDelegate.java:51) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:58) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:108) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:94) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquireConnectionIfNeeded(LogicalConnectionManagedImpl.java:116) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.getPhysicalConnection(LogicalConnectionManagedImpl.java:143) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl.connection(StatementPreparerImpl.java:54) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl$5.doPrepare(StatementPreparerImpl.java:153) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl$StatementPreparationTemplate.prepareStatement(StatementPreparerImpl.java:183) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl.prepareQueryStatement(StatementPreparerImpl.java:155) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.exec.spi.JdbcSelectExecutor.lambda$list$0(JdbcSelectExecutor.java:85) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess.executeQuery(DeferredResultSetAccess.java:231) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess.getResultSet(DeferredResultSetAccess.java:167) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.results.jdbc.internal.JdbcValuesResultSetImpl.advanceNext(JdbcValuesResultSetImpl.java:265) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.results.jdbc.internal.JdbcValuesResultSetImpl.processNext(JdbcValuesResultSetImpl.java:145) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.results.jdbc.internal.AbstractJdbcValues.next(AbstractJdbcValues.java:19) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.results.internal.RowProcessingStateStandardImpl.next(RowProcessingStateStandardImpl.java:67) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.results.spi.ListResultsConsumer.consume(ListResultsConsumer.java:204) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.results.spi.ListResultsConsumer.consume(ListResultsConsumer.java:33) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.doExecuteQuery(JdbcSelectExecutorStandardImpl.java:211) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.executeQuery(JdbcSelectExecutorStandardImpl.java:83) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.exec.spi.JdbcSelectExecutor.list(JdbcSelectExecutor.java:76) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.sql.exec.spi.JdbcSelectExecutor.list(JdbcSelectExecutor.java:65) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.lambda$new$2(ConcreteSqmSelectQueryPlan.java:139) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.withCacheableSqmInterpretation(ConcreteSqmSelectQueryPlan.java:382) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.performList(ConcreteSqmSelectQueryPlan.java:302) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.query.sqm.internal.QuerySqmImpl.doList(QuerySqmImpl.java:526) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.query.spi.AbstractSelectionQuery.list(AbstractSelectionQuery.java:423) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.query.Query.getResultList(Query.java:120) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.orm.jpa.SharedEntityManagerCreator$DeferredQueryInvocationHandler.invoke(SharedEntityManagerCreator.java:418) ~[spring-orm-6.1.12.jar!/:6.1.12]
+	at jdk.proxy2/jdk.proxy2.$Proxy170.getResultList(Unknown Source) ~[na:na]
+	at org.springframework.data.jpa.repository.query.JpaQueryExecution$CollectionExecution.doExecute(JpaQueryExecution.java:129) ~[spring-data-jpa-3.3.3.jar!/:3.3.3]
+	at org.springframework.data.jpa.repository.query.JpaQueryExecution.execute(JpaQueryExecution.java:92) ~[spring-data-jpa-3.3.3.jar!/:3.3.3]
+	at org.springframework.data.jpa.repository.query.AbstractJpaQuery.doExecute(AbstractJpaQuery.java:152) ~[spring-data-jpa-3.3.3.jar!/:3.3.3]
+	at org.springframework.data.jpa.repository.query.AbstractJpaQuery.execute(AbstractJpaQuery.java:140) ~[spring-data-jpa-3.3.3.jar!/:3.3.3]
+	at org.springframework.data.repository.core.support.RepositoryMethodInvoker.doInvoke(RepositoryMethodInvoker.java:170) ~[spring-data-commons-3.3.3.jar!/:3.3.3]
+	at org.springframework.data.repository.core.support.RepositoryMethodInvoker.invoke(RepositoryMethodInvoker.java:158) ~[spring-data-commons-3.3.3.jar!/:3.3.3]
+	at org.springframework.data.repository.core.support.QueryExecutorMethodInterceptor.doInvoke(QueryExecutorMethodInterceptor.java:169) ~[spring-data-commons-3.3.3.jar!/:3.3.3]
+	at org.springframework.data.repository.core.support.QueryExecutorMethodInterceptor.invoke(QueryExecutorMethodInterceptor.java:148) ~[spring-data-commons-3.3.3.jar!/:3.3.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke(DefaultMethodInvokingMethodInterceptor.java:70) ~[spring-data-commons-3.3.3.jar!/:3.3.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:379) ~[spring-tx-6.1.12.jar!/:6.1.12]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.1.12.jar!/:6.1.12]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.12.jar!/:6.1.12]
+	at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:138) ~[spring-tx-6.1.12.jar!/:6.1.12]
+	... 27 common frames omitted
+Caused by: java.sql.SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 32721ms (total=0, active=0, idle=0, waiting=0)
+	at com.zaxxer.hikari.pool.HikariPool.createTimeoutException(HikariPool.java:686) ~[HikariCP-5.1.0.jar!/:na]
+	at com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:179) ~[HikariCP-5.1.0.jar!/:na]
+	at com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:144) ~[HikariCP-5.1.0.jar!/:na]
+	at com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:127) ~[HikariCP-5.1.0.jar!/:na]
+	at org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl.getConnection(DatasourceConnectionProviderImpl.java:122) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.internal.NonContextualJdbcConnectionAccess.obtainConnection(NonContextualJdbcConnectionAccess.java:46) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquireConnectionIfNeeded(LogicalConnectionManagedImpl.java:113) ~[hibernate-core-6.5.2.Final.jar!/:6.5.2.Final]
+	... 70 common frames omitted
+
+2026-10-13T16:59:55.494-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udsm_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-53182 (University of Dar es Salaam)
+2026-10-13T16:59:55.502-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udsm_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#7] - no Session
+2026-10-13T16:59:55.608-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-53182 (University of Dar es Salaam) - Leader: UDSM Student Government Leader
+2026-10-13T16:59:55.639-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#7] - no Session
+2026-10-13T16:59:55.928-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udom_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-30107 (University of Dodoma)
+2026-10-13T16:59:55.942-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udom_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#6] - no Session
+2026-10-13T16:59:56.081-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-30107 (University of Dodoma) - Leader: UDOM Student Ministry Leader
+2026-10-13T16:59:56.082-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#6] - no Session
+2026-10-13T17:04:56.951-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udsm_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-53182 (University of Dar es Salaam)
+2026-10-13T17:04:56.961-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udsm_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#7] - no Session
+2026-10-13T17:04:57.025-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-53182 (University of Dar es Salaam) - Leader: UDSM Student Government Leader
+2026-10-13T17:04:57.026-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#7] - no Session
+2026-10-13T17:05:57.572-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: udsm_leader@campnav.org | Subject: [CAMPNAV] New Campus Issue Reported: CAM-20261013-50978 (University of Dar es Salaam)
+2026-10-13T17:05:57.607-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udsm_leader@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#5] - no Session
+2026-10-13T17:05:58.147-04:00  INFO 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : [SIMULATED EMAIL OUTBOX] To: admin@campnav.org | Subject: [CAMPNAV Admin Alert] New Report CAM-20261013-50978 (University of Dar es Salaam) - Leader: UDSM Student Government Leader
+2026-10-13T17:05:58.147-04:00 ERROR 51938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to admin@campnav.org: could not initialize proxy [com.campnav.backend.model.IssueReport#5] - no Session

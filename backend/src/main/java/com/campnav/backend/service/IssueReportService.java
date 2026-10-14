@@ -1,5 +1,7 @@
 package com.campnav.backend.service;
 
+import com.campnav.backend.dto.CreateIssueReportRequest;
+import com.campnav.backend.dto.IssueReportResponse;
 import com.campnav.backend.model.*;
 import com.campnav.backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,49 +27,98 @@ public class IssueReportService {
     private final AdminActivityLogRepository activityLogRepository;
 
     @Transactional
-    public IssueReport createReport(IssueReport report) {
-        report.setId(null); // Ensure JPA auto-generates a new primary key
+    public IssueReportResponse createReport(CreateIssueReportRequest request) {
+        // Validation
+        if (request.getReporterName() == null || request.getReporterName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Reporter name is required");
+        }
+        if (request.getDescription() == null || request.getDescription().trim().isEmpty()) {
+            throw new IllegalArgumentException("Description is required");
+        }
+        if (request.getCategory() == null || request.getCategory().trim().isEmpty()) {
+            throw new IllegalArgumentException("Category is required");
+        }
+        if (request.getLatitude() == null || request.getLongitude() == null) {
+            throw new IllegalArgumentException("Issue coordinates (latitude and longitude) are required");
+        }
+
+        if (request.getReporterEmail() != null && !request.getReporterEmail().trim().isEmpty()) {
+            String email = request.getReporterEmail().trim();
+            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                throw new IllegalArgumentException("Invalid email format");
+            }
+        }
+
+        IssueReport report = new IssueReport();
 
         // 1. Generate Unique External ID in format CAM-YYYYMMDD-XXXXX
         String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String externalId = "CAM-" + dateStr + "-" + String.format("%05d", (int)(Math.random() * 90000) + 10000);
         report.setExternalId(externalId);
 
-        // Reporter Identity Validation: Name is REQUIRED, Email is OPTIONAL
-        if (report.getReporterName() == null || report.getReporterName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Reporter name is required");
-        }
-        report.setReporterName(report.getReporterName().trim());
+        report.setReporterName(request.getReporterName().trim());
+        report.setReporterEmail(request.getReporterEmail() != null && !request.getReporterEmail().trim().isEmpty() ? request.getReporterEmail().trim() : null);
+        report.setReporterPhone(request.getReporterPhone() != null && !request.getReporterPhone().trim().isEmpty() ? request.getReporterPhone().trim() : null);
+        
+        report.setCategory(request.getCategory().trim().toUpperCase());
+        report.setSubCategory(request.getSubCategory());
+        report.setDescription(request.getDescription().trim());
+        
+        report.setLatitude(request.getLatitude());
+        report.setLongitude(request.getLongitude());
+        report.setCampusName(request.getCampusName() != null ? request.getCampusName() : "Main Campus");
 
-        if (report.getReporterEmail() != null && !report.getReporterEmail().trim().isEmpty()) {
-            String email = report.getReporterEmail().trim();
-            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                throw new IllegalArgumentException("Invalid email format");
+        report.setAddress(request.getAddress());
+        report.setStreet(request.getStreet());
+        report.setWard(request.getWard());
+        report.setDistrict(request.getDistrict());
+        report.setRegion(request.getRegion());
+        report.setNearbyLandmark(request.getNearbyLandmark());
+
+        report.setReporterLatitude(request.getReporterLatitude());
+        report.setReporterLongitude(request.getReporterLongitude());
+        report.setLocationAccuracy(request.getLocationAccuracy());
+        report.setLocationSource(request.getLocationSource() != null ? request.getLocationSource() : "CURRENT_LOCATION");
+        
+        report.setEvidenceUrls(request.getEvidenceUrls() != null ? request.getEvidenceUrls() : new ArrayList<>());
+        report.setIsEmergency(Boolean.TRUE.equals(request.getIsEmergency()) || "EMERGENCY".equalsIgnoreCase(request.getUrgency()));
+
+        // Urgency and Priority mapping
+        if (request.getUrgency() != null) {
+            try {
+                report.setUrgency(IssueReport.UrgencyLevel.valueOf(request.getUrgency().toUpperCase()));
+            } catch (Exception e) {
+                report.setUrgency(IssueReport.UrgencyLevel.NORMAL);
             }
-            report.setReporterEmail(email);
         } else {
-            report.setReporterEmail(null);
+            report.setUrgency(IssueReport.UrgencyLevel.NORMAL);
         }
 
-        if (report.getStatus() == null) {
-            report.setStatus(IssueReport.IssueStatus.SUBMITTED);
+        if (request.getUserSeverity() != null) {
+            try {
+                report.setUserSeverity(IssueReport.IssuePriority.valueOf(request.getUserSeverity().toUpperCase()));
+            } catch (Exception e) {
+                report.setUserSeverity(IssueReport.IssuePriority.MEDIUM);
+            }
+        } else {
+            report.setUserSeverity(IssueReport.IssuePriority.MEDIUM);
         }
 
-        // 2. Attach University Entity if ID provided
-        if (report.getUniversity() != null && report.getUniversity().getId() != null) {
-            universityRepository.findById(report.getUniversity().getId()).ifPresent(report::setUniversity);
-        } else if (report.getUniversity() == null) {
-            // Default to first university (e.g. UDSM) if unassigned
-            universityRepository.findAll().stream().findFirst().ifPresent(report::setUniversity);
+        report.setStatus(IssueReport.IssueStatus.SUBMITTED);
+
+        // 2. Attach University Entity and Validate
+        if (request.getUniversityId() != null) {
+            University university = universityRepository.findById(request.getUniversityId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid or nonexistent university ID: " + request.getUniversityId()));
+            report.setUniversity(university);
+        } else {
+            University defaultUniversity = universityRepository.findAll().stream().findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("No default university configured in system"));
+            report.setUniversity(defaultUniversity);
         }
 
         // 3. Automated Priority & Impact Score Calculation
-        if (report.getUserSeverity() != null) {
-            report.setCalculatedPriority(calculatePriority(report));
-        } else {
-            report.setUserSeverity(IssueReport.IssuePriority.MEDIUM);
-            report.setCalculatedPriority(IssueReport.IssuePriority.MEDIUM);
-        }
+        report.setCalculatedPriority(calculatePriority(report));
         report.setImpactScore(calculateImpactScore(report));
 
         // 4. Automated Department Assignment
@@ -102,35 +154,75 @@ public class IssueReportService {
         report.setTimestamp(LocalDateTime.now());
         report.setUpdatedAt(LocalDateTime.now());
 
-        // Ensure valid default coordinates
-        if (report.getLatitude() == null) report.setLatitude(-6.780543);
-        if (report.getLongitude() == null) report.setLongitude(39.204593);
-
         IssueReport saved = reportRepository.save(report);
 
         // 7. Queue Dual Notifications (Leader AND Admin)
-        if (saved.getAssignedLeader() != null) {
-            emailNotificationService.queueNewReportLeaderNotification(saved, saved.getAssignedLeader());
-            emailNotificationService.queueNewReportAdminNotification(saved);
-        } else {
-            emailNotificationService.queueMissingLeaderAdminNotification(saved);
+        try {
+            if (saved.getAssignedLeader() != null) {
+                emailNotificationService.queueNewReportLeaderNotification(saved, saved.getAssignedLeader());
+                emailNotificationService.queueNewReportAdminNotification(saved);
+            } else {
+                emailNotificationService.queueMissingLeaderAdminNotification(saved);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to queue notification for saved report {}: {}", saved.getExternalId(), e.getMessage());
         }
 
         // Log Activity
-        AdminActivityLog logEvent = AdminActivityLog.builder()
-                .action("ISSUE_CREATED")
-                .actorUsername(saved.getReporter() != null ? saved.getReporter().getUsername() : "citizen")
-                .description("New issue reported: " + saved.getExternalId() + " (" + saved.getCategory() + ") at " + (saved.getUniversity() != null ? saved.getUniversity().getName() : "Campus"))
-                .relatedEntityId(saved.getExternalId())
-                .build();
-        activityLogRepository.save(logEvent);
+        try {
+            AdminActivityLog logEvent = AdminActivityLog.builder()
+                    .action("ISSUE_CREATED")
+                    .actorUsername(saved.getReporter() != null ? saved.getReporter().getUsername() : "citizen")
+                    .description("New issue reported: " + saved.getExternalId() + " (" + saved.getCategory() + ") at " + (saved.getUniversity() != null ? saved.getUniversity().getName() : "Campus"))
+                    .relatedEntityId(saved.getExternalId())
+                    .build();
+            activityLogRepository.save(logEvent);
+        } catch (Exception e) {
+            log.warn("Failed to log activity for issue {}: {}", saved.getExternalId(), e.getMessage());
+        }
 
-        return saved;
+        return mapToResponse(saved);
+    }
+
+    public List<IssueReportResponse> getAllReports() {
+        return reportRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<IssueReportResponse> getReportsByUniversity(Long universityId) {
+        if (universityId == null || !universityRepository.existsById(universityId)) {
+            throw new IllegalArgumentException("Invalid or nonexistent university ID: " + universityId);
+        }
+        return reportRepository.findByUniversityId(universityId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<IssueReport> getAllReportEntities() {
+        return reportRepository.findAll();
+    }
+
+    public List<IssueReportResponse> getNearbyIssues(Double lat, Double lng, Double radiusKm) {
+        return reportRepository.findNearbyIssues(lat, lng, radiusKm).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public IssueReportResponse getReportByExternalId(String externalId) {
+        IssueReport report = reportRepository.findByExternalId(externalId)
+                .orElseThrow(() -> new RuntimeException("Issue not found with ID: " + externalId));
+        return mapToResponse(report);
+    }
+
+    public IssueReport getReportEntityByExternalId(String externalId) {
+        return reportRepository.findByExternalId(externalId)
+                .orElseThrow(() -> new RuntimeException("Issue not found with ID: " + externalId));
     }
 
     @Transactional
     public EmailNotification resendLeaderNotificationByAdmin(String externalId, String adminUsername) {
-        IssueReport report = getReportByExternalId(externalId);
+        IssueReport report = getReportEntityByExternalId(externalId);
         CommunityUser leader = report.getAssignedLeader();
         if (leader == null && report.getUniversity() != null) {
             leader = studentLeaderService.getActiveLeaderForUniversity(report.getUniversity().getId()).orElse(null);
@@ -159,7 +251,7 @@ public class IssueReportService {
 
     @Transactional
     public IssueReport acknowledgeReportByLeader(String externalId, String leaderUsername) {
-        IssueReport report = getReportByExternalId(externalId);
+        IssueReport report = getReportEntityByExternalId(externalId);
         report.setRoutingStatus(IssueReport.RoutingStatus.LEADER_ACKNOWLEDGED);
         report.setStatus(IssueReport.IssueStatus.UNDER_REVIEW);
         report.setUpdatedAt(LocalDateTime.now());
@@ -188,12 +280,9 @@ public class IssueReportService {
     @Transactional
     public UniversityOfficeReferral referReportToUniversityOffice(
             String externalId, String officeName, String officeContact, String channel, LocalDateTime followUpDate, String leaderUsername) {
-        IssueReport report = getReportByExternalId(externalId);
+        IssueReport report = getReportEntityByExternalId(externalId);
 
         CommunityUser leader = report.getAssignedLeader();
-        if (leader == null && leaderUsername != null) {
-            // fallback
-        }
 
         UniversityOfficeReferral referral = UniversityOfficeReferral.builder()
                 .report(report)
@@ -235,7 +324,7 @@ public class IssueReportService {
 
     @Transactional
     public IssueReport leaderResolveReport(String externalId, String resolutionDescription, String afterImageUrl, String leaderUsername) {
-        IssueReport report = getReportByExternalId(externalId);
+        IssueReport report = getReportEntityByExternalId(externalId);
         report.setStatus(IssueReport.IssueStatus.RESOLVED);
         report.setPublicResponse(resolutionDescription);
         if (afterImageUrl != null) report.setAfterImageUrl(afterImageUrl);
@@ -260,6 +349,130 @@ public class IssueReportService {
         }
 
         return saved;
+    }
+
+    @Transactional
+    public IssueReportResponse confirmIssue(String externalId) {
+        IssueReport report = getReportEntityByExternalId(externalId);
+        report.setSupportsCount((report.getSupportsCount() != null ? report.getSupportsCount() : 0) + 1);
+        report.setUpdatedAt(LocalDateTime.now());
+        IssueReport saved = reportRepository.save(report);
+        return mapToResponse(saved);
+    }
+
+    @Transactional
+    public IssueReportResponse verifyResolution(String externalId, boolean resolved, String username) {
+        IssueReport report = getReportEntityByExternalId(externalId);
+        String message = resolved ? "Community verified the resolution." : "Resident reported issue still exists.";
+        IssueReport.IssueStatus status = resolved ? IssueReport.IssueStatus.COMMUNITY_VERIFIED : IssueReport.IssueStatus.IN_PROGRESS;
+
+        report.setStatus(status);
+        report.setVerificationCount((report.getVerificationCount() != null ? report.getVerificationCount() : 0) + 1);
+        report.setUpdatedAt(LocalDateTime.now());
+
+        IssueTimeline event = IssueTimeline.builder()
+                .issue(report)
+                .status(status)
+                .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+        if (report.getTimeline() == null) report.setTimeline(new ArrayList<>());
+        report.getTimeline().add(event);
+
+        IssueReport saved = reportRepository.save(report);
+        return mapToResponse(saved);
+    }
+
+    @Transactional
+    public IssueReportResponse updateStatus(String externalId, IssueReport.IssueStatus newStatus, String message, String internalNotes, String publicResponse, String adminUsername) {
+        IssueReport report = getReportEntityByExternalId(externalId);
+
+        report.setStatus(newStatus);
+        if (internalNotes != null) report.setInternalNotes(internalNotes);
+        if (publicResponse != null) report.setPublicResponse(publicResponse);
+        report.setUpdatedAt(LocalDateTime.now());
+
+        IssueTimeline event = IssueTimeline.builder()
+                .issue(report)
+                .status(newStatus)
+                .message(message != null ? message : "Status updated to " + newStatus)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        if (report.getTimeline() == null) report.setTimeline(new ArrayList<>());
+        report.getTimeline().add(event);
+
+        IssueReport saved = reportRepository.save(report);
+        return mapToResponse(saved);
+    }
+
+    @Transactional
+    public IssueReportResponse assignIssue(String externalId, Long departmentId, String adminUsername) {
+        IssueReport report = getReportEntityByExternalId(externalId);
+        departmentRepository.findById(departmentId).ifPresent(report::setAssignedDepartment);
+        report.setStatus(IssueReport.IssueStatus.ASSIGNED);
+        report.setUpdatedAt(LocalDateTime.now());
+
+        IssueTimeline event = IssueTimeline.builder()
+                .issue(report)
+                .status(IssueReport.IssueStatus.ASSIGNED)
+                .message("Assigned to department: " + (report.getAssignedDepartment() != null ? report.getAssignedDepartment().getName() : "Department"))
+                .timestamp(LocalDateTime.now())
+                .build();
+        if (report.getTimeline() == null) report.setTimeline(new ArrayList<>());
+        report.getTimeline().add(event);
+
+        IssueReport saved = reportRepository.save(report);
+        return mapToResponse(saved);
+    }
+
+    @Transactional
+    public IssueReportResponse resolveIssue(String externalId, String resolutionDescription, String adminUsername) {
+        IssueReport report = getReportEntityByExternalId(externalId);
+        report.setStatus(IssueReport.IssueStatus.RESOLVED);
+        report.setPublicResponse(resolutionDescription);
+        report.setUpdatedAt(LocalDateTime.now());
+
+        IssueTimeline event = IssueTimeline.builder()
+                .issue(report)
+                .status(IssueReport.IssueStatus.RESOLVED)
+                .message("Issue resolved: " + resolutionDescription)
+                .timestamp(LocalDateTime.now())
+                .build();
+        if (report.getTimeline() == null) report.setTimeline(new ArrayList<>());
+        report.getTimeline().add(event);
+
+        IssueReport saved = reportRepository.save(report);
+        return mapToResponse(saved);
+    }
+
+    public Map<String, Object> getAdminStats() {
+        List<IssueReport> reports = reportRepository.findAll();
+        long total = reports.size();
+        long submitted = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.SUBMITTED).count();
+        long underReview = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.UNDER_REVIEW).count();
+        long validated = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.VERIFIED).count();
+        long assigned = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.ASSIGNED).count();
+        long inProgress = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.IN_PROGRESS).count();
+        long resolved = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.RESOLVED).count();
+        long communityVerified = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.COMMUNITY_VERIFIED).count();
+        long rejected = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.REJECTED).count();
+        long emergency = reports.stream().filter(r -> Boolean.TRUE.equals(r.getIsEmergency())).count();
+        long unassigned = reports.stream().filter(r -> r.getRoutingStatus() == IssueReport.RoutingStatus.UNASSIGNED).count();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalReports", total);
+        stats.put("submittedReports", submitted);
+        stats.put("underReviewReports", underReview);
+        stats.put("validatedReports", validated);
+        stats.put("assignedReports", assigned);
+        stats.put("inProgressReports", inProgress);
+        stats.put("resolvedReports", resolved);
+        stats.put("communityVerifiedReports", communityVerified);
+        stats.put("rejectedReports", rejected);
+        stats.put("emergencyReports", emergency);
+        stats.put("unassignedReports", unassigned);
+        return stats;
     }
 
     private IssueReport.IssuePriority calculatePriority(IssueReport report) {
@@ -300,166 +513,84 @@ public class IssueReportService {
         departmentRepository.findByName(deptName).ifPresent(report::setAssignedDepartment);
     }
 
-    public List<IssueReport> getNearbyIssues(Double lat, Double lng, Double radiusKm) {
-        return reportRepository.findNearbyIssues(lat, lng, radiusKm);
-    }
+    public IssueReportResponse mapToResponse(IssueReport report) {
+        String timestampStr = report.getTimestamp() != null 
+                ? report.getTimestamp().toString() 
+                : LocalDateTime.now().toString();
+        String updatedAtStr = report.getUpdatedAt() != null 
+                ? report.getUpdatedAt().toString() 
+                : timestampStr;
 
-    public List<IssueReport> getAllReports() {
-        return reportRepository.findAll();
-    }
+        Map<String, Object> issueLocMap = new HashMap<>();
+        issueLocMap.put("latitude", report.getLatitude() != null ? report.getLatitude() : 0.0);
+        issueLocMap.put("longitude", report.getLongitude() != null ? report.getLongitude() : 0.0);
+        if (report.getAddress() != null) issueLocMap.put("address", report.getAddress());
+        if (report.getStreet() != null) issueLocMap.put("street", report.getStreet());
+        if (report.getWard() != null) issueLocMap.put("ward", report.getWard());
+        if (report.getDistrict() != null) issueLocMap.put("district", report.getDistrict());
+        if (report.getRegion() != null) issueLocMap.put("region", report.getRegion());
+        if (report.getNearbyLandmark() != null) issueLocMap.put("nearbyLandmark", report.getNearbyLandmark());
+        if (report.getLocationAccuracy() != null) issueLocMap.put("accuracy", report.getLocationAccuracy());
 
-    public List<IssueReport> getReportsByUniversity(Long universityId) {
-        return reportRepository.findByUniversityId(universityId);
-    }
+        Map<String, Object> reporterLocMap = new HashMap<>();
+        reporterLocMap.put("latitude", report.getReporterLatitude() != null ? report.getReporterLatitude() : 0.0);
+        reporterLocMap.put("longitude", report.getReporterLongitude() != null ? report.getReporterLongitude() : 0.0);
 
-    public IssueReport getReportByExternalId(String externalId) {
-        return reportRepository.findByExternalId(externalId)
-                .orElseThrow(() -> new RuntimeException("Issue not found with ID: " + externalId));
-    }
+        List<String> evidence = report.getEvidenceUrls() != null ? report.getEvidenceUrls() : Collections.emptyList();
 
-    @Transactional
-    public IssueReport confirmIssue(String externalId) {
-        IssueReport report = getReportByExternalId(externalId);
-        report.setSupportsCount((report.getSupportsCount() != null ? report.getSupportsCount() : 0) + 1);
-        report.setUpdatedAt(LocalDateTime.now());
-        return reportRepository.save(report);
-    }
+        List<IssueReportResponse.IssueTimelineResponse> timelineList = report.getTimeline() != null
+                ? report.getTimeline().stream().map(t -> IssueReportResponse.IssueTimelineResponse.builder()
+                        .timestamp(t.getTimestamp() != null ? t.getTimestamp().toString() : LocalDateTime.now().toString())
+                        .status(t.getStatus() != null ? t.getStatus().name() : "SUBMITTED")
+                        .message(t.getMessage() != null ? t.getMessage() : "")
+                        .actorId(t.getActor() != null ? t.getActor().getUsername() : null)
+                        .build()).collect(Collectors.toList())
+                : Collections.emptyList();
 
-    @Transactional
-    public IssueReport updateStatus(String externalId, IssueReport.IssueStatus newStatus, String message, String internalNotes, String publicResponse, String adminUsername) {
-        IssueReport report = getReportByExternalId(externalId);
-
-        report.setStatus(newStatus);
-        if (internalNotes != null) report.setInternalNotes(internalNotes);
-        if (publicResponse != null) report.setPublicResponse(publicResponse);
-        report.setUpdatedAt(LocalDateTime.now());
-
-        IssueTimeline event = IssueTimeline.builder()
-                .issue(report)
-                .status(newStatus)
-                .message(message != null ? message : "Status updated to " + newStatus)
-                .timestamp(LocalDateTime.now())
+        return IssueReportResponse.builder()
+                .id(report.getExternalId() != null ? report.getExternalId() : (report.getId() != null ? report.getId().toString() : ""))
+                .dbId(report.getId())
+                .universityId(report.getUniversity() != null ? report.getUniversity().getId() : null)
+                .universityName(report.getUniversity() != null ? report.getUniversity().getName() : null)
+                .campusName(report.getCampusName())
+                .category(report.getCategory())
+                .subCategory(report.getSubCategory())
+                .description(report.getDescription())
+                .voiceTranscription(report.getVoiceTranscription())
+                .status(report.getStatus() != null ? report.getStatus().name() : "SUBMITTED")
+                .routingStatus(report.getRoutingStatus() != null ? report.getRoutingStatus().name() : "UNASSIGNED")
+                .urgency(report.getUrgency() != null ? report.getUrgency().name() : "NORMAL")
+                .userSeverity(report.getUserSeverity() != null ? report.getUserSeverity().name() : "MEDIUM")
+                .calculatedPriority(report.getCalculatedPriority() != null ? report.getCalculatedPriority().name() : "MEDIUM")
+                .impactScore(report.getImpactScore())
+                .latitude(report.getLatitude())
+                .longitude(report.getLongitude())
+                .address(report.getAddress())
+                .street(report.getStreet())
+                .ward(report.getWard())
+                .district(report.getDistrict())
+                .region(report.getRegion())
+                .nearbyLandmark(report.getNearbyLandmark())
+                .reporterLatitude(report.getReporterLatitude())
+                .reporterLongitude(report.getReporterLongitude())
+                .locationAccuracy(report.getLocationAccuracy())
+                .issueLocation(issueLocMap)
+                .reporterLocation(reporterLocMap)
+                .evidenceUrls(evidence)
+                .evidenceUris(evidence)
+                .locationSource(report.getLocationSource())
+                .reporterName(report.getReporterName())
+                .reporterEmail(report.getReporterEmail())
+                .reporterPhone(report.getReporterPhone())
+                .supportsCount(report.getSupportsCount())
+                .verificationCount(report.getVerificationCount())
+                .isEmergency(report.getIsEmergency())
+                .publicResponse(report.getPublicResponse())
+                .internalNotes(report.getInternalNotes())
+                .timestamp(timestampStr)
+                .lastUpdated(updatedAtStr)
+                .updatedAt(updatedAtStr)
+                .timeline(timelineList)
                 .build();
-
-        if (report.getTimeline() == null) report.setTimeline(new ArrayList<>());
-        report.getTimeline().add(event);
-
-        IssueReport saved = reportRepository.save(report);
-
-        AdminActivityLog log = AdminActivityLog.builder()
-                .action("ISSUE_STATUS_CHANGED")
-                .actorUsername(adminUsername != null ? adminUsername : "admin")
-                .description("Updated issue " + externalId + " status to " + newStatus)
-                .relatedEntityId(externalId)
-                .build();
-        activityLogRepository.save(log);
-
-        return saved;
-    }
-
-    @Transactional
-    public IssueReport assignIssue(String externalId, Long departmentId, String adminUsername) {
-        IssueReport report = getReportByExternalId(externalId);
-        departmentRepository.findById(departmentId).ifPresent(report::setAssignedDepartment);
-        report.setStatus(IssueReport.IssueStatus.ASSIGNED);
-        report.setUpdatedAt(LocalDateTime.now());
-
-        IssueTimeline event = IssueTimeline.builder()
-                .issue(report)
-                .status(IssueReport.IssueStatus.ASSIGNED)
-                .message("Assigned to department: " + (report.getAssignedDepartment() != null ? report.getAssignedDepartment().getName() : "Department"))
-                .timestamp(LocalDateTime.now())
-                .build();
-        report.getTimeline().add(event);
-
-        IssueReport saved = reportRepository.save(report);
-
-        AdminActivityLog log = AdminActivityLog.builder()
-                .action("ISSUE_ASSIGNED")
-                .actorUsername(adminUsername != null ? adminUsername : "admin")
-                .description("Assigned issue " + externalId + " to department")
-                .relatedEntityId(externalId)
-                .build();
-        activityLogRepository.save(log);
-
-        return saved;
-    }
-
-    @Transactional
-    public IssueReport resolveIssue(String externalId, String resolutionDescription, String adminUsername) {
-        IssueReport report = getReportByExternalId(externalId);
-        report.setStatus(IssueReport.IssueStatus.RESOLVED);
-        report.setPublicResponse(resolutionDescription);
-        report.setUpdatedAt(LocalDateTime.now());
-
-        IssueTimeline event = IssueTimeline.builder()
-                .issue(report)
-                .status(IssueReport.IssueStatus.RESOLVED)
-                .message("Issue resolved: " + resolutionDescription)
-                .timestamp(LocalDateTime.now())
-                .build();
-        report.getTimeline().add(event);
-
-        IssueReport saved = reportRepository.save(report);
-
-        AdminActivityLog log = AdminActivityLog.builder()
-                .action("ISSUE_RESOLVED")
-                .actorUsername(adminUsername != null ? adminUsername : "admin")
-                .description("Resolved issue " + externalId)
-                .relatedEntityId(externalId)
-                .build();
-        activityLogRepository.save(log);
-
-        return saved;
-    }
-
-    @Transactional
-    public IssueReport verifyResolution(String externalId, boolean resolved, String username) {
-        IssueReport report = getReportByExternalId(externalId);
-        String message = resolved ? "Community verified the resolution." : "Resident reported issue still exists.";
-        IssueReport.IssueStatus status = resolved ? IssueReport.IssueStatus.COMMUNITY_VERIFIED : IssueReport.IssueStatus.IN_PROGRESS;
-
-        report.setStatus(status);
-        report.setVerificationCount((report.getVerificationCount() != null ? report.getVerificationCount() : 0) + 1);
-        report.setUpdatedAt(LocalDateTime.now());
-
-        IssueTimeline event = IssueTimeline.builder()
-                .issue(report)
-                .status(status)
-                .message(message)
-                .timestamp(LocalDateTime.now())
-                .build();
-        report.getTimeline().add(event);
-
-        return reportRepository.save(report);
-    }
-
-    public Map<String, Object> getAdminStats() {
-        List<IssueReport> reports = reportRepository.findAll();
-        long total = reports.size();
-        long submitted = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.SUBMITTED).count();
-        long underReview = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.UNDER_REVIEW).count();
-        long validated = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.VERIFIED).count();
-        long assigned = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.ASSIGNED).count();
-        long inProgress = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.IN_PROGRESS).count();
-        long resolved = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.RESOLVED).count();
-        long communityVerified = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.COMMUNITY_VERIFIED).count();
-        long rejected = reports.stream().filter(r -> r.getStatus() == IssueReport.IssueStatus.REJECTED).count();
-        long emergency = reports.stream().filter(r -> Boolean.TRUE.equals(r.getIsEmergency())).count();
-        long unassigned = reports.stream().filter(r -> r.getRoutingStatus() == IssueReport.RoutingStatus.UNASSIGNED).count();
-
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalReports", total);
-        stats.put("submittedReports", submitted);
-        stats.put("underReviewReports", underReview);
-        stats.put("validatedReports", validated);
-        stats.put("assignedReports", assigned);
-        stats.put("inProgressReports", inProgress);
-        stats.put("resolvedReports", resolved);
-        stats.put("communityVerifiedReports", communityVerified);
-        stats.put("rejectedReports", rejected);
-        stats.put("emergencyReports", emergency);
-        stats.put("unassignedReports", unassigned);
-        return stats;
     }
 }

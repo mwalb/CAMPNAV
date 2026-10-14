@@ -233,6 +233,6 @@ INSERT INTO campus_location (university_id, category_id, name, official_name, al
 (2, 24, 'Kanaani Primary School', 'Kanaani Primary School', 'Kanaani Primary', 'SCH-KANAANI', 'Kanaani Primary School', -6.230878, 35.859853, 'VERIFIED', true);
 
 -- SYNC SEQUENCES
-ALTER TABLE university ALTER COLUMN id RESTART WITH 10;
-ALTER TABLE campus ALTER COLUMN id RESTART WITH 10;
-ALTER TABLE category ALTER COLUMN id RESTART WITH 50;
+ALTER SEQUENCE university_id_seq RESTART WITH 10;
+ALTER SEQUENCE campus_id_seq RESTART WITH 10;
+ALTER SEQUENCE category_id_seq RESTART WITH 50;

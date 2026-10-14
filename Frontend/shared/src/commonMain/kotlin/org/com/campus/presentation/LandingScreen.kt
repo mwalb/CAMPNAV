@@ -126,7 +126,7 @@ fun LandingScreen(
 
                 LandingActionCard(
                     title = "Campus\nEntertainment",
-                    subtitle = "Stream live TV & IPTV channels",
+                    subtitle = "Stream Live TV Channels",
                     icon = Icons.Default.LiveTv,
                     color = Color(0xFF00E5FF),
                     visible = startAnimation,

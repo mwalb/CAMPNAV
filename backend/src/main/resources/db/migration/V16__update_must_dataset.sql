@@ -84,5 +84,5 @@ INSERT INTO campus_location (university_id, category_id, name, official_name, al
 (3, 31, 'Nets', 'Nets Landmark Point', 'Nets', 'MUST-NETS', 'Nets area landmark near student hosteling zone', -8.941597, 33.413944, 'VERIFIED', true),
 (3, 31, 'Ofisi ya Serikali ya Mtaa Sisitila (Mbeya Jiji)', 'Ofisi ya Serikali ya Mtaa Sisitila (Mbeya Jiji)', 'Sisitila Ward Office', 'MUST-MTAA-SISITILA', 'Sisitila Local Government Ward Office (Mbeya City)', -8.940189, 33.414620, 'VERIFIED', true);
 
--- SYNC SEQUENCES FOR H2 / POSTGRESQL
-ALTER TABLE category ALTER COLUMN id RESTART WITH 60;
+-- SYNC SEQUENCES FOR POSTGRESQL
+ALTER SEQUENCE category_id_seq RESTART WITH 60;

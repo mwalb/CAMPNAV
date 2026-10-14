@@ -22,7 +22,7 @@ INSERT INTO category (id, university_id, name, slug, icon_name, description, is_
 (13, 1, 'Other Campus Facilities', 'other', 'more_horiz', 'Washrooms and miscellaneous facilities', true, 13);
 
 -- Reset sequence for category
-ALTER TABLE category ALTER COLUMN id RESTART WITH 14;
+ALTER SEQUENCE category_id_seq RESTART WITH 14;
 
 -- 3. INSERT UDSM LOCATIONS WITH VERIFIED COORDINATES
 

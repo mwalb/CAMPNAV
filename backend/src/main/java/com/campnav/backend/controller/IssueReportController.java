@@ -1,7 +1,10 @@
 package com.campnav.backend.controller;
 
+import com.campnav.backend.dto.CreateIssueReportRequest;
+import com.campnav.backend.dto.IssueReportResponse;
 import com.campnav.backend.model.IssueReport;
 import com.campnav.backend.service.IssueReportService;
+import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +22,8 @@ public class IssueReportController {
     private final IssueReportService reportService;
 
     @PostMapping("/community/reports")
-    public ResponseEntity<IssueReport> createReport(@RequestBody IssueReport report) {
-        return ResponseEntity.ok(reportService.createReport(report));
+    public ResponseEntity<IssueReportResponse> createReport(@Valid @RequestBody CreateIssueReportRequest request) {
+        return ResponseEntity.ok(reportService.createReport(request));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -29,12 +32,20 @@ public class IssueReportController {
     }
 
     @GetMapping("/community/reports")
-    public ResponseEntity<List<IssueReport>> getAllReports() {
+    public ResponseEntity<List<IssueReportResponse>> getAllReports(@RequestParam(required = false) Long universityId) {
+        if (universityId != null) {
+            return ResponseEntity.ok(reportService.getReportsByUniversity(universityId));
+        }
         return ResponseEntity.ok(reportService.getAllReports());
     }
 
+    @GetMapping("/universities/{universityId}/reports")
+    public ResponseEntity<List<IssueReportResponse>> getReportsByUniversity(@PathVariable Long universityId) {
+        return ResponseEntity.ok(reportService.getReportsByUniversity(universityId));
+    }
+
     @GetMapping("/community/reports/nearby")
-    public ResponseEntity<List<IssueReport>> getNearbyReports(
+    public ResponseEntity<List<IssueReportResponse>> getNearbyReports(
             @RequestParam Double lat,
             @RequestParam Double lng,
             @RequestParam(defaultValue = "2.0") Double radius) {
@@ -42,22 +53,22 @@ public class IssueReportController {
     }
 
     @GetMapping("/community/reports/{externalId}")
-    public ResponseEntity<IssueReport> getReportDetails(@PathVariable String externalId) {
+    public ResponseEntity<IssueReportResponse> getReportDetails(@PathVariable String externalId) {
         return ResponseEntity.ok(reportService.getReportByExternalId(externalId));
     }
 
     @GetMapping("/community/reports/track/{externalId}")
-    public ResponseEntity<IssueReport> trackReport(@PathVariable String externalId) {
+    public ResponseEntity<IssueReportResponse> trackReport(@PathVariable String externalId) {
         return ResponseEntity.ok(reportService.getReportByExternalId(externalId));
     }
 
     @PostMapping("/community/reports/{externalId}/confirm")
-    public ResponseEntity<IssueReport> confirmIssue(@PathVariable String externalId) {
+    public ResponseEntity<IssueReportResponse> confirmIssue(@PathVariable String externalId) {
         return ResponseEntity.ok(reportService.confirmIssue(externalId));
     }
 
     @PostMapping("/community/reports/{externalId}/verify")
-    public ResponseEntity<IssueReport> verifyResolution(
+    public ResponseEntity<IssueReportResponse> verifyResolution(
             @PathVariable String externalId,
             @RequestParam boolean resolved,
             Authentication authentication) {
@@ -67,7 +78,7 @@ public class IssueReportController {
 
     // --- Admin Issue Management Endpoints ---
     @GetMapping("/admin/issues")
-    public ResponseEntity<List<IssueReport>> getAdminAllReports() {
+    public ResponseEntity<List<IssueReportResponse>> getAdminAllReports() {
         return ResponseEntity.ok(reportService.getAllReports());
     }
 
@@ -77,12 +88,12 @@ public class IssueReportController {
     }
 
     @PostMapping("/admin/issues/{externalId}/status")
-    public ResponseEntity<IssueReport> updateStatus(
+    public ResponseEntity<IssueReportResponse> updateStatus(
             @PathVariable String externalId,
             @RequestBody StatusUpdateRequest request,
             Authentication authentication) {
         String adminUsername = authentication != null && authentication.getName() != null ? authentication.getName() : "admin";
-        IssueReport updated = reportService.updateStatus(
+        IssueReportResponse updated = reportService.updateStatus(
                 externalId,
                 request.getStatus(),
                 request.getMessage(),
@@ -94,22 +105,22 @@ public class IssueReportController {
     }
 
     @PostMapping("/admin/issues/{externalId}/assign")
-    public ResponseEntity<IssueReport> assignIssue(
+    public ResponseEntity<IssueReportResponse> assignIssue(
             @PathVariable String externalId,
             @RequestBody AssignRequest request,
             Authentication authentication) {
         String adminUsername = authentication != null && authentication.getName() != null ? authentication.getName() : "admin";
-        IssueReport updated = reportService.assignIssue(externalId, request.getDepartmentId(), adminUsername);
+        IssueReportResponse updated = reportService.assignIssue(externalId, request.getDepartmentId(), adminUsername);
         return ResponseEntity.ok(updated);
     }
 
     @PostMapping("/admin/issues/{externalId}/resolve")
-    public ResponseEntity<IssueReport> resolveIssue(
+    public ResponseEntity<IssueReportResponse> resolveIssue(
             @PathVariable String externalId,
             @RequestBody ResolveRequest request,
             Authentication authentication) {
         String adminUsername = authentication != null && authentication.getName() != null ? authentication.getName() : "admin";
-        IssueReport updated = reportService.resolveIssue(externalId, request.getResolutionDescription(), adminUsername);
+        IssueReportResponse updated = reportService.resolveIssue(externalId, request.getResolutionDescription(), adminUsername);
         return ResponseEntity.ok(updated);
     }
 

@@ -189,6 +189,7 @@ fun MainApp() {
                 onBack = { mode = AppMode.Landing }
             )
             AppMode.MyReports -> MyReportsScreen(
+                initialUniversityId = selectedUniversity?.id ?: 1L,
                 onBack = { mode = AppMode.ReportingLanding },
                 onReportSelected = { id ->
                     selectedIssueId = id
@@ -215,6 +216,11 @@ fun MainApp() {
                 }
             )
             AppMode.CommunityMap -> CommunityMapScreen(
+                initialUniversityId = selectedUniversity?.id ?: 1L,
+                onReportSelected = { id ->
+                    selectedIssueId = id
+                    mode = AppMode.IssueDetail
+                },
                 onBack = { mode = AppMode.ReportingLanding }
             )
             AppMode.IssueDetail -> selectedIssueId?.let { id ->

@@ -51,15 +51,13 @@ fun ReportingLandingScreen(
     val repository = remember { CommunityRepository() }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(selectedUniversityId) {
         scope.launch {
             try {
-                val reports = repository.getAllReports()
-                if (reports.isNotEmpty()) {
-                    activeReportCount = reports.count { it.status.name != "RESOLVED" && it.status.name != "CLOSED" }
-                }
+                val reports = repository.getReportsByUniversity(selectedUniversityId)
+                activeReportCount = reports.count { it.status.name != "RESOLVED" && it.status.name != "CLOSED" }
             } catch (_: Exception) {
-                // Ignore background stats fetch errors
+                activeReportCount = 0
             }
         }
     }
@@ -253,8 +251,8 @@ fun ReportingLandingScreen(
                 // Secondary Action Items (Visually Quieter)
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     SecondaryActionRow(
-                        title = "My Reports",
-                        subtitle = "Track your submitted issues & status updates",
+                        title = "Reports",
+                        subtitle = "Track campus submitted issues & status updates",
                         icon = Icons.Default.List,
                         onClick = onViewMyReports
                     )

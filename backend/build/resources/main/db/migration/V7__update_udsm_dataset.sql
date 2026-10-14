@@ -6,8 +6,8 @@ INSERT INTO university (id, external_id, name, short_name, city, country, latitu
 SELECT 1, 'UDSM', 'University of Dar es Salaam', 'UDSM', 'Dar es Salaam', 'Tanzania', -6.7801, 39.2041, true
 WHERE NOT EXISTS (SELECT 1 FROM university WHERE id = 1);
 
--- Sync university sequence for H2
-ALTER TABLE university ALTER COLUMN id RESTART WITH 2;
+-- Sync university sequence
+ALTER SEQUENCE university_id_seq RESTART WITH 2;
 
 -- Clear UDSM data to rebuild
 DELETE FROM campus_location WHERE university_id = 1;
@@ -22,7 +22,7 @@ INSERT INTO category (id, university_id, name, icon_name, description, slug, is_
 (5, 1, 'Health & Recreation', 'local_hospital', 'Medical Centers, Sports Fields, and Cafeterias', 'health', true, 5);
 
 -- Reset sequence for category
-ALTER TABLE category ALTER COLUMN id RESTART WITH 6;
+ALTER SEQUENCE category_id_seq RESTART WITH 6;
 
 -- Campus Location Records with Exact Google Maps POI Names
 INSERT INTO campus_location

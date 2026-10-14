@@ -1,5 +1,6 @@
 package com.campnav.backend.controller;
 
+import com.campnav.backend.dto.IssueReportResponse;
 import com.campnav.backend.model.IssueReport;
 import com.campnav.backend.model.UniversityOfficeReferral;
 import com.campnav.backend.service.IssueReportService;
@@ -30,25 +31,27 @@ public class StudentLeaderController {
     }
 
     @GetMapping("/issues")
-    public ResponseEntity<List<IssueReport>> getAssignedIssues(Authentication authentication) {
+    public ResponseEntity<List<IssueReportResponse>> getAssignedIssues(Authentication authentication) {
         String username = getUsername(authentication);
         List<Long> univIds = leaderService.getAuthorizedUniversityIdsForUser(username);
         if (univIds.isEmpty()) return ResponseEntity.ok(List.of());
 
         // Returns issues for all authorized universities
-        List<IssueReport> reports = reportService.getAllReports().stream()
+        List<IssueReportResponse> reports = reportService.getAllReportEntities().stream()
                 .filter(r -> r.getUniversity() != null && univIds.contains(r.getUniversity().getId()))
+                .map(reportService::mapToResponse)
                 .toList();
 
         return ResponseEntity.ok(reports);
     }
 
     @PostMapping("/issues/{externalId}/acknowledge")
-    public ResponseEntity<IssueReport> acknowledgeReport(
+    public ResponseEntity<IssueReportResponse> acknowledgeReport(
             @PathVariable String externalId,
             Authentication authentication) {
         String username = getUsername(authentication);
-        return ResponseEntity.ok(reportService.acknowledgeReportByLeader(externalId, username));
+        IssueReport report = reportService.acknowledgeReportByLeader(externalId, username);
+        return ResponseEntity.ok(reportService.mapToResponse(report));
     }
 
     @PostMapping("/issues/{externalId}/refer")
@@ -69,17 +72,18 @@ public class StudentLeaderController {
     }
 
     @PostMapping("/issues/{externalId}/resolve")
-    public ResponseEntity<IssueReport> resolveIssue(
+    public ResponseEntity<IssueReportResponse> resolveIssue(
             @PathVariable String externalId,
             @RequestBody ResolveRequest request,
             Authentication authentication) {
         String username = getUsername(authentication);
-        return ResponseEntity.ok(reportService.leaderResolveReport(
+        IssueReport report = reportService.leaderResolveReport(
                 externalId,
                 request.getResolutionDescription(),
                 request.getAfterImageUrl(),
                 username
-        ));
+        );
+        return ResponseEntity.ok(reportService.mapToResponse(report));
     }
 
     private String getUsername(Authentication authentication) {

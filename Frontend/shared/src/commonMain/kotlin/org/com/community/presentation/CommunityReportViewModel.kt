@@ -117,39 +117,41 @@ class CommunityReportViewModel {
             description.trim()
         }
 
-        val report = IssueReport(
-            id = "", // Backend generates tracking reference ID
+        val createRequest = CreateIssueReportRequest(
             universityId = selectedUniversityId,
-            universityName = selectedUniversityName,
             campusName = campusName,
-            category = selectedCategory ?: IssueCategory.OTHER,
+            category = selectedCategory?.name ?: "OTHER",
+            subCategory = null,
             description = finalDescription,
             urgency = urgency,
-            locationSource = locationSource,
-            issueLocation = issueLocation ?: GeoLocation(-6.780543, 39.204593),
-            reporterLocation = reporterLocation ?: GeoLocation(-6.780543, 39.204593),
-            distanceToIssue = 0.0,
-            evidenceUris = evidenceUris.toList(),
-            userPriority = when(urgency) {
-                "EMERGENCY" -> IssuePriority.CRITICAL
-                "HIGH" -> IssuePriority.HIGH
-                "LOW" -> IssuePriority.LOW
-                else -> IssuePriority.MEDIUM
+            userSeverity = when(urgency) {
+                "EMERGENCY" -> "CRITICAL"
+                "HIGH" -> "HIGH"
+                "LOW" -> "LOW"
+                else -> "MEDIUM"
             },
-            calculatedPriority = IssuePriority.MEDIUM,
-            impactScore = 0,
-            reporterId = "student_user",
+            latitude = issueLocation?.latitude ?: -6.780543,
+            longitude = issueLocation?.longitude ?: 39.204593,
+            address = issueLocation?.address,
+            street = issueLocation?.street,
+            ward = issueLocation?.ward,
+            district = issueLocation?.district,
+            region = issueLocation?.region,
+            nearbyLandmark = issueLocation?.nearbyLandmark,
+            reporterLatitude = reporterLocation?.latitude,
+            reporterLongitude = reporterLocation?.longitude,
+            locationAccuracy = issueLocation?.accuracy,
+            evidenceUrls = evidenceUris.toList(),
+            locationSource = locationSource,
             reporterName = reporterName.trim(),
             reporterEmail = reporterEmail.trim().ifBlank { null },
             reporterPhone = reporterPhone.trim().ifBlank { null },
-            timestamp = now,
-            lastUpdated = now,
             isEmergency = (urgency == "EMERGENCY")
         )
 
         viewModelScope.launch {
             try {
-                val result = repository.createReport(report)
+                val result = repository.createReport(createRequest)
                 submissionResult = if (!result.id.isNull_or_blank()) result.id else "CAM-${now.toString().takeLast(8)}"
                 routingResult = result.routingStatus
                 isSubmitted = true
