@@ -1,0 +1,15 @@
+# Gradle & Build directories
+.gradle/
+build/
+**/build/
+**/.gradle/
+
+# Log files
+*.log
+**/*.log
+
+# IDE files
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

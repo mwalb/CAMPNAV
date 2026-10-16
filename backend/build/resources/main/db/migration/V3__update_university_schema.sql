@@ -1,3 +1,0 @@
-ALTER TABLE university ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
-ALTER TABLE university ADD COLUMN sort_order INTEGER;
-ALTER TABLE university ADD COLUMN campus_area_hectares DOUBLE PRECISION;

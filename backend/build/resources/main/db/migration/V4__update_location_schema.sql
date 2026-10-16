@@ -1,1 +1,0 @@
-ALTER TABLE campus_location ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
