@@ -50,8 +50,10 @@ public class StudentLeaderController {
             @PathVariable String externalId,
             Authentication authentication) {
         String username = getUsername(authentication);
-        IssueReport report = reportService.acknowledgeReportByLeader(externalId, username);
-        return ResponseEntity.ok(reportService.mapToResponse(report));
+        IssueReport report = reportService.getReportEntityByExternalId(externalId);
+        checkUniversityAuthorization(username, report);
+        IssueReport updated = reportService.acknowledgeReportByLeader(externalId, username);
+        return ResponseEntity.ok(reportService.mapToResponse(updated));
     }
 
     @PostMapping("/issues/{externalId}/refer")
@@ -60,6 +62,8 @@ public class StudentLeaderController {
             @RequestBody ReferralRequest request,
             Authentication authentication) {
         String username = getUsername(authentication);
+        IssueReport report = reportService.getReportEntityByExternalId(externalId);
+        checkUniversityAuthorization(username, report);
         LocalDateTime followUp = request.getFollowUpDays() != null ? LocalDateTime.now().plusDays(request.getFollowUpDays()) : null;
         return ResponseEntity.ok(reportService.referReportToUniversityOffice(
                 externalId,
@@ -77,13 +81,42 @@ public class StudentLeaderController {
             @RequestBody ResolveRequest request,
             Authentication authentication) {
         String username = getUsername(authentication);
-        IssueReport report = reportService.leaderResolveReport(
+        IssueReport report = reportService.getReportEntityByExternalId(externalId);
+        checkUniversityAuthorization(username, report);
+        IssueReport updated = reportService.leaderResolveReport(
                 externalId,
                 request.getResolutionDescription(),
                 request.getAfterImageUrl(),
                 username
         );
-        return ResponseEntity.ok(reportService.mapToResponse(report));
+        return ResponseEntity.ok(reportService.mapToResponse(updated));
+    }
+
+    @DeleteMapping("/issues/{externalId}")
+    public ResponseEntity<Map<String, String>> deleteLeaderReport(
+            @PathVariable String externalId,
+            Authentication authentication) {
+        String username = getUsername(authentication);
+        IssueReport report = reportService.getReportEntityByExternalId(externalId);
+        checkUniversityAuthorization(username, report);
+        reportService.deleteReport(externalId, username);
+        return ResponseEntity.ok(Map.of("message", "Issue report deleted successfully"));
+    }
+
+    private void checkUniversityAuthorization(String username, IssueReport report) {
+        if (report.getUniversity() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Access denied: Unrouted report has no verified university assignment. Only Admin can manage unrouted reports."
+            );
+        }
+        List<Long> authorizedUnivIds = leaderService.getAuthorizedUniversityIdsForUser(username);
+        if (!authorizedUnivIds.contains(report.getUniversity().getId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Access denied: Student leader is not authorized for university " + report.getUniversity().getName()
+            );
+        }
     }
 
     private String getUsername(Authentication authentication) {

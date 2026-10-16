@@ -1,5 +1,6 @@
 package org.com.community.presentation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,20 +45,29 @@ fun TrackReportScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(
+        org.com.core.ui.components.CenteredPageContainer(
+            maxWidth = 500.dp,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentAlignment = Alignment.Center
+            scrollable = true
         ) {
-            Column(
+            Card(
                 modifier = Modifier
-                    .widthIn(max = 500.dp)
-                    .fillMaxWidth(0.9f)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .fillMaxWidth()
+                    .widthIn(max = 500.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                 Text(
                     "Enter Report ID",
                     style = MaterialTheme.typography.headlineSmall,
@@ -132,6 +142,7 @@ fun TrackReportScreen(
                     }
                 }
             }
+          }
         }
     }
 }

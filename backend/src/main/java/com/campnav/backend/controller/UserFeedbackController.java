@@ -2,6 +2,8 @@ package com.campnav.backend.controller;
 
 import com.campnav.backend.model.UserFeedback;
 import com.campnav.backend.service.UserFeedbackService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +21,7 @@ public class UserFeedbackController {
     private final UserFeedbackService feedbackService;
 
     @PostMapping
-    public ResponseEntity<UserFeedback> submitFeedback(@RequestBody FeedbackRequest request) {
+    public ResponseEntity<UserFeedback> submitFeedback(@Valid @RequestBody FeedbackRequest request) {
         UserFeedback created = feedbackService.submitFeedback(
                 request.getFeedbackText(),
                 request.getContributorName(),
@@ -74,7 +76,9 @@ public class UserFeedbackController {
 
     @Data
     public static class FeedbackRequest {
+        @NotBlank(message = "Feedback text is required")
         private String feedbackText;
+        @NotBlank(message = "Contributor name is required")
         private String contributorName;
         private String contributorContact;
     }

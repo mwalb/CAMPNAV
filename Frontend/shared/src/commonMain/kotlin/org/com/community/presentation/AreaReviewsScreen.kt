@@ -79,12 +79,16 @@ fun AreaReviewsScreen(
             .fillMaxSize()
             .background(AppColorScheme.background)
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        org.com.core.ui.components.CenteredPageContainer(
+            maxWidth = 680.dp,
+            modifier = Modifier.fillMaxSize()
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) {
@@ -119,11 +123,18 @@ fun AreaReviewsScreen(
 
             // Submit Review Card
             item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                    shape = RoundedCornerShape(20.dp)
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 560.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
                         Text("Rate This Area *", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(12.dp))
 
@@ -239,6 +250,7 @@ fun AreaReviewsScreen(
                     }
                 }
             }
+        }
 
             item {
                 Spacer(Modifier.height(8.dp))
@@ -285,4 +297,5 @@ fun AreaReviewsScreen(
             }
         }
     }
+}
 }

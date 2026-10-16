@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - SecurityAuditTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>SecurityAuditTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.campnav.backend.controller.html">com.campnav.backend.controller</a> &gt; SecurityAuditTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">9</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">1.522s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a href="#">Tests</a>
+</li>
+<li>
+<a href="#">Standard output</a>
+</li>
+<li>
+<a href="#">Standard error</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">testAdminEndpointAllowedWithAdminRole()</td>
+<td class="success">0.111s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">testAdminEndpointForbiddenWithOrdinaryUserRole()</td>
+<td class="success">0.010s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">testAdminEndpointUnauthorizedWithoutAuth()</td>
+<td class="success">0.011s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">testDebugAllRawEndpointAllowedWithAdminRole()</td>
+<td class="success">0.042s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">testDebugAllRawEndpointForbiddenWithOrdinaryUserRole()</td>
+<td class="success">0.916s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">testDebugAllRawEndpointUnauthorizedWithoutAuth()</td>
+<td class="success">0.009s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">testFeedbackValidationFailureBlankText()</td>
+<td class="success">0.016s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">testLoginWithValidAdminCredentials()</td>
+<td class="success">0.275s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">testReviewValidationFailureInvalidRating()</td>
+<td class="success">0.132s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre id="class-stdout">10:29:26.519 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.campnav.backend.controller.SecurityAuditTest]: SecurityAuditTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+10:29:27.004 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.campnav.backend.CampNavBackendApplication for test class com.campnav.backend.controller.SecurityAuditTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+2026-10-16T10:29:27.975-04:00  INFO 113938 --- [campnav-backend] [    Test worker] c.c.b.controller.SecurityAuditTest       : Starting SecurityAuditTest using Java 21.0.11-ea with PID 113938 (started by mwalb in /home/mwalb/StudioProjects/CAMPNAV/backend)
+2026-10-16T10:29:27.979-04:00  INFO 113938 --- [campnav-backend] [    Test worker] c.c.b.controller.SecurityAuditTest       : No active profile set, falling back to 1 default profile: &quot;default&quot;
+2026-10-16T10:29:30.509-04:00  INFO 113938 --- [campnav-backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-16T10:29:30.782-04:00  INFO 113938 --- [campnav-backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 259 ms. Found 15 JPA repository interfaces.
+2026-10-16T10:29:32.950-04:00  INFO 113938 --- [campnav-backend] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-16T10:29:33.698-04:00  INFO 113938 --- [campnav-backend] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@10b67f54
+2026-10-16T10:29:33.700-04:00  INFO 113938 --- [campnav-backend] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-16T10:29:33.759-04:00  INFO 113938 --- [campnav-backend] [    Test worker] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/campnav (PostgreSQL 17.5)
+2026-10-16T10:29:33.780-04:00  WARN 113938 --- [campnav-backend] [    Test worker] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 17.5 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 16.
+2026-10-16T10:29:33.922-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.f.core.internal.command.DbValidate     : Successfully validated 23 migrations (execution time 00:00.124s)
+2026-10-16T10:29:33.963-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.f.core.internal.command.DbMigrate      : Current version of schema &quot;public&quot;: 25
+2026-10-16T10:29:33.974-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.f.core.internal.command.DbMigrate      : Schema &quot;public&quot; is up to date. No migration necessary.
+2026-10-16T10:29:34.203-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-16T10:29:34.288-04:00  INFO 113938 --- [campnav-backend] [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+2026-10-16T10:29:34.348-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-16T10:29:34.981-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-16T10:29:37.491-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-16T10:29:37.566-04:00  INFO 113938 --- [campnav-backend] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-16T10:29:38.328-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-16T10:29:39.897-04:00  INFO 113938 --- [campnav-backend] [    Test worker] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2026-10-16T10:29:39.898-04:00  WARN 113938 --- [campnav-backend] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used for username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider.
+2026-10-16T10:29:40.261-04:00  WARN 113938 --- [campnav-backend] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-16T10:29:41.684-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-10-16T10:29:41.685-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-16T10:29:41.689-04:00  INFO 113938 --- [campnav-backend] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 3 ms
+2026-10-16T10:29:41.747-04:00  INFO 113938 --- [campnav-backend] [    Test worker] c.c.b.controller.SecurityAuditTest       : Started SecurityAuditTest in 14.409 seconds (process running for 17.986)
+Updated Admin account credentials.
+2026-10-16T10:29:44.041-04:00 ERROR 113938 --- [campnav-backend] [   scheduling-1] c.c.b.service.EmailNotificationService   : Failed to send email to udom_leader@campnav.org: Authentication failed
+2026-10-16T10:29:44.374-04:00  WARN 113938 --- [campnav-backend] [    Test worker] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public org.springframework.http.ResponseEntity&lt;com.campnav.backend.model.CommunityReview&gt; com.campnav.backend.controller.CommunityReviewController.addReview(com.campnav.backend.controller.CommunityReviewController$ReviewRequest): [Field error in object 'reviewRequest' on field 'rating': rejected value [6]; codes [Max.reviewRequest.rating,Max.rating,Max.java.lang.Integer,Max]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [reviewRequest.rating,rating]; arguments []; default message [rating],5]; default message [Rating must be at most 5]] ]
+2026-10-16T10:29:44.681-04:00  WARN 113938 --- [campnav-backend] [    Test worker] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public org.springframework.http.ResponseEntity&lt;com.campnav.backend.model.UserFeedback&gt; com.campnav.backend.controller.UserFeedbackController.submitFeedback(com.campnav.backend.controller.UserFeedbackController$FeedbackRequest): [Field error in object 'feedbackRequest' on field 'feedbackText': rejected value []; codes [NotBlank.feedbackRequest.feedbackText,NotBlank.feedbackText,NotBlank.java.lang.String,NotBlank]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [feedbackRequest.feedbackText,feedbackText]; arguments []; default message [feedbackText]]; default message [Feedback text is required]] ]
+</pre>
+<button class="clipboard-copy-btn" aria-label="Copy to clipboard" data-copy-element-id="class-stdout">Copy</button>
+</span>
+</div>
+<div class="tab">
+<h2>Standard error</h2>
+<span class="code">
+<pre id="class-stderr">WARNING: A Java agent has been loaded dynamically (/home/mwalb/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.14.19/154da3a65b4f4a909d3e5bdec55d1b2b4cbb6ce1/byte-buddy-agent-1.14.19.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+</pre>
+<button class="clipboard-copy-btn" aria-label="Copy to clipboard" data-copy-element-id="class-stderr">Copy</button>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 9.1.0</a> at Oct 16, 2026, 10:29:50 AM</p>
+</div>
+</div>
+</body>
+</html>

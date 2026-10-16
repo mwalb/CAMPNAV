@@ -133,6 +133,15 @@ public class IssueReportController {
         return ResponseEntity.ok(notification);
     }
 
+    @DeleteMapping("/admin/issues/{externalId}")
+    public ResponseEntity<Map<String, String>> deleteAdminReport(
+            @PathVariable String externalId,
+            Authentication authentication) {
+        String adminUsername = authentication != null && authentication.getName() != null ? authentication.getName() : "admin";
+        reportService.deleteReport(externalId, adminUsername);
+        return ResponseEntity.ok(Map.of("message", "Issue report deleted successfully"));
+    }
+
     @Data
     public static class StatusUpdateRequest {
         private IssueReport.IssueStatus status;

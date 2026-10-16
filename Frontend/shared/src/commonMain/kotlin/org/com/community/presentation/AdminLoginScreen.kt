@@ -36,17 +36,21 @@ fun AdminLoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColorScheme.background),
-        contentAlignment = Alignment.Center
+            .background(AppColorScheme.background)
     ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .wrapContentHeight(),
-            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.9f)),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        org.com.core.ui.components.CenteredPageContainer(
+            maxWidth = 500.dp,
+            modifier = Modifier.fillMaxSize(),
+            scrollable = true
         ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.9f)),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
             Column(
                 modifier = Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -125,6 +129,7 @@ fun AdminLoginScreen(
                     }
                 }
             }
+          }
         }
     }
 }

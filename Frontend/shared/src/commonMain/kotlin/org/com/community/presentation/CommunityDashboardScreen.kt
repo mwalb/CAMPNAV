@@ -28,7 +28,6 @@ import org.com.core.ui.theme.AppColorScheme
 fun CommunityDashboardScreen(
     userRole: UserRole,
     onBack: () -> Unit,
-    onNavigateToMap: () -> Unit,
     onReportSelected: (String) -> Unit
 ) {
     Scaffold(
@@ -40,16 +39,10 @@ fun CommunityDashboardScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = null)
                     }
                 },
-                actions = {
-                    IconButton(onClick = onNavigateToMap) {
-                        Icon(Icons.Default.Map, contentDescription = "Map View")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = AppColorScheme.background,
                     titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                    actionIconContentColor = Color.White
+                    navigationIconContentColor = Color.White
                 )
             )
         },

@@ -64,6 +64,15 @@ public class AdminStudentLeaderController {
         ));
     }
 
+    @DeleteMapping("/leaders/{id}")
+    public ResponseEntity<java.util.Map<String, String>> deleteLeader(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String adminUsername = getUsername(authentication);
+        leaderService.deleteLeaderAssignment(id, adminUsername);
+        return ResponseEntity.ok(java.util.Map.of("message", "Student Leader account deleted successfully"));
+    }
+
     @GetMapping("/notifications")
     public ResponseEntity<List<EmailNotification>> getAllNotifications() {
         return ResponseEntity.ok(emailService.getAllNotifications());

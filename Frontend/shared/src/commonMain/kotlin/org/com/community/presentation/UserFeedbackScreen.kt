@@ -1,5 +1,6 @@
 package org.com.community.presentation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,12 +65,16 @@ fun UserFeedbackScreen(
             .fillMaxSize()
             .background(AppColorScheme.background)
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+        org.com.core.ui.components.CenteredPageContainer(
+            maxWidth = 640.dp,
+            modifier = Modifier.fillMaxSize()
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -96,13 +101,20 @@ fun UserFeedbackScreen(
             }
 
             item {
-                Card(
+                Box(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.6f)),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 760.dp),
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(24.dp),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                    ) {
+                        Column(
                         modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
@@ -230,6 +242,7 @@ fun UserFeedbackScreen(
                     }
                 }
             }
+        }
 
             item {
                 Spacer(Modifier.height(8.dp))
@@ -311,4 +324,5 @@ fun UserFeedbackScreen(
             }
         }
     }
+}
 }

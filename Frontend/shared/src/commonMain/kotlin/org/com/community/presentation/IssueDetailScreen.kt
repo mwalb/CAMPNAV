@@ -73,9 +73,16 @@ fun IssueDetailScreen(
         },
         containerColor = AppColorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        org.com.core.ui.components.CenteredPageContainer(
+            maxWidth = 760.dp,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.primary)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.primary)
+                }
             } else if (issue == null) {
                 Column(
                     modifier = Modifier.fillMaxSize(),

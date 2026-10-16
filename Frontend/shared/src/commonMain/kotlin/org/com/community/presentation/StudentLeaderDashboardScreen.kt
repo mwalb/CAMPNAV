@@ -222,7 +222,13 @@ fun StudentLeaderDashboardScreen(
                                     },
                                     onRefer = { issue -> referIssueTarget = issue },
                                     onResolve = { issue -> resolveIssueTarget = issue },
-                                    onViewDetail = { issue -> selectedIssueDetail = issue }
+                                    onViewDetail = { issue -> selectedIssueDetail = issue },
+                                    onDelete = { issue ->
+                                        scope.launch {
+                                            repository.deleteLeaderIssue(token, issue.id)
+                                            loadLeaderData()
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -455,65 +461,103 @@ fun LeaderReportsList(
     onAcknowledge: (IssueReport) -> Unit,
     onRefer: (IssueReport) -> Unit,
     onResolve: (IssueReport) -> Unit,
-    onViewDetail: (IssueReport) -> Unit
+    onViewDetail: (IssueReport) -> Unit,
+    onDelete: (IssueReport) -> Unit
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
-        items(reports) { issue ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text(issue.id, fontWeight = FontWeight.Black, color = AppColorScheme.primary, fontSize = 16.sp)
-                        Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF3B82F6).copy(alpha = 0.2f)) {
-                            Text(issue.routingStatus, color = Color(0xFF60A5FA), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                        }
-                    }
+    var reportToDelete by remember { mutableStateOf<IssueReport?>(null) }
 
-                    Spacer(Modifier.height(8.dp))
-                    Text(issue.category.displayName, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text(issue.description, color = Color.LightGray, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (issue.routingStatus == "ASSIGNED_TO_LEADER") {
-                            Button(
-                                onClick = { onAcknowledge(issue) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text("Acknowledge in CAMPNAV", fontSize = 11.sp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
+            items(reports) { issue ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text(issue.id, fontWeight = FontWeight.Black, color = AppColorScheme.primary, fontSize = 16.sp)
+                            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF3B82F6).copy(alpha = 0.2f)) {
+                                Text(issue.routingStatus, color = Color(0xFF60A5FA), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                             }
                         }
 
-                        Button(
-                            onClick = { onRefer(issue) },
-                            colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Refer to Office", fontSize = 11.sp)
-                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(issue.category.displayName, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(issue.description, color = Color.LightGray, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
 
-                        Button(
-                            onClick = { onResolve(issue) },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Record Resolution", fontSize = 11.sp)
-                        }
+                        Spacer(Modifier.height(12.dp))
 
-                        OutlinedButton(
-                            onClick = { onViewDetail(issue) },
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Details", fontSize = 11.sp, color = Color.White)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (issue.routingStatus == "ASSIGNED_TO_LEADER") {
+                                Button(
+                                    onClick = { onAcknowledge(issue) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("Acknowledge in CAMPNAV", fontSize = 11.sp)
+                                }
+                            }
+
+                            Button(
+                                onClick = { onRefer(issue) },
+                                colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Refer to Office", fontSize = 11.sp)
+                            }
+
+                            Button(
+                                onClick = { onResolve(issue) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Record Resolution", fontSize = 11.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = { onViewDetail(issue) },
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Details", fontSize = 11.sp, color = Color.White)
+                            }
+
+                            OutlinedButton(
+                                onClick = { reportToDelete = issue },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Delete", fontSize = 11.sp)
+                            }
                         }
                     }
                 }
             }
+        }
+
+        reportToDelete?.let { issue ->
+            AlertDialog(
+                onDismissRequest = { reportToDelete = null },
+                title = { Text("Confirm Delete Report", fontWeight = FontWeight.Bold, color = Color.White) },
+                text = { Text("Are you sure you want to delete report ${issue.id}? This action cannot be undone.", color = Color.LightGray) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            onDelete(issue)
+                            reportToDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { reportToDelete = null }) { Text("Cancel", color = Color.Gray) }
+                },
+                containerColor = AppColorScheme.surface
+            )
         }
     }
 }

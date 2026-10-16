@@ -221,6 +221,22 @@ public class IssueReportService {
     }
 
     @Transactional
+    public void deleteReport(String externalId, String username) {
+        IssueReport report = getReportEntityByExternalId(externalId);
+        
+        AdminActivityLog logEvent = AdminActivityLog.builder()
+                .action("ISSUE_REPORT_DELETED")
+                .actorUsername(username != null ? username : "admin")
+                .description("Deleted issue report: " + externalId + " (" + report.getCategory() + ")")
+                .relatedEntityId(externalId)
+                .build();
+        activityLogRepository.save(logEvent);
+
+        reportRepository.delete(report);
+        log.info("Issue report {} deleted by user {}", externalId, username);
+    }
+
+    @Transactional
     public EmailNotification resendLeaderNotificationByAdmin(String externalId, String adminUsername) {
         IssueReport report = getReportEntityByExternalId(externalId);
         CommunityUser leader = report.getAssignedLeader();

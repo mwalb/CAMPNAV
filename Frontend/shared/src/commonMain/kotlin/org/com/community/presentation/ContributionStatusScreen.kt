@@ -53,12 +53,16 @@ fun ContributionStatusScreen(
             .fillMaxSize()
             .background(AppColorScheme.background)
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        org.com.core.ui.components.CenteredPageContainer(
+            maxWidth = 500.dp,
+            modifier = Modifier.fillMaxSize()
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) {
@@ -185,4 +189,5 @@ fun ContributionStatusScreen(
             }
         }
     }
+}
 }

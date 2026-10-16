@@ -2,6 +2,9 @@ package com.campnav.backend.controller;
 
 import com.campnav.backend.model.CommunityContribution;
 import com.campnav.backend.service.CommunityContributionService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +21,7 @@ public class CommunityContributionController {
     private final CommunityContributionService contributionService;
 
     @PostMapping("/contributions")
-    public ResponseEntity<CommunityContribution> submitContribution(@RequestBody ContributionRequest request) {
+    public ResponseEntity<CommunityContribution> submitContribution(@Valid @RequestBody ContributionRequest request) {
         CommunityContribution contribution = contributionService.submitContribution(
                 request.getUniversityId(),
                 request.getLocationName(),
@@ -52,14 +55,21 @@ public class CommunityContributionController {
 
     @Data
     public static class ContributionRequest {
+        @NotNull(message = "University ID is required")
         private Long universityId;
+        @NotBlank(message = "Location name is required")
         private String locationName;
+        @NotBlank(message = "Area type is required")
         private String areaType;
         private Long categoryId;
         private String customCategory;
+        @NotBlank(message = "Description is required")
         private String description;
+        @NotNull(message = "Latitude is required")
         private Double latitude;
+        @NotNull(message = "Longitude is required")
         private Double longitude;
+        @NotBlank(message = "Contributor name is required")
         private String contributorName;
         private String contributorContact;
     }

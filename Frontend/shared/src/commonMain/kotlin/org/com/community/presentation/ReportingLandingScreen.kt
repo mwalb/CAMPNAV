@@ -34,7 +34,6 @@ import org.com.core.ui.theme.AppColorScheme
 @Composable
 fun ReportingLandingScreen(
     onReportNew: () -> Unit,
-    onViewMap: () -> Unit,
     onViewMyReports: () -> Unit,
     onTrackReport: () -> Unit,
     onBack: () -> Unit
@@ -88,14 +87,19 @@ fun ReportingLandingScreen(
             },
             containerColor = Color.Transparent
         ) { padding ->
-            Column(
+            org.com.core.ui.components.CenteredPageContainer(
+                maxWidth = 760.dp,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 20.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.Start
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
                 // Header
                 Text(
                     text = "Report a Campus Issue",
@@ -263,17 +267,11 @@ fun ReportingLandingScreen(
                         icon = Icons.Default.Search,
                         onClick = onTrackReport
                     )
-
-                    SecondaryActionRow(
-                        title = "Issues Map",
-                        subtitle = "View active campus issues on map view",
-                        icon = Icons.Default.Map,
-                        onClick = onViewMap
-                    )
                 }
 
                 Spacer(Modifier.height(24.dp))
             }
+          }
         }
     }
 }

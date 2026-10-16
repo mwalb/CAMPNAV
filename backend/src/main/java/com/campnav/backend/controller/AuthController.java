@@ -1,6 +1,8 @@
 package com.campnav.backend.controller;
 
 import com.campnav.backend.service.JwtService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +26,7 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
@@ -39,7 +41,9 @@ public class AuthController {
 
     @Data
     public static class LoginRequest {
+        @NotBlank(message = "Username is required")
         private String username;
+        @NotBlank(message = "Password is required")
         private String password;
     }
 

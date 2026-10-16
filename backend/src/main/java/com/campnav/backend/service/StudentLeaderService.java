@@ -134,6 +134,48 @@ public class StudentLeaderService {
         return toDTO(saved);
     }
 
+    @Transactional
+    public void deleteLeaderAssignment(Long assignmentId, String adminUsername) {
+        StudentLeaderAssignment assignment = leaderAssignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Student leader assignment not found with ID: " + assignmentId));
+
+        CommunityUser leader = assignment.getLeader();
+        University university = assignment.getUniversity();
+
+        assignment.setStatus(AssignmentStatus.DEACTIVATED);
+        assignment.setEndDate(LocalDateTime.now());
+        assignment.setDeactivationReason("Account deleted/deactivated by admin: " + adminUsername);
+        leaderAssignmentRepository.save(assignment);
+
+        if (leader != null) {
+            leader.setRole(CommunityUser.UserRole.CITIZEN);
+            leader.setIsActive(false);
+            userRepository.save(leader);
+        }
+
+        if (leader != null && university != null) {
+            List<IssueReport> assignedReports = reportRepository.findByUniversityIdAndRoutingStatus(
+                    university.getId(), IssueReport.RoutingStatus.ASSIGNED_TO_LEADER
+            );
+            for (IssueReport r : assignedReports) {
+                if (r.getAssignedLeader() != null && r.getAssignedLeader().getId().equals(leader.getId())) {
+                    r.setAssignedLeader(null);
+                    r.setRoutingStatus(IssueReport.RoutingStatus.UNASSIGNED);
+                    reportRepository.save(r);
+                }
+            }
+        }
+
+        AdminActivityLog logEvent = AdminActivityLog.builder()
+                .action("STUDENT_LEADER_DELETED")
+                .actorUsername(adminUsername != null ? adminUsername : "admin")
+                .description("Deleted/deactivated Student Leader assignment ID " + assignmentId + (leader != null ? " for " + leader.getFullName() : ""))
+                .relatedEntityId("LEADER-" + assignmentId)
+                .build();
+        activityLogRepository.save(logEvent);
+        log.info("Student leader assignment {} deleted/deactivated by admin {}", assignmentId, adminUsername);
+    }
+
     public Optional<CommunityUser> getActiveLeaderForUniversity(Long universityId) {
         return leaderAssignmentRepository.findFirstByUniversityIdAndStatusOrderByIdDesc(universityId, AssignmentStatus.ACTIVE)
                 .map(StudentLeaderAssignment::getLeader);

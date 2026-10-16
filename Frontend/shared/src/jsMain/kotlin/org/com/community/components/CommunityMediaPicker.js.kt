@@ -38,7 +38,7 @@ private fun triggerWebCameraJS() {
             input = document.createElement("input");
             input.id = "web-camera-input";
             input.type = "file";
-            input.accept = "image/*";
+            input.accept = "image/jpeg,image/png,image/webp,image/gif";
             input.setAttribute("capture", "environment");
             input.style.display = "none";
             document.body.appendChild(input);
@@ -46,11 +46,24 @@ private fun triggerWebCameraJS() {
         input.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Invalid file format. Please select an image file.');
+                    input.value = '';
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('Image size exceeds 10MB limit. Please choose a smaller file.');
+                    input.value = '';
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     if (window.onWebMediaCapturedJS) {
                         window.onWebMediaCapturedJS(event.target.result);
                     }
+                };
+                reader.onerror = () => {
+                    alert('Failed to read image file.');
                 };
                 reader.readAsDataURL(file);
             }
@@ -67,18 +80,31 @@ private fun triggerWebGalleryJS() {
             input = document.createElement("input");
             input.id = "web-gallery-input";
             input.type = "file";
-            input.accept = "image/*";
+            input.accept = "image/jpeg,image/png,image/webp,image/gif";
             input.style.display = "none";
             document.body.appendChild(input);
         }
         input.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Invalid file format. Please select an image file.');
+                    input.value = '';
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('Image size exceeds 10MB limit. Please choose a smaller file.');
+                    input.value = '';
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     if (window.onWebMediaCapturedJS) {
                         window.onWebMediaCapturedJS(event.target.result);
                     }
+                };
+                reader.onerror = () => {
+                    alert('Failed to read image file.');
                 };
                 reader.readAsDataURL(file);
             }

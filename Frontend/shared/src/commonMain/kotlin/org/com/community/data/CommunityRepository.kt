@@ -378,6 +378,39 @@ class CommunityRepository {
         }
     }
 
+    suspend fun deleteAdminIssue(token: String, externalId: String): Boolean {
+        return try {
+            apiClient.delete("/api/admin/issues/$externalId") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun deleteLeaderIssue(token: String, externalId: String): Boolean {
+        return try {
+            apiClient.delete("/api/leader/issues/$externalId") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun deleteLeaderAccount(token: String, id: Long): Boolean {
+        return try {
+            apiClient.delete("/api/admin/leaders/$id") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun resendLeaderNotification(token: String, externalId: String): Boolean {
         return try {
             apiClient.post("/api/admin/issues/$externalId/resend-notification") {
@@ -439,4 +472,23 @@ class CommunityRepository {
             null
         }
     }
+
+    // --- Contact Inquiry ---
+    suspend fun submitContactInquiry(request: ContactRequest): Map<String, Any> {
+        return try {
+            apiClient.post("/api/contact") {
+                setBody(request)
+            }.body()
+        } catch (e: Exception) {
+            mapOf("success" to false, "message" to (e.message ?: "Network error submitting inquiry."))
+        }
+    }
 }
+
+@kotlinx.serialization.Serializable
+data class ContactRequest(
+    val name: String,
+    val email: String,
+    val subject: String,
+    val message: String
+)

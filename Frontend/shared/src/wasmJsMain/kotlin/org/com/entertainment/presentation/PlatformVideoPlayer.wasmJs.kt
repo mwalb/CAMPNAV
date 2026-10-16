@@ -106,7 +106,7 @@ actual fun PlatformVideoPlayer(
     val videoElement = remember {
         (document.createElement("video") as HTMLVideoElement).apply {
             style.position = "absolute"
-            style.zIndex = "0"
+            style.zIndex = "1"
             controls = true
             autoplay = false
             style.backgroundColor = "black"

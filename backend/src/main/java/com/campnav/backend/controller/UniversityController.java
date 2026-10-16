@@ -8,6 +8,7 @@ import com.campnav.backend.model.Category;
 import com.campnav.backend.model.University;
 import com.campnav.backend.service.UniversityService;
 import com.campnav.backend.repository.UniversityRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ public class UniversityController {
     private UniversityRepository universityRepository;
 
     @GetMapping("/universities/debug/all-raw")
+    @PreAuthorize("hasRole('ADMIN')")
     public List<University> getAllRaw() {
         return universityRepository.findAll();
     }

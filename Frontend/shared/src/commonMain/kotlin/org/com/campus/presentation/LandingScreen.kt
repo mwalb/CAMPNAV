@@ -33,9 +33,7 @@ fun LandingScreen(
     onExploreCampuses: () -> Unit,
     onReportIssue: () -> Unit,
     onEntertainment: () -> Unit = {},
-    onCommunity: () -> Unit = {},
-    isDarkTheme: Boolean = true,
-    onToggleTheme: () -> Unit = {}
+    onCommunity: () -> Unit = {}
 ) {
     var startAnimation by remember { mutableStateOf(false) }
     
@@ -55,23 +53,6 @@ fun LandingScreen(
                 )
             )
     ) {
-        // Compact Theme Toggle Button (Top-Right)
-        IconButton(
-            onClick = onToggleTheme,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(top = 16.dp, end = 16.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
-        ) {
-            Icon(
-                imageVector = if (isDarkTheme) Icons.Default.WbSunny else Icons.Default.NightsStay,
-                contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()

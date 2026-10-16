@@ -80,18 +80,29 @@ fun CommunityReportScreen(
                 },
                 containerColor = Color.Transparent
             ) { padding ->
-                Box(
+                org.com.core.ui.components.CenteredPageContainer(
+                    maxWidth = 660.dp,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
                 ) {
-                    if (viewModel.isSubmitted) {
-                        QuickReportSuccessView(
-                            viewModel = viewModel,
-                            onDone = onBack
-                        )
-                    } else {
-                        QuickReportFormView(viewModel = viewModel)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 660.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                    ) {
+                        if (viewModel.isSubmitted) {
+                            QuickReportSuccessView(
+                                viewModel = viewModel,
+                                onDone = onBack
+                            )
+                        } else {
+                            QuickReportFormView(viewModel = viewModel)
+                        }
                     }
                 }
             }
@@ -122,8 +133,8 @@ fun QuickReportFormView(viewModel: CommunityReportViewModel) {
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp)
+            .fillMaxWidth()
+            .padding(24.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.Start
     ) {
@@ -619,7 +630,7 @@ fun QuickReportSuccessView(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(24.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -645,7 +656,7 @@ fun QuickReportSuccessView(
         )
 
         Text(
-            "Your report is saved in CAMPNAV database.",
+            "Report submitted successfully!",
             color = Color.Gray,
             fontSize = 13.sp,
             modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
@@ -685,21 +696,6 @@ fun QuickReportSuccessView(
                     maxLines = 2,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Mail, contentDescription = null, tint = AppColorScheme.secondary, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        if (viewModel.routingResult == "ASSIGNED_TO_LEADER")
-                            "Notification queued for University Student Leader"
-                        else
-                            "Report saved in CAMPNAV; queued for Student Leader assignment",
-                        fontSize = 11.sp,
-                        color = Color.White
-                    )
-                }
             }
         }
 

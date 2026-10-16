@@ -102,12 +102,17 @@ fun MyReportsScreen(
         },
         containerColor = AppColorScheme.background
     ) { padding ->
-        Column(
+        org.com.core.ui.components.CenteredPageContainer(
+            maxWidth = 760.dp,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+            ) {
             // University Filter Chips Bar
             LazyRow(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -223,6 +228,7 @@ fun MyReportsScreen(
                         }
                     }
                 }
+              }
             }
         }
     }

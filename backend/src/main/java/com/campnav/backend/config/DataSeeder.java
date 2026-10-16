@@ -59,16 +59,20 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedInitialAdmin() {
-        String adminEmail = "raphaelfrank01@gmail.com";
-        String adminUsername = "admin";
-        String adminPassword = System.getenv("ADMIN_PASSWORD") != null ? System.getenv("ADMIN_PASSWORD") : "Raphaelfrank1111";
+        String adminEmail = "raphaelfrank720@gmail.com";
+        String adminUsername = "mwalb66";
+        String adminPassword = System.getenv("ADMIN_PASSWORD") != null ? System.getenv("ADMIN_PASSWORD") : "CAMPNAV1111()";
 
-        if (userRepository.findByEmail(adminEmail).isEmpty() && userRepository.findByUsername(adminUsername).isEmpty()) {
-            CommunityUser adminUser = CommunityUser.builder()
-                    .externalId("ADMIN-RAPHAEL-01")
+        CommunityUser adminUser = userRepository.findByUsername(adminUsername)
+                .orElseGet(() -> userRepository.findByEmail(adminEmail)
+                        .orElse(null));
+
+        if (adminUser == null) {
+            adminUser = CommunityUser.builder()
+                    .externalId("ADMIN-MWALB66")
                     .username(adminUsername)
                     .email(adminEmail)
-                    .fullName("Raphael Frank (Admin)")
+                    .fullName("Mwalb Administrator")
                     .passwordHash(passwordEncoder.encode(adminPassword))
                     .role(CommunityUser.UserRole.ADMIN)
                     .isActive(true)
@@ -76,6 +80,14 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
             userRepository.save(adminUser);
             System.out.println("Initialized Admin account for " + adminEmail);
+        } else {
+            adminUser.setUsername(adminUsername);
+            adminUser.setEmail(adminEmail);
+            adminUser.setRole(CommunityUser.UserRole.ADMIN);
+            adminUser.setIsActive(true);
+            adminUser.setPasswordHash(passwordEncoder.encode(adminPassword));
+            userRepository.save(adminUser);
+            System.out.println("Updated Admin account credentials.");
         }
     }
 

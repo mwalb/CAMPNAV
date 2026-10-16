@@ -113,46 +113,66 @@ fun AddLocationScreen(
             )
         } else if (submittedContribution != null && areaType != "COMMERCIAL_AREA") {
             // Success State View for University Area
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            org.com.core.ui.components.CenteredPageContainer(
+                maxWidth = 560.dp,
+                modifier = Modifier.fillMaxSize()
             ) {
-                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(72.dp))
-                Spacer(Modifier.height(16.dp))
-                Text("Contribution Submitted Successfully!", style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                Text("Reference: ${submittedContribution!!.reference}", style = MaterialTheme.typography.titleMedium, color = AppColorScheme.primary)
-                Spacer(Modifier.height(16.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant),
-                    modifier = Modifier.fillMaxWidth()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Status: ${submittedContribution!!.status}", color = Color.Yellow, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(8.dp))
-                        Text("Area Type: ${submittedContribution!!.areaType}", color = Color.White)
-                        Text("University area submissions are reviewed for official mapping.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(72.dp))
+                    Spacer(Modifier.height(16.dp))
+                    Text("Contribution Submitted Successfully!", style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Reference: ${submittedContribution!!.reference}", style = MaterialTheme.typography.titleMedium, color = AppColorScheme.primary)
+                    Spacer(Modifier.height(16.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Status: ${submittedContribution!!.status}", color = Color.Yellow, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
+                            Text("Area Type: ${submittedContribution!!.areaType}", color = Color.White)
+                            Text("University area submissions are reviewed for official mapping.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        }
                     }
-                }
-                Spacer(Modifier.height(24.dp))
-                Button(
-                    onClick = { onSubmissionSuccess(submittedContribution!!.reference) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
-                ) {
-                    Text("View Status / Back")
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = { onSubmissionSuccess(submittedContribution!!.reference) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColorScheme.primary)
+                    ) {
+                        Text("View Status / Back")
+                    }
                 }
             }
         } else {
-            LazyColumn(
+            org.com.core.ui.components.CenteredPageContainer(
+                maxWidth = 660.dp,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(24.dp)
             ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 660.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onBack) {
@@ -445,4 +465,6 @@ fun AddLocationScreen(
             }
         }
     }
+}
+}
 }

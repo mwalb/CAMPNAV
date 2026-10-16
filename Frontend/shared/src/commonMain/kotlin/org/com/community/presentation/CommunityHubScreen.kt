@@ -35,41 +35,51 @@ fun CommunityHubScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
+        org.com.core.ui.components.CenteredPageContainer(
+            maxWidth = 700.dp,
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 24.dp)
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onBackground)
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onBackground)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Community Hub",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Explore reviews, share feedback & leader portal",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
-                Spacer(Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = "Community Hub",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Explore reviews, share feedback & leader portal",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
 
-            Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(24.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                 item {
                     CommunityCard(
                         title = "Community Reviews",
@@ -113,7 +123,7 @@ fun CommunityHubScreen(
                 item {
                     CommunityCard(
                         title = "Contact Us",
-                        subtitle = "Get in touch with CAMPNAV support (0745596995)",
+                        subtitle = "Get in touch with CAMPNAV support (0748409358)",
                         icon = Icons.Default.Phone,
                         color = Color(0xFF4CAF50),
                         onClick = onNavigateToContact
@@ -129,6 +139,7 @@ fun CommunityHubScreen(
                         onClick = onNavigateToAdmin
                     )
                 }
+              }
             }
         }
     }

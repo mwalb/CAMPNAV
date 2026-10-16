@@ -172,17 +172,23 @@ fun CommunityMapScreen(
                 }
             }
 
-            IconButton(
-                onClick = { loadReportsForSelectedUniversity() },
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    Icons.Default.Refresh,
-                    contentDescription = "Refresh",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+                IconButton(
+                    onClick = { loadReportsForSelectedUniversity() },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                org.com.core.ui.components.ThemeToggleButton()
             }
         }
 

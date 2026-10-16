@@ -2,6 +2,11 @@ package com.campnav.backend.controller;
 
 import com.campnav.backend.model.CommunityReview;
 import com.campnav.backend.service.CommunityReviewService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +28,7 @@ public class CommunityReviewController {
     }
 
     @PostMapping("/reviews")
-    public ResponseEntity<CommunityReview> addReview(@RequestBody ReviewRequest request) {
+    public ResponseEntity<CommunityReview> addReview(@Valid @RequestBody ReviewRequest request) {
         CommunityReview review = reviewService.addReview(
                 request.getUniversityId(),
                 request.getLocationId(),
@@ -76,10 +81,16 @@ public class CommunityReviewController {
 
     @Data
     public static class ReviewRequest {
+        @NotNull(message = "University ID is required")
         private Long universityId;
         private Long locationId;
+        @NotNull(message = "Rating is required")
+        @Min(value = 1, message = "Rating must be at least 1")
+        @Max(value = 5, message = "Rating must be at most 5")
         private Integer rating;
+        @NotBlank(message = "Comment is required")
         private String comment;
+        @NotBlank(message = "Contributor name is required")
         private String contributorName;
         private String contributorContact;
     }

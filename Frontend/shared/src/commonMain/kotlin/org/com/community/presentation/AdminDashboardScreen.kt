@@ -176,17 +176,18 @@ fun AdminDashboardScreen(
                         } else {
                             when (selectedSection) {
                                 AdminSection.OVERVIEW -> OverviewContent(issues, contributions, reviews, feedbacks, logs) { selectedSection = it }
-                                AdminSection.COMMUNITY_ISSUES -> IssuesContent(issues, { id, status, msg ->
-                                    scope.launch { communityRepo.adminUpdateStatus(token, id, status, msg, null, null); loadData() }
-                                }, {}, { externalId ->
-                                    scope.launch { communityRepo.resendLeaderNotification(token, externalId); loadData() }
-                                })
+                                AdminSection.COMMUNITY_ISSUES -> IssuesContent(
+                                    issues = issues,
+                                    onUpdateStatus = { id, status, msg -> scope.launch { communityRepo.adminUpdateStatus(token, id, status, msg, null, null); loadData() } },
+                                    onResolve = {},
+                                    onResendNotification = { externalId -> scope.launch { communityRepo.resendLeaderNotification(token, externalId); loadData() } },
+                                    onDeleteIssue = { externalId -> scope.launch { communityRepo.deleteAdminIssue(token, externalId); loadData() } }
+                                )
                                 AdminSection.STUDENT_LEADERS -> StudentLeadersAdminContent(
                                     leaders = leaders,
                                     onAppointNew = { showAppointLeaderDialog = true },
-                                    onUpdateStatus = { id, status ->
-                                        scope.launch { communityRepo.updateLeaderStatus(token, id, status, null); loadData() }
-                                    }
+                                    onUpdateStatus = { id, status -> scope.launch { communityRepo.updateLeaderStatus(token, id, status, null); loadData() } },
+                                    onDeleteLeader = { id -> scope.launch { communityRepo.deleteLeaderAccount(token, id); loadData() } }
                                 )
                                 AdminSection.ISSUE_NOTIFICATIONS -> NotificationsAdminContent(
                                     notifications = notifications,
@@ -196,8 +197,18 @@ fun AdminDashboardScreen(
                                     unassignedIssues = issues.filter { it.routingStatus == "UNASSIGNED" },
                                     onAppointLeader = { showAppointLeaderDialog = true }
                                 )
-                                AdminSection.COMMUNITY_REVIEWS -> ReviewsContent(reviews, { id -> scope.launch { communityRepo.approveReview(token, id); loadData() } }, {}, {})
-                                AdminSection.USER_FEEDBACK -> FeedbackContent(feedbacks, { id -> scope.launch { communityRepo.approveFeedback(token, id); loadData() } }, {}, {})
+                                AdminSection.COMMUNITY_REVIEWS -> ReviewsContent(
+                                    reviews = reviews,
+                                    onApprove = { id -> scope.launch { communityRepo.approveReview(token, id); loadData() } },
+                                    onReject = { id, reason -> scope.launch { communityRepo.rejectReview(token, id, reason); loadData() } },
+                                    onDelete = { id -> scope.launch { communityRepo.deleteReview(token, id); loadData() } }
+                                )
+                                AdminSection.USER_FEEDBACK -> FeedbackContent(
+                                    feedbacks = feedbacks,
+                                    onApprove = { id -> scope.launch { communityRepo.approveFeedback(token, id); loadData() } },
+                                    onReject = { id, reason -> scope.launch { communityRepo.rejectFeedback(token, id, reason); loadData() } },
+                                    onDelete = { id -> scope.launch { communityRepo.deleteFeedback(token, id); loadData() } }
+                                )
                                 AdminSection.LOCATION_CONTRIBUTIONS -> ContributionsContent(contributions, { id -> scope.launch { communityRepo.approveContribution(token, id); loadData() } }, { id, reason -> scope.launch { communityRepo.rejectContribution(token, id, reason); loadData() } })
                                 AdminSection.ACTIVITY_LOGS -> LogsContent(logs)
                             }
@@ -322,56 +333,92 @@ fun AdminDashboardScreen(
 fun StudentLeadersAdminContent(
     leaders: List<StudentLeaderDTO>,
     onAppointNew: () -> Unit,
-    onUpdateStatus: (Long, String) -> Unit
+    onUpdateStatus: (Long, String) -> Unit,
+    onDeleteLeader: (Long) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("University Student Leaders (${leaders.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
-            Button(onClick = onAppointNew, shape = RoundedCornerShape(12.dp)) {
-                Icon(Icons.Default.PersonAdd, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Appoint New Leader")
+    var leaderToDelete by remember { mutableStateOf<StudentLeaderDTO?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("University Student Leaders (${leaders.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                Button(onClick = onAppointNew, shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.PersonAdd, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Appoint New Leader")
+                }
             }
-        }
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-        if (leaders.isEmpty()) {
-            Text("No student leaders appointed.", color = Color.Gray)
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(leaders) { leader ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(leader.leaderFullName + " (@" + leader.leaderUsername + ")", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
-                                Text("University: " + leader.universityName, color = AppColorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                                Text("Email: " + leader.leaderEmail, color = Color.Gray, fontSize = 12.sp)
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (leader.status == "ACTIVE") Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFEF4444).copy(alpha = 0.2f)
-                            ) {
-                                Text(leader.status, color = if (leader.status == "ACTIVE") Color(0xFF10B981) else Color(0xFFEF4444), fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.padding(6.dp))
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            if (leader.status == "ACTIVE" && leader.id != null) {
-                                OutlinedButton(onClick = { onUpdateStatus(leader.id, "DEACTIVATED") }) {
-                                    Text("Deactivate", fontSize = 11.sp, color = Color(0xFFEF4444))
+            if (leaders.isEmpty()) {
+                Text("No student leaders appointed.", color = Color.Gray)
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(leaders) { leader ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(leader.leaderFullName + " (@" + leader.leaderUsername + ")", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+                                    Text("University: " + leader.universityName, color = AppColorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("Email: " + leader.leaderEmail, color = Color.Gray, fontSize = 12.sp)
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (leader.status == "ACTIVE") Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFEF4444).copy(alpha = 0.2f)
+                                ) {
+                                    Text(leader.status, color = if (leader.status == "ACTIVE") Color(0xFF10B981) else Color(0xFFEF4444), fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.padding(6.dp))
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                if (leader.status == "ACTIVE" && leader.id != null) {
+                                    OutlinedButton(onClick = { onUpdateStatus(leader.id, "DEACTIVATED") }) {
+                                        Text("Deactivate", fontSize = 11.sp, color = Color(0xFFEF4444))
+                                    }
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                if (leader.id != null) {
+                                    OutlinedButton(onClick = { leaderToDelete = leader }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444))) {
+                                        Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Delete", fontSize = 11.sp)
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+
+        leaderToDelete?.let { leader ->
+            AlertDialog(
+                onDismissRequest = { leaderToDelete = null },
+                title = { Text("Confirm Delete University Leader", fontWeight = FontWeight.Bold, color = Color.White) },
+                text = { Text("Are you sure you want to delete/deactivate University Leader account for ${leader.leaderFullName} (${leader.universityName})?", color = Color.LightGray) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            leader.id?.let { onDeleteLeader(it) }
+                            leaderToDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { leaderToDelete = null }) { Text("Cancel", color = Color.Gray) }
+                },
+                containerColor = AppColorScheme.surface
+            )
         }
     }
 }
@@ -530,120 +577,134 @@ fun IssuesContent(
     issues: List<IssueReport>,
     onUpdateStatus: (String, String, String) -> Unit,
     onResolve: (IssueReport) -> Unit,
-    onResendNotification: (String) -> Unit
+    onResendNotification: (String) -> Unit,
+    onDeleteIssue: (String) -> Unit
 ) {
     var selectedIssue by remember { mutableStateOf<IssueReport?>(null) }
+    var issueToDelete by remember { mutableStateOf<IssueReport?>(null) }
     var notificationMessage by remember { mutableStateOf<String?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Community Issues (${issues.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
-        }
-
-        notificationMessage?.let { msg ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B5E20)),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(msg, color = Color.White, modifier = Modifier.padding(12.dp), fontSize = 12.sp)
+                Text("Community Issues (${issues.size})", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
             }
-        }
 
-        if (issues.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No issue reports registered.", color = Color.Gray)
+            notificationMessage?.let { msg ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B5E20)),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                ) {
+                    Text(msg, color = Color.White, modifier = Modifier.padding(12.dp), fontSize = 12.sp)
+                }
             }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(issues) { issue ->
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(issue.id, fontWeight = FontWeight.Bold, color = AppColorScheme.primary, fontSize = 14.sp)
+
+            if (issues.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No issue reports registered.", color = Color.Gray)
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(issues) { issue ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = AppColorScheme.surfaceVariant.copy(alpha = 0.7f)),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(issue.id, fontWeight = FontWeight.Bold, color = AppColorScheme.primary, fontSize = 14.sp)
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = AppColorScheme.primary.copy(alpha = 0.2f)
+                                        ) {
+                                            Text(
+                                                issue.category.displayName,
+                                                color = AppColorScheme.primary,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
-                                        color = AppColorScheme.primary.copy(alpha = 0.2f)
+                                        color = when (issue.status) {
+                                            IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF10B981).copy(alpha = 0.2f)
+                                            IssueStatus.IN_PROGRESS, IssueStatus.UNDER_REVIEW -> Color(0xFF3B82F6).copy(alpha = 0.2f)
+                                            IssueStatus.REJECTED -> Color(0xFFEF4444).copy(alpha = 0.2f)
+                                            else -> Color(0xFFFFB74D).copy(alpha = 0.2f)
+                                        }
                                     ) {
                                         Text(
-                                            issue.category.displayName,
-                                            color = AppColorScheme.primary,
-                                            fontSize = 11.sp,
+                                            issue.status.name,
+                                            color = when (issue.status) {
+                                                IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF10B981)
+                                                IssueStatus.IN_PROGRESS, IssueStatus.UNDER_REVIEW -> Color(0xFF3B82F6)
+                                                IssueStatus.REJECTED -> Color(0xFFEF4444)
+                                                else -> Color(0xFFFFB74D)
+                                            },
                                             fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            fontSize = 11.sp,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                         )
                                     }
                                 }
 
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = when (issue.status) {
-                                        IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF10B981).copy(alpha = 0.2f)
-                                        IssueStatus.IN_PROGRESS, IssueStatus.UNDER_REVIEW -> Color(0xFF3B82F6).copy(alpha = 0.2f)
-                                        IssueStatus.REJECTED -> Color(0xFFEF4444).copy(alpha = 0.2f)
-                                        else -> Color(0xFFFFB74D).copy(alpha = 0.2f)
-                                    }
+                                Text(issue.description, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        issue.status.name,
-                                        color = when (issue.status) {
-                                            IssueStatus.RESOLVED, IssueStatus.COMMUNITY_VERIFIED -> Color(0xFF10B981)
-                                            IssueStatus.IN_PROGRESS, IssueStatus.UNDER_REVIEW -> Color(0xFF3B82F6)
-                                            IssueStatus.REJECTED -> Color(0xFFEF4444)
-                                            else -> Color(0xFFFFB74D)
-                                        },
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-
-                            Text(issue.description, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text("University: ${issue.universityName ?: "Campus"}", color = Color.LightGray, fontSize = 12.sp)
-                                    Text("Routing: ${issue.routingStatus}", color = Color.Gray, fontSize = 11.sp)
-                                }
-
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(
-                                        onClick = { selectedIssue = issue },
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Icon(Icons.Default.Info, null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(4.dp))
-                                        Text("Details", fontSize = 11.sp)
+                                    Column {
+                                        Text("University: ${issue.universityName ?: "Campus"}", color = Color.LightGray, fontSize = 12.sp)
+                                        Text("Routing: ${issue.routingStatus}", color = Color.Gray, fontSize = 11.sp)
                                     }
 
-                                    Button(
-                                        onClick = {
-                                            onResendNotification(issue.id)
-                                            notificationMessage = "Resent email notification to University Student Leader for report ${issue.id}"
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Icon(Icons.Default.Email, null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(4.dp))
-                                        Text("Send Email to Leader", fontSize = 11.sp)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedButton(
+                                            onClick = { selectedIssue = issue },
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Icon(Icons.Default.Info, null, modifier = Modifier.size(16.dp))
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("Details", fontSize = 11.sp)
+                                        }
+
+                                        Button(
+                                            onClick = {
+                                                onResendNotification(issue.id)
+                                                notificationMessage = "Resent email notification to University Student Leader for report ${issue.id}"
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Icon(Icons.Default.Email, null, modifier = Modifier.size(16.dp))
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("Send Email to Leader", fontSize = 11.sp)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = { issueToDelete = issue },
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("Delete", fontSize = 11.sp)
+                                        }
                                     }
                                 }
                             }
@@ -652,43 +713,66 @@ fun IssuesContent(
                 }
             }
         }
-    }
 
-    // Issue Details Dialog
-    selectedIssue?.let { item ->
-        AlertDialog(
-            onDismissRequest = { selectedIssue = null },
-            title = { Text("Issue Details — ${item.id}", fontWeight = FontWeight.Bold, color = Color.White) },
-            text = {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    DetailRow("Report Reference", item.id)
-                    DetailRow("Category", item.category.displayName)
-                    DetailRow("Urgency", item.urgency)
-                    DetailRow("University", item.universityName ?: "Campus")
-                    DetailRow("Campus", item.campusName ?: "Main Campus")
-                    DetailRow("Description", item.description)
-                    DetailRow("Exact Latitude", item.issueLocation.latitude.toString())
-                    DetailRow("Exact Longitude", item.issueLocation.longitude.toString())
-                    DetailRow("Location Source", item.locationSource)
-                    DetailRow("Reporter Name", item.reporterName ?: "Campus Student")
-                    DetailRow("Reporter Email", item.reporterEmail ?: "student@campnav.org")
-                    DetailRow("Reporter Phone", item.reporterPhone ?: "n/a")
-                    DetailRow("Report Status", item.status.name)
-                    DetailRow("Routing Status", item.routingStatus)
-                    item.publicResponse?.let { DetailRow("Public Response", it) }
-                    item.internalNotes?.let { DetailRow("Internal Notes", it) }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { selectedIssue = null }) {
-                    Text("Close", color = AppColorScheme.primary)
-                }
-            },
-            containerColor = AppColorScheme.surface
-        )
+        issueToDelete?.let { issue ->
+            AlertDialog(
+                onDismissRequest = { issueToDelete = null },
+                title = { Text("Confirm Delete Issue Report", fontWeight = FontWeight.Bold, color = Color.White) },
+                text = { Text("Are you sure you want to delete issue report ${issue.id}? This action cannot be undone.", color = Color.LightGray) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            onDeleteIssue(issue.id)
+                            issueToDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { issueToDelete = null }) { Text("Cancel", color = Color.Gray) }
+                },
+                containerColor = AppColorScheme.surface
+            )
+        }
+
+        // Issue Details Dialog
+        selectedIssue?.let { item ->
+            AlertDialog(
+                onDismissRequest = { selectedIssue = null },
+                title = { Text("Issue Details — ${item.id}", fontWeight = FontWeight.Bold, color = Color.White) },
+                text = {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        DetailRow("Report Reference", item.id)
+                        DetailRow("Category", item.category.displayName)
+                        DetailRow("Urgency", item.urgency)
+                        DetailRow("University", item.universityName ?: "Campus")
+                        DetailRow("Campus", item.campusName ?: "Main Campus")
+                        DetailRow("Description", item.description)
+                        DetailRow("Exact Latitude", item.issueLocation.latitude.toString())
+                        DetailRow("Exact Longitude", item.issueLocation.longitude.toString())
+                        DetailRow("Location Source", item.locationSource)
+                        DetailRow("Reporter Name", item.reporterName ?: "Campus Student")
+                        DetailRow("Reporter Email", item.reporterEmail ?: "student@campnav.org")
+                        DetailRow("Reporter Phone", item.reporterPhone ?: "n/a")
+                        DetailRow("Report Status", item.status.name)
+                        DetailRow("Routing Status", item.routingStatus)
+                        item.publicResponse?.let { DetailRow("Public Response", it) }
+                        item.internalNotes?.let { DetailRow("Internal Notes", it) }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { selectedIssue = null }) {
+                        Text("Close", color = AppColorScheme.primary)
+                    }
+                },
+                containerColor = AppColorScheme.surface
+            )
+        }
     }
 }
 
@@ -716,12 +800,12 @@ fun MetricCard(
 }
 
 @Composable
-fun ReviewsContent(reviews: List<CommunityReview>, onApprove: (Long) -> Unit, onReject: (Long) -> Unit, onDelete: (Long) -> Unit) {
+fun ReviewsContent(reviews: List<CommunityReview>, onApprove: (Long) -> Unit, onReject: (Long, String) -> Unit, onDelete: (Long) -> Unit) {
     LazyColumn(modifier = Modifier.fillMaxSize()) { items(reviews) { Text(it.comment, color = Color.White) } }
 }
 
 @Composable
-fun FeedbackContent(feedbacks: List<UserFeedback>, onApprove: (Long) -> Unit, onReject: (Long) -> Unit, onDelete: (Long) -> Unit) {
+fun FeedbackContent(feedbacks: List<UserFeedback>, onApprove: (Long) -> Unit, onReject: (Long, String) -> Unit, onDelete: (Long) -> Unit) {
     LazyColumn(modifier = Modifier.fillMaxSize()) { items(feedbacks) { Text(it.feedbackText, color = Color.White) } }
 }
 

@@ -21,7 +21,6 @@ enum class AppMode {
     ReportingLanding,
     CommunityReport,
     CommunityDashboard,
-    CommunityMap,
     MyReports,
     TrackReport,
     IssueDetail,
@@ -61,16 +60,18 @@ fun MainApp() {
         saveThemeIsDark(nextValue)
     }
 
-    CampNavTheme(isDark = isDarkTheme) {
-        when (mode) {
-            AppMode.Landing -> LandingScreen(
-                onExploreCampuses = { mode = AppMode.UniversitySelection },
-                onReportIssue = { mode = AppMode.ReportingLanding },
-                onEntertainment = { mode = AppMode.Entertainment },
-                onCommunity = { mode = AppMode.CommunityHub },
-                isDarkTheme = isDarkTheme,
-                onToggleTheme = { toggleTheme() }
-            )
+    CompositionLocalProvider(
+        org.com.core.ui.components.LocalIsDarkTheme provides isDarkTheme,
+        org.com.core.ui.components.LocalThemeToggle provides { toggleTheme() }
+    ) {
+        CampNavTheme(isDark = isDarkTheme) {
+            when (mode) {
+                AppMode.Landing -> LandingScreen(
+                    onExploreCampuses = { mode = AppMode.UniversitySelection },
+                    onReportIssue = { mode = AppMode.ReportingLanding },
+                    onEntertainment = { mode = AppMode.Entertainment },
+                    onCommunity = { mode = AppMode.CommunityHub }
+                )
             AppMode.Entertainment -> IPTVPlayerApp(
                 onBackToSelection = { mode = AppMode.Landing }
             )
@@ -183,7 +184,6 @@ fun MainApp() {
             }
             AppMode.ReportingLanding -> ReportingLandingScreen(
                 onReportNew = { mode = AppMode.CommunityReport },
-                onViewMap = { mode = AppMode.CommunityMap },
                 onViewMyReports = { mode = AppMode.MyReports },
                 onTrackReport = { mode = AppMode.TrackReport },
                 onBack = { mode = AppMode.Landing }
@@ -209,19 +209,10 @@ fun MainApp() {
             AppMode.CommunityDashboard -> CommunityDashboardScreen(
                 userRole = UserRole.CITIZEN,
                 onBack = { mode = AppMode.ReportingLanding },
-                onNavigateToMap = { mode = AppMode.CommunityMap },
                 onReportSelected = { id ->
                     selectedIssueId = id
                     mode = AppMode.IssueDetail
                 }
-            )
-            AppMode.CommunityMap -> CommunityMapScreen(
-                initialUniversityId = selectedUniversity?.id ?: 1L,
-                onReportSelected = { id ->
-                    selectedIssueId = id
-                    mode = AppMode.IssueDetail
-                },
-                onBack = { mode = AppMode.ReportingLanding }
             )
             AppMode.IssueDetail -> selectedIssueId?.let { id ->
                 IssueDetailScreen(
@@ -231,7 +222,6 @@ fun MainApp() {
             } ?: run {
                 ReportingLandingScreen(
                     onReportNew = { mode = AppMode.CommunityReport },
-                    onViewMap = { mode = AppMode.CommunityMap },
                     onViewMyReports = { mode = AppMode.MyReports },
                     onTrackReport = { mode = AppMode.TrackReport },
                     onBack = { mode = AppMode.Landing }
@@ -269,4 +259,5 @@ fun MainApp() {
             }
         }
     }
+  }
 }
