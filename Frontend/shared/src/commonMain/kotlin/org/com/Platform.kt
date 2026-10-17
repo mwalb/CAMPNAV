@@ -13,3 +13,5 @@ expect fun formatEpochMillis(millis: Long): String
 expect fun getSavedThemeIsDark(): Boolean?
 
 expect fun saveThemeIsDark(isDark: Boolean)
+
+expect fun getApiBaseUrl(): String

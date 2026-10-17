@@ -43,3 +43,24 @@ actual fun saveThemeIsDark(isDark: Boolean) {
         // ignore
     }
 }
+
+actual fun getApiBaseUrl(): String {
+    return try {
+        val window = kotlinx.browser.window
+        val customUrl = window.asDynamic().__CAMPNAV_API_URL__ as? String
+        if (!customUrl.isNullOrBlank()) return customUrl
+
+        val metaElement = kotlinx.browser.document.querySelector("meta[name='campnav-api-url']")
+        val metaUrl = metaElement?.getAttribute("content")
+        if (!metaUrl.isNullOrBlank()) return metaUrl
+
+        val hostname = window.location.hostname
+        if (hostname == "localhost" || hostname == "127.0.0.1") {
+            "http://localhost:8080"
+        } else {
+            "https://campnav.fly.dev"
+        }
+    } catch (e: Exception) {
+        "http://localhost:8080"
+    }
+}

@@ -1,0 +1,36 @@
+# Fly.io configuration for CAMPNAV Backend (deployed from repository root)
+app = "campnav"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  SPRING_PROFILES_ACTIVE = "prod"
+  CAMPNAV_EMAIL_ENABLED = "true"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop_app"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[http_service.checks]]
+  grace_period = "15s"
+  interval = "10s"
+  method = "GET"
+  timeout = "2s"
+  path = "/actuator/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

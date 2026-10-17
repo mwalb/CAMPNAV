@@ -3,6 +3,7 @@ package com.campnav.backend.controller;
 import jakarta.mail.internet.MimeMessage;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -14,10 +15,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/contact")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ContactController {
 
-    private final JavaMailSender mailSender;
+    private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
     @Value("${spring.mail.username:charlesnestory793@gmail.com}")
     private String contactRecipientEmail;
@@ -32,6 +32,14 @@ public class ContactController {
         }
         if (request.getMessage() == null || request.getMessage().trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Message is required."));
+        }
+
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+        if (mailSender == null) {
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Contact inquiry received (email delivery disabled)."
+            ));
         }
 
         String subj = request.getSubject() != null && !request.getSubject().trim().isEmpty()
@@ -52,7 +60,9 @@ public class ContactController {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo("charlesnestory793@gmail.com");
+            String recipient = (contactRecipientEmail != null && !contactRecipientEmail.isBlank())
+                    ? contactRecipientEmail : "charlesnestory793@gmail.com";
+            helper.setTo(recipient);
             helper.setReplyTo(request.getEmail().trim());
             helper.setSubject(subj);
             helper.setText(request.getMessage(), htmlBody);
@@ -60,7 +70,7 @@ public class ContactController {
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "message", "Contact inquiry successfully sent to provider."
+                    "message", "Contact inquiry successfully sent."
             ));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(

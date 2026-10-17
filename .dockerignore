@@ -1,0 +1,14 @@
+.git
+.gitignore
+.idea
+.gradle
+Frontend/
+backend/build
+backend/.gradle
+database.sql
+database-seed-report.md
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*

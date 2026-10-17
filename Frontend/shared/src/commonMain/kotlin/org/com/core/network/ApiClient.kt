@@ -7,16 +7,15 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
-import org.com.getPlatform
+import org.com.getApiBaseUrl
 
 object ApiConfig {
 
-    const val WEB_BASE_URL = "http://localhost:8080"
+    const val DEFAULT_WEB_BASE_URL = "http://localhost:8080"
     const val ANDROID_BASE_URL = "http://10.0.2.2:8080"
     
     fun getBaseUrl(): String {
-        val platform = getPlatform().name.lowercase()
-        return if (platform.contains("android")) ANDROID_BASE_URL else WEB_BASE_URL
+        return getApiBaseUrl()
     }
 }
 

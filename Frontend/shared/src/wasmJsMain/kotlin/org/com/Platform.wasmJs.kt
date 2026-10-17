@@ -47,3 +47,20 @@ actual fun getSavedThemeIsDark(): Boolean? {
 actual fun saveThemeIsDark(isDark: Boolean) {
     jsSaveThemeIsDark(isDark)
 }
+
+@JsFun("""() => {
+    try {
+        if (window.__CAMPNAV_API_URL__) return window.__CAMPNAV_API_URL__;
+        const meta = document.querySelector("meta[name='campnav-api-url']");
+        if (meta && meta.content) return meta.content;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return 'http://localhost:8080';
+        }
+        return 'https://campnav.fly.dev';
+    } catch(e) {
+        return 'http://localhost:8080';
+    }
+}""")
+private external fun jsGetApiBaseUrl(): String
+
+actual fun getApiBaseUrl(): String = jsGetApiBaseUrl()

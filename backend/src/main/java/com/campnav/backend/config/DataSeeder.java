@@ -8,6 +8,8 @@ import com.campnav.backend.service.StudentLeaderService;
 import com.campnav.backend.service.UniversityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +29,15 @@ public class DataSeeder implements CommandLineRunner {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private Environment environment;
+
+    @org.springframework.beans.factory.annotation.Value("${campnav.admin.email:raphaelfrank720@gmail.com}")
+    private String adminEmailProp;
+
+    @org.springframework.beans.factory.annotation.Value("${campnav.admin.password:CAMPNAV1111()}")
+    private String adminPasswordProp;
 
     @Override
     public void run(String... args) throws Exception {
@@ -59,15 +70,26 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedInitialAdmin() {
-        String adminEmail = "raphaelfrank720@gmail.com";
-        String adminUsername = "mwalb66";
-        String adminPassword = System.getenv("ADMIN_PASSWORD") != null ? System.getenv("ADMIN_PASSWORD") : "CAMPNAV1111()";
+        boolean isProduction = environment.acceptsProfiles(Profiles.of("prod"));
 
+        String adminEmail = (adminEmailProp != null && !adminEmailProp.isBlank()) ? adminEmailProp.trim() : "raphaelfrank720@gmail.com";
+        String adminUsername = "mwalb66";
+
+        String envAdminPassword = System.getenv("ADMIN_PASSWORD");
+        String adminPassword = (envAdminPassword != null && !envAdminPassword.isBlank())
+                ? envAdminPassword.trim()
+                : ((adminPasswordProp != null && !adminPasswordProp.isBlank()) ? adminPasswordProp.trim() : "CAMPNAV1111()");
+
+        // Check if admin user exists by username or by email
         CommunityUser adminUser = userRepository.findByUsername(adminUsername)
                 .orElseGet(() -> userRepository.findByEmail(adminEmail)
                         .orElse(null));
 
         if (adminUser == null) {
+            if (isProduction && (adminPassword.isBlank() || "CAMPNAV1111()".equals(adminPassword) || adminPassword.length() < 8)) {
+                throw new IllegalStateException("Production startup failed: A secure ADMIN_PASSWORD environment variable (at least 8 characters) is required to create the initial admin user.");
+            }
+
             adminUser = CommunityUser.builder()
                     .externalId("ADMIN-MWALB66")
                     .username(adminUsername)
@@ -79,15 +101,22 @@ public class DataSeeder implements CommandLineRunner {
                     .reputationScore(100)
                     .build();
             userRepository.save(adminUser);
-            System.out.println("Initialized Admin account for " + adminEmail);
+            System.out.println("Initialized Admin account for username: " + adminUsername);
         } else {
-            adminUser.setUsername(adminUsername);
-            adminUser.setEmail(adminEmail);
-            adminUser.setRole(CommunityUser.UserRole.ADMIN);
-            adminUser.setIsActive(true);
-            adminUser.setPasswordHash(passwordEncoder.encode(adminPassword));
-            userRepository.save(adminUser);
-            System.out.println("Updated Admin account credentials.");
+            // Existing admin account found: verify role and status without resetting existing password
+            boolean updated = false;
+            if (adminUser.getRole() != CommunityUser.UserRole.ADMIN) {
+                adminUser.setRole(CommunityUser.UserRole.ADMIN);
+                updated = true;
+            }
+            if (!Boolean.TRUE.equals(adminUser.getIsActive())) {
+                adminUser.setIsActive(true);
+                updated = true;
+            }
+            if (updated) {
+                userRepository.save(adminUser);
+                System.out.println("Verified Admin account role and active status.");
+            }
         }
     }
 
