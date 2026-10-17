@@ -58,7 +58,7 @@ actual fun getApiBaseUrl(): String {
         if (hostname == "localhost" || hostname == "127.0.0.1") {
             "http://localhost:8080"
         } else {
-            "https://campnav.fly.dev"
+            "https://campnav-1.fly.dev"
         }
     } catch (e: Exception) {
         "http://localhost:8080"

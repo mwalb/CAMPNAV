@@ -56,7 +56,7 @@ actual fun saveThemeIsDark(isDark: Boolean) {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             return 'http://localhost:8080';
         }
-        return 'https://campnav.fly.dev';
+        return 'https://campnav-1.fly.dev';
     } catch(e) {
         return 'http://localhost:8080';
     }
