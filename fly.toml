@@ -1,6 +1,10 @@
-# Fly.io configuration for CAMPNAV Backend (deployed from repository root)
+# fly.toml app configuration file generated for campnav on 2026-10-17T21:22:23Z
+#
+# See https://docs.fly.io/reference/configuration for information about how to use this file.
+#
+
 app = "campnav"
-primary_region = "fra"
+primary_region = 'fra'
 
 [build]
   dockerfile = "Dockerfile"
@@ -16,21 +20,19 @@ primary_region = "fra"
   auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 0
-  processes = ["app"]
-
-  [http_service.concurrency]
-    type = "requests"
-    hard_limit = 250
-    soft_limit = 200
-
-[[http_service.checks]]
-  grace_period = "15s"
-  interval = "10s"
-  method = "GET"
-  timeout = "2s"
-  path = "/actuator/health"
+  processes = ['app']
+  checks = [{ grace_period = '15s', interval = '10s', method = 'GET', path = '/actuator/health', timeout = '2s' }]
+  concurrency = { hard_limit = 250, soft_limit = 200, type = 'requests' }
 
 [[vm]]
-  memory = "512mb"
-  cpu_kind = "shared"
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
+
+[[vm]]
+  memory = '47gb'
+  cpu_kind = 'performance'
+  cpus = 16
+  memory_mb = 48128
+  processes = ['app']
+  size = 'performance-16x'
