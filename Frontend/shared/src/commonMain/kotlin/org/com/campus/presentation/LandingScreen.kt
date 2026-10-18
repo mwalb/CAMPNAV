@@ -35,6 +35,11 @@ fun LandingScreen(
     onEntertainment: () -> Unit = {},
     onCommunity: () -> Unit = {}
 ) {
+    DisposableEffect(Unit) {
+        setHomeScreenAdEnabled(true)
+        onDispose { setHomeScreenAdEnabled(false) }
+    }
+
     var startAnimation by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
