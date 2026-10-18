@@ -274,7 +274,7 @@ private fun initGlobalJSBridge() {
         currentLocBtn.style.cssText = btnStyle;
         currentLocBtn.onclick = () => {
             console.log("[CAMPNAV] [DIAGNOSTIC] CURRENT LOCATION SELECTED");
-            const navWindow = window.open('about:blank', '_blank');
+            const navWindow = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? null : window.open('about:blank', '_blank');
             window.getPositionWithFallback((pos) => {
                 const oLat = pos.coords.latitude;
                 const oLng = pos.coords.longitude;
@@ -288,7 +288,7 @@ private fun initGlobalJSBridge() {
                 if (navWindow) {
                     navWindow.location.href = url;
                 } else {
-                    window.open(url, '_blank');
+                    window.location.href = url;
                 }
                 console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
                 window.hideNavOverlays();
@@ -443,7 +443,7 @@ private fun initGlobalJSBridge() {
             } else if (!finalDest) {
                 alert("Destination missing.");
             } else {
-                const navWindow = window.open('about:blank', '_blank');
+                const navWindow = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? null : window.open('about:blank', '_blank');
                 window.getPositionWithFallback((pos) => {
                     console.log("[CAMPNAV] [DIAGNOSTIC] CURRENT LOCATION SELECTED");
                     console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LATITUDE: " + pos.coords.latitude);
@@ -456,7 +456,7 @@ private fun initGlobalJSBridge() {
                     if (navWindow) {
                         navWindow.location.href = url;
                     } else {
-                        window.open(url, '_blank');
+                        window.location.href = url;
                     }
                     console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
                     window.hideNavOverlays();
@@ -528,7 +528,7 @@ private fun initGlobalJSBridge() {
         
         currentLocBtn.onclick = () => {
             console.log("[CAMPNAV] [DIAGNOSTIC] CURRENT LOCATION SELECTED");
-            const navWindow = window.open('about:blank', '_blank');
+            const navWindow = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? null : window.open('about:blank', '_blank');
             window.getPositionWithFallback((pos) => {
                 window.hideNavOverlays();
                 const url = 'https://www.google.com/maps/dir/?api=1&origin=' + pos.coords.latitude + ',' + pos.coords.longitude + '&destination=' + dest.latitude + ',' + dest.longitude + '&travelmode=driving';
@@ -537,7 +537,7 @@ private fun initGlobalJSBridge() {
                 if (navWindow) {
                     navWindow.location.href = url;
                 } else {
-                    window.open(url, '_blank');
+                    window.location.href = url;
                 }
                 console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
                 console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
