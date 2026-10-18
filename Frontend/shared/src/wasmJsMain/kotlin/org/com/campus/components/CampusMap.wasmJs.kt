@@ -160,31 +160,34 @@ private fun syncWebMarkers(locations: List<CampusLocation>, selectedId: Long?, s
 
     window.getPositionWithFallback = (onSuccess, onError) => {
         if (!navigator.geolocation) {
-            console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION FAILURE: Geolocation not supported");
             onError("Geolocation not supported");
             return;
         }
+
         console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION REQUEST STARTED");
+
+        // Prefer a recent cached position; don't wait 30 seconds for the first result.
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS (standard accuracy)");
+                console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS");
                 onSuccess(pos);
             },
             (err1) => {
-                console.warn("[CAMPNAV] Standard accuracy location timeout/fail, trying high accuracy...", err1.message);
+                console.warn("[CAMPNAV] Fast location attempt failed; trying GPS:", err1.message);
+
                 navigator.geolocation.getCurrentPosition(
                     (pos2) => {
-                        console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS (high accuracy)");
+                        console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS (GPS fallback)");
                         onSuccess(pos2);
                     },
                     (err2) => {
-                        console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION FAILURE: " + err2.message);
+                        console.warn("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION FAILURE:", err2.message);
                         onError(err2.message || "Location access failed");
                     },
-                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
                 );
             },
-            { enableHighAccuracy: false, timeout: 30000, maximumAge: 60000 }
+            { enableHighAccuracy: false, timeout: 6000, maximumAge: 120000 }
         );
     };
 
@@ -273,35 +276,43 @@ private fun syncWebMarkers(locations: List<CampusLocation>, selectedId: Long?, s
         currentLocBtn.innerHTML = "Use my current location";
         currentLocBtn.style.cssText = btnStyle;
         currentLocBtn.onclick = () => {
+            if (currentLocBtn.disabled) return;
+
             console.log("[CAMPNAV] [DIAGNOSTIC] CURRENT LOCATION SELECTED");
-            const navWindow = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? null : window.open('about:blank', '_blank');
-            window.getPositionWithFallback((pos) => {
-                const oLat = pos.coords.latitude;
-                const oLng = pos.coords.longitude;
-                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LATITUDE: " + oLat);
-                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN LONGITUDE: " + oLng);
-                console.log("[CAMPNAV] [DIAGNOSTIC] ORIGIN CONFIRMED");
-                console.log("[CAMPNAV] [DIAGNOSTIC] DESTINATION CONSUMED: " + dest.name + " (" + dest.latitude + ", " + dest.longitude + ")");
-                const url = 'https://www.google.com/maps/dir/?api=1&origin=' + oLat + ',' + oLng + '&destination=' + dest.latitude + ',' + dest.longitude + '&travelmode=driving';
-                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION URL CREATED: " + url);
-                console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCH REQUESTED");
-                if (navWindow) {
-                    navWindow.location.href = url;
-                } else {
-                    window.location.href = url;
-                }
-                console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCHED");
-                window.hideNavOverlays();
-                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
-                window.onEndNav();
-            }, (err) => {
-                if (navWindow) navWindow.close();
-                console.warn("[CAMPNAV] Geolocation failed:", err);
-                alert("We couldn't access your current location. Please allow location permissions in your browser or select a starting point manually.");
-                window.hideNavOverlays();
-                console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION STATE RESET");
-                window.onEndNav();
-            });
+            currentLocBtn.disabled = true;
+            currentLocBtn.textContent = "Opening Google Maps…";
+            currentLocBtn.style.opacity = "0.7";
+            currentLocBtn.style.cursor = "wait";
+
+            const status = document.createElement("div");
+            status.textContent =
+                "Opening Google Maps. It will try to use your current location as the starting point.";
+            status.style.cssText =
+                "color:#AAA;font-size:13px;line-height:1.4;text-align:center;margin-top:8px;";
+            navPanel.insertBefore(status, currentLocBtn.nextSibling);
+
+            // Open Maps immediately; let Google Maps resolve the user's location.
+            const url =
+                'https://www.google.com/maps/dir/?api=1&destination=' +
+                dest.latitude + ',' + dest.longitude +
+                '&travelmode=driving';
+
+            console.log("[CAMPNAV] [DIAGNOSTIC] NAVIGATION URL CREATED: " + url);
+
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                window.location.href = url;
+                return;
+            }
+
+            const mapWindow = window.open(url, '_blank');
+            if (!mapWindow) {
+                window.location.href = url;
+                return;
+            }
+
+            console.log("[CAMPNAV] [DIAGNOSTIC] GOOGLE MAPS LAUNCH REQUESTED");
         };
         navPanel.appendChild(currentLocBtn);
 
