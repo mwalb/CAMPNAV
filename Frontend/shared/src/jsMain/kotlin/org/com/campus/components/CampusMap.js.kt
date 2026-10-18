@@ -167,24 +167,24 @@ private fun initGlobalJSBridge() {
         console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION REQUEST STARTED");
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS");
+                console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS (standard accuracy)");
                 onSuccess(pos);
             },
             (err1) => {
-                console.warn("[CAMPNAV] High accuracy location timeout/fail, trying standard accuracy...", err1.message);
+                console.warn("[CAMPNAV] Standard accuracy location timeout/fail, trying high accuracy...", err1.message);
                 navigator.geolocation.getCurrentPosition(
                     (pos2) => {
-                        console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS");
+                        console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION SUCCESS (high accuracy)");
                         onSuccess(pos2);
                     },
                     (err2) => {
                         console.log("[CAMPNAV] [DIAGNOSTIC] GEOLOCATION FAILURE: " + err2.message);
                         onError(err2.message || "Location access failed");
                     },
-                    { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
                 );
             },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+            { enableHighAccuracy: false, timeout: 30000, maximumAge: 60000 }
         );
     };
 
