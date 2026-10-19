@@ -37,7 +37,7 @@ fun LandingScreen(
 ) {
     DisposableEffect(Unit) {
         setHomeScreenAdEnabled(true)
-        onDispose { setHomeScreenAdEnabled(true) }
+        onDispose { setHomeScreenAdEnabled(false) }
     }
 
     var startAnimation by remember { mutableStateOf(false) }
