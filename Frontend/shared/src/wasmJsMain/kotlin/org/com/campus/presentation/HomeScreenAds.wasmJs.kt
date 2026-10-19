@@ -24,5 +24,5 @@ package org.com.campus.presentation
 private external fun updateMonetagIpp(enabled: Boolean)
 
 actual fun setHomeScreenAdEnabled(enabled: Boolean) {
-    updateMonetagIpp(enabled)
+    // Monetag ads temporarily disabled while troubleshooting the map.
 }
