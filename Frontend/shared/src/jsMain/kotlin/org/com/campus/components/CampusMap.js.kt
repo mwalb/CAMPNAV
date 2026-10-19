@@ -322,6 +322,14 @@ private fun initGlobalJSBridge() {
         selectOnMapBtn.onclick = () => {
             console.log("[CAMPNAV] [DIAGNOSTIC] MANUAL LOCATION SELECTED");
             window.hideNavOverlays();
+
+            // Keep the map visible without the dark backdrop during manual selection.
+            const mapOverlay = document.getElementById("native-map-overlay");
+            if (mapOverlay) {
+                mapOverlay.style.display = "none";
+                mapOverlay.style.pointerEvents = "none";
+            }
+
             window.onStatusChange("SELECTING_START_POINT");
         };
         navPanel.appendChild(selectOnMapBtn);
