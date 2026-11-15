@@ -38,7 +38,7 @@ fun CampusMapScreen(
     var searchQuery by remember { mutableStateOf("") }
 
     val repository = remember { CampusRepository() }
-    val routingService = remember { GoogleRoutingService("AIzaSyAvna2gdB_NvFXsBGgY-WBnatqy9IKUN5s") }
+    val routingService = remember { GoogleRoutingService("AIzaSyDnKLNd3113Sj2042jlLdZVbCxblsjAgf8") }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(university.id) {
